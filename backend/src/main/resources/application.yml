@@ -38,6 +38,12 @@ app:
   csv:
     preview-row-limit: 100
     max-columns: 50
+  dimension:
+    time-patterns: "2020,2021,2022,2023,2024,2025,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Q1,Q2,Q3,Q4,January,February,March,April,May,June,July,August,September,October,November,December"
+    location-patterns: "USA,Canada,Mexico,UK,Germany,France,Spain,Italy,China,Japan,India,Brazil,Australia,Netherlands,Switzerland,Sweden,Norway,Denmark,Finland,Poland,Czech Republic,Slovakia,Hungary,Romania,Bulgaria,Greece,Portugal,Ireland,Belgium,Austria"
+    confidence-threshold: 0.7
+    min-sample-size: 5
+    max-sample-size: 50
 
 logging:
   level:
