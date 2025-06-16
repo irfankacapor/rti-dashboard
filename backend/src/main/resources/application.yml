@@ -35,6 +35,9 @@ app:
     max-file-size: 26214400  # 25MB in bytes
     max-rows: 200000
     directory: uploads
+  csv:
+    preview-row-limit: 100
+    max-columns: 50
 
 logging:
   level:
