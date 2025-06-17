@@ -1,6 +1,6 @@
 package io.dashboard.dto.goal;
 
-import io.dashboard.enums.ImpactDirection;
+import io.dashboard.entity.GoalIndicator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,12 +16,10 @@ import java.time.LocalDateTime;
 public class GoalIndicatorResponse {
     
     private Long id;
-    private Long goalId;
-    private String goalName;
     private Long indicatorId;
     private String indicatorName;
     private BigDecimal aggregationWeight;
-    private ImpactDirection impactDirection;
+    private GoalIndicator.ImpactDirection impactDirection;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 } 

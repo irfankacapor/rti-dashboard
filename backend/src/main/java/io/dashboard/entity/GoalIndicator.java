@@ -1,6 +1,5 @@
 package io.dashboard.entity;
 
-import io.dashboard.enums.ImpactDirection;
 import io.dashboard.model.Indicator;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -47,4 +46,9 @@ public class GoalIndicator {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    public enum ImpactDirection {
+        POSITIVE,
+        NEGATIVE
+    }
 } 
