@@ -16,6 +16,8 @@ public interface DimLocationRepository extends JpaRepository<DimLocation, Long> 
     
     Optional<DimLocation> findByName(String name);
     
+    Optional<DimLocation> findByValue(String value);
+    
     List<DimLocation> findByType(DimLocation.LocationType type);
     
     List<DimLocation> findByParentId(Long parentId);

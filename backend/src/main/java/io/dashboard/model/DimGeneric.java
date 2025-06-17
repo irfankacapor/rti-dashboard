@@ -23,6 +23,9 @@ public class DimGeneric {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
     
+    @Column(name = "dimension_name", length = 100)
+    private String dimensionName; // Name of the dimension (e.g., "Category", "Sector")
+    
     @Column(name = "value", nullable = false, length = 255)
     private String value;
     

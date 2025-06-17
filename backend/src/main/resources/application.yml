@@ -45,6 +45,31 @@ app:
     min-sample-size: 5
     max-sample-size: 50
 
+# Data Processing Configuration
+data:
+  processing:
+    batch-size: 1000
+    timeout-minutes: 60
+    max-errors: 1000
+    confidence-threshold: 0.7
+    threads:
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 100
+    validation:
+      enable-data-quality-checks: true
+      enable-duplicate-detection: true
+      enable-range-validation: true
+      min-value-threshold: -999999999
+      max-value-threshold: 999999999
+    aggregation:
+      enable-auto-aggregation: false
+      aggregation-types: "SUM,AVG,MIN,MAX"
+    error-handling:
+      max-retries: 3
+      retry-delay-seconds: 30
+      fail-fast: false
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

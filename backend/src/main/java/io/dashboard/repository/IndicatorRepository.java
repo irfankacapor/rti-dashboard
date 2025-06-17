@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface IndicatorRepository extends JpaRepository<Indicator, Long> {
     Optional<Indicator> findByCode(String code);
+    Optional<Indicator> findByName(String name);
     boolean existsByCode(String code);
     
     @Query("SELECT DISTINCT i FROM Indicator i JOIN i.subareaIndicators si WHERE si.subarea.id = :subareaId")

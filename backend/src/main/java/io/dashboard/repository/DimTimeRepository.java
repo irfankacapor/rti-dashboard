@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface DimTimeRepository extends JpaRepository<DimTime, Long> {
     
+    Optional<DimTime> findByValue(String value);
+    
     Optional<DimTime> findByYearAndMonthAndDay(Integer year, Integer month, Integer day);
     
     Optional<DimTime> findByTimePeriod(String timePeriod);
