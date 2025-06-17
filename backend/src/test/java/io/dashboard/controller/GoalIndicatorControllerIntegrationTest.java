@@ -2,9 +2,9 @@ package io.dashboard.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dashboard.dto.goal.*;
-import io.dashboard.entity.Goal;
-import io.dashboard.entity.GoalIndicator;
-import io.dashboard.entity.GoalType;
+import io.dashboard.model.Goal;
+import io.dashboard.model.GoalIndicator;
+import io.dashboard.model.GoalType;
 import io.dashboard.enums.ImpactDirection;
 import io.dashboard.model.Indicator;
 import io.dashboard.repository.GoalIndicatorRepository;

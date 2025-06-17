@@ -3,10 +3,10 @@ package io.dashboard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dashboard.dto.goal.*;
-import io.dashboard.entity.Goal;
-import io.dashboard.entity.GoalIndicator;
-import io.dashboard.entity.GoalTarget;
-import io.dashboard.entity.GoalType;
+import io.dashboard.model.Goal;
+import io.dashboard.model.GoalIndicator;
+import io.dashboard.model.GoalTarget;
+import io.dashboard.model.GoalType;
 import io.dashboard.model.Indicator;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
@@ -69,15 +69,12 @@ public class GoalService {
         GoalType goalType = goalTypeRepository.findById(request.getGoalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Goal type not found with ID: " + request.getGoalTypeId()));
         
-        validateAttributes(request.getAttributes());
-        
         Goal goal = Goal.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .url(request.getUrl())
                 .year(request.getYear())
                 .goalType(goalType)
-                .attributes(request.getAttributes())
                 .build();
         
         Goal savedGoal = goalRepository.save(goal);
@@ -95,14 +92,11 @@ public class GoalService {
         GoalType goalType = goalTypeRepository.findById(request.getGoalTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Goal type not found with ID: " + request.getGoalTypeId()));
         
-        validateAttributes(request.getAttributes());
-        
         goal.setName(request.getName());
         goal.setDescription(request.getDescription());
         goal.setUrl(request.getUrl());
         goal.setYear(request.getYear());
         goal.setGoalType(goalType);
-        goal.setAttributes(request.getAttributes());
         
         Goal updatedGoal = goalRepository.save(goal);
         log.info("Updated goal with ID: {}", updatedGoal.getId());
@@ -164,16 +158,6 @@ public class GoalService {
         
         goalTargetRepository.delete(target);
         log.info("Removed target with ID: {} from goal with ID: {}", targetId, goalId);
-    }
-    
-    private void validateAttributes(String attributes) {
-        if (attributes != null && !attributes.trim().isEmpty()) {
-            try {
-                objectMapper.readTree(attributes);
-            } catch (Exception e) {
-                throw new BadRequestException("Invalid JSON format in attributes: " + e.getMessage());
-            }
-        }
     }
     
     private void validateTargetYear(Integer targetYear) {

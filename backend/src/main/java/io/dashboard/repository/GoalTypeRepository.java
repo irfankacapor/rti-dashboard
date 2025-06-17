@@ -1,6 +1,6 @@
 package io.dashboard.repository;
 
-import io.dashboard.entity.GoalType;
+import io.dashboard.model.GoalType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

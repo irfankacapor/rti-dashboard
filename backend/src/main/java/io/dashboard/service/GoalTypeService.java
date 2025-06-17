@@ -3,7 +3,7 @@ package io.dashboard.service;
 import io.dashboard.dto.goal.GoalTypeCreateRequest;
 import io.dashboard.dto.goal.GoalTypeResponse;
 import io.dashboard.dto.goal.GoalTypeUpdateRequest;
-import io.dashboard.entity.GoalType;
+import io.dashboard.model.GoalType;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.repository.GoalTypeRepository;

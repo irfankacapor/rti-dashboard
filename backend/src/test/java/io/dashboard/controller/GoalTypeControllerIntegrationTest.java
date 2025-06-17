@@ -3,7 +3,7 @@ package io.dashboard.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dashboard.dto.goal.GoalTypeCreateRequest;
 import io.dashboard.dto.goal.GoalTypeUpdateRequest;
-import io.dashboard.entity.GoalType;
+import io.dashboard.model.GoalType;
 import io.dashboard.repository.GoalTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

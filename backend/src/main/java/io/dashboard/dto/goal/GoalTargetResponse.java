@@ -1,6 +1,6 @@
 package io.dashboard.dto.goal;
 
-import io.dashboard.entity.GoalTarget;
+import io.dashboard.model.GoalTarget;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

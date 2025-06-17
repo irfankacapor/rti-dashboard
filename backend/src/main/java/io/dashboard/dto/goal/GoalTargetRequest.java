@@ -1,6 +1,6 @@
 package io.dashboard.dto.goal;
 
-import io.dashboard.entity.GoalTarget;
+import io.dashboard.model.GoalTarget;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
