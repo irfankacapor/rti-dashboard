@@ -1,9 +1,9 @@
 package io.dashboard.service;
 
 import io.dashboard.dto.goal.*;
-import io.dashboard.model.Goal;
-import io.dashboard.model.GoalIndicator;
-import io.dashboard.model.GoalTarget;
+import io.dashboard.entity.Goal;
+import io.dashboard.entity.GoalIndicator;
+import io.dashboard.entity.GoalTarget;
 import io.dashboard.enums.ImpactDirection;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;

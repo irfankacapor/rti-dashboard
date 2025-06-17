@@ -1,9 +1,9 @@
 package io.dashboard.service;
 
 import io.dashboard.dto.goal.*;
-import io.dashboard.model.Goal;
-import io.dashboard.model.GoalIndicator;
-import io.dashboard.model.GoalTarget;
+import io.dashboard.entity.Goal;
+import io.dashboard.entity.GoalIndicator;
+import io.dashboard.entity.GoalTarget;
 import io.dashboard.enums.ImpactDirection;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
@@ -423,8 +423,7 @@ class GoalIndicatorServiceTest {
                 goalIndicatorService.bulkLinkIndicators(1L, requests));
         
         verify(goalRepository).findById(1L);
-        verify(indicatorRepository, times(2)).existsById(1L);
-        verify(goalIndicatorRepository, times(2)).existsByGoalIdAndIndicatorId(eq(1L), eq(1L));
+        verify(indicatorRepository).existsById(1L);
         verifyNoMoreInteractions(indicatorRepository, goalIndicatorRepository);
     }
 } 

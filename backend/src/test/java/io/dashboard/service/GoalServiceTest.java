@@ -2,12 +2,11 @@ package io.dashboard.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dashboard.dto.goal.*;
-import io.dashboard.model.Goal;
-import io.dashboard.model.GoalIndicator;
-import io.dashboard.model.GoalTarget;
-import io.dashboard.model.GoalType;
+import io.dashboard.entity.Goal;
+import io.dashboard.entity.GoalIndicator;
+import io.dashboard.entity.GoalTarget;
+import io.dashboard.entity.GoalType;
 import io.dashboard.model.Indicator;
-import io.dashboard.enums.ImpactDirection;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.repository.GoalIndicatorRepository;
@@ -82,6 +81,7 @@ class GoalServiceTest {
                 .url("https://sdgs.un.org/goals/goal1")
                 .year(2030)
                 .goalType(goalType)
+                .attributes("{\"sdg_number\": 1, \"category\": \"social\"}")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -109,7 +109,7 @@ class GoalServiceTest {
                 .goal(goal)
                 .indicator(indicator)
                 .aggregationWeight(new BigDecimal("0.5"))
-                .impactDirection(ImpactDirection.NEGATIVE)
+                .impactDirection(GoalIndicator.ImpactDirection.NEGATIVE)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -120,6 +120,7 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2030)
                 .goalTypeId(1L)
+                .attributes("{\"test\": true}")
                 .build();
         
         updateRequest = GoalUpdateRequest.builder()
@@ -128,6 +129,7 @@ class GoalServiceTest {
                 .url("https://updated.com")
                 .year(2035)
                 .goalTypeId(1L)
+                .attributes("{\"updated\": true}")
                 .build();
         
         targetRequest = GoalTargetRequest.builder()
@@ -233,6 +235,7 @@ class GoalServiceTest {
     void create_shouldCreateGoal_whenValidRequest() throws Exception {
         // Given
         when(goalTypeRepository.findById(1L)).thenReturn(Optional.of(goalType));
+        when(objectMapper.readTree("{\"test\": true}")).thenReturn(null);
         when(goalRepository.save(any(Goal.class))).thenReturn(goal);
         when(goalTargetRepository.findByGoalIdWithIndicator(1L)).thenReturn(Arrays.asList(goalTarget));
         when(goalIndicatorRepository.findByGoalIdWithIndicator(1L)).thenReturn(Arrays.asList(goalIndicator));
@@ -246,6 +249,7 @@ class GoalServiceTest {
         assertEquals("End Poverty", result.getName());
         
         verify(goalTypeRepository).findById(1L);
+        verify(objectMapper).readTree("{\"test\": true}");
         verify(goalRepository).save(any(Goal.class));
     }
     
@@ -264,10 +268,29 @@ class GoalServiceTest {
     }
     
     @Test
+    void create_shouldThrowException_whenInvalidJsonAttributes() throws Exception {
+        // Given
+        when(goalTypeRepository.findById(1L)).thenReturn(Optional.of(goalType));
+        when(objectMapper.readTree("invalid json")).thenThrow(new RuntimeException("Invalid JSON"));
+        
+        GoalCreateRequest invalidRequest = createRequest.toBuilder().attributes("invalid json").build();
+        
+        // When & Then
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> goalService.create(invalidRequest));
+        assertTrue(exception.getMessage().contains("Invalid JSON format in attributes"));
+        
+        verify(goalTypeRepository).findById(1L);
+        verify(objectMapper).readTree("invalid json");
+        verify(goalRepository, never()).save(any());
+    }
+    
+    @Test
     void update_shouldUpdateGoal_whenValidRequest() throws Exception {
         // Given
         when(goalRepository.findById(1L)).thenReturn(Optional.of(goal));
         when(goalTypeRepository.findById(1L)).thenReturn(Optional.of(goalType));
+        when(objectMapper.readTree("{\"updated\": true}")).thenReturn(null);
         when(goalRepository.save(any(Goal.class))).thenReturn(goal);
         when(goalTargetRepository.findByGoalIdWithIndicator(1L)).thenReturn(Arrays.asList(goalTarget));
         when(goalIndicatorRepository.findByGoalIdWithIndicator(1L)).thenReturn(Arrays.asList(goalIndicator));
@@ -282,6 +305,7 @@ class GoalServiceTest {
         
         verify(goalRepository).findById(1L);
         verify(goalTypeRepository).findById(1L);
+        verify(objectMapper).readTree("{\"updated\": true}");
         verify(goalRepository).save(any(Goal.class));
     }
     
