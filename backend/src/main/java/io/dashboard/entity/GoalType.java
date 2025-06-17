@@ -1,4 +1,4 @@
-package io.dashboard.model;
+package io.dashboard.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -39,5 +39,6 @@ public class GoalType {
     private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "goalType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Goal> goals = new ArrayList<>();
 } 

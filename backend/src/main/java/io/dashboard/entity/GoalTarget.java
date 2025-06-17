@@ -1,6 +1,5 @@
-package io.dashboard.model;
+package io.dashboard.entity;
 
-import io.dashboard.enums.ImpactDirection;
 import io.dashboard.model.Indicator;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -14,12 +13,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "goal_indicators")
+@Table(name = "goal_targets")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GoalIndicator {
+public class GoalTarget {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,12 +32,18 @@ public class GoalIndicator {
     @JoinColumn(name = "indicator_id", nullable = false)
     private Indicator indicator;
     
-    @Column(name = "aggregation_weight", precision = 5, scale = 4, nullable = false)
-    private BigDecimal aggregationWeight;
+    @Column(name = "target_year", nullable = false)
+    private Integer targetYear;
+    
+    @Column(name = "target_value", nullable = false, precision = 19, scale = 6)
+    private BigDecimal targetValue;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "impact_direction", nullable = false)
-    private ImpactDirection impactDirection;
+    @Column(name = "target_type", nullable = false)
+    private TargetType targetType;
+    
+    @Column(name = "target_per", precision = 5, scale = 2)
+    private BigDecimal targetPer;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -47,4 +52,10 @@ public class GoalIndicator {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    public enum TargetType {
+        ABSOLUTE,
+        RELATIVE,
+        PERCENTAGE_CHANGE
+    }
 } 
