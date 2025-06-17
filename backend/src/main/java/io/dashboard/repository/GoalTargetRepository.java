@@ -17,4 +17,6 @@ public interface GoalTargetRepository extends JpaRepository<GoalTarget, Long> {
     
     @Query("SELECT gt FROM GoalTarget gt LEFT JOIN FETCH gt.indicator WHERE gt.goal.id = :goalId")
     List<GoalTarget> findByGoalIdWithIndicator(Long goalId);
+    
+    List<GoalTarget> findByGoalIdAndIndicatorId(Long goalId, Long indicatorId);
 } 

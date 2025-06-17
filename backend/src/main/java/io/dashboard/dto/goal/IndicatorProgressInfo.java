@@ -7,21 +7,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GoalIndicatorResponse {
+public class IndicatorProgressInfo {
     
-    private Long id;
-    private Long goalId;
-    private String goalName;
     private Long indicatorId;
     private String indicatorName;
-    private BigDecimal aggregationWeight;
+    private BigDecimal currentValue;
+    private BigDecimal targetValue;
+    private BigDecimal progress;
+    private BigDecimal weight;
     private ImpactDirection impactDirection;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String unit;
 } 
