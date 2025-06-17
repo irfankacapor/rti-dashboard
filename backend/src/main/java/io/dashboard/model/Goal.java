@@ -1,5 +1,7 @@
-package io.dashboard.entity;
+package io.dashboard.model;
 
+import io.dashboard.model.GoalTarget;
+import io.dashboard.model.GoalIndicator;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,9 +42,6 @@ public class Goal {
     @JoinColumn(name = "goal_type_id", nullable = false)
     private GoalType goalType;
     
-    @Column(name = "attributes", columnDefinition = "JSON")
-    private String attributes;
-    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -53,10 +51,8 @@ public class Goal {
     private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<GoalTarget> targets = new ArrayList<>();
     
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<GoalIndicator> indicators = new ArrayList<>();
 } 
