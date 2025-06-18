@@ -13,4 +13,7 @@ public interface IndicatorRepository extends JpaRepository<Indicator, Long> {
     
     @Query("SELECT DISTINCT i FROM Indicator i JOIN i.subareaIndicators si WHERE si.subarea.id = :subareaId")
     List<Indicator> findBySubareaId(Long subareaId);
+
+    @Query("SELECT i FROM Indicator i LEFT JOIN FETCH i.goalIndicators gi LEFT JOIN FETCH gi.goal WHERE i.id = :indicatorId")
+    Indicator findByIdWithGoals(Long indicatorId);
 } 

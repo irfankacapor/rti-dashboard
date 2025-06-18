@@ -158,6 +158,15 @@ public class IndicatorService {
         subareaIndicatorRepository.deleteById(id);
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Indicator findIndicatorWithGoals(Long indicatorId) {
+        Indicator indicator = indicatorRepository.findByIdWithGoals(indicatorId);
+        if (indicator == null) {
+            throw new ResourceNotFoundException("Indicator", "id", indicatorId);
+        }
+        return indicator;
+    }
+
     private IndicatorResponse toResponse(Indicator indicator) {
         IndicatorResponse resp = new IndicatorResponse();
         resp.setId(indicator.getId());

@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.dashboard.exception.ErrorResponse;
+import io.dashboard.exception.ResourceNotFoundException;
+import io.dashboard.exception.BadRequestException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
@@ -53,7 +57,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         ErrorResponse errorResponse = new ErrorResponse(
-            "An unexpected error occurred: " + ex.getMessage(),
+            "An unexpected error occurred",
             "Internal Server Error",
             HttpStatus.INTERNAL_SERVER_ERROR.value()
         );
