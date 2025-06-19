@@ -1,0 +1,19 @@
+{
+  "Index": {
+    "title": "Welcome to RTI Dashboard",
+    "description": "A modern dashboard built with Next.js"
+  },
+  "Landing": {
+    "title": "RTI Dashboard",
+    "subtitle": "Create comprehensive indicator dashboards with multi-dimensional data analysis",
+    "startButton": "Start Configuration"
+  },
+  "Wizard": {
+    "title": "Dashboard Configuration Wizard",
+    "step1": "Areas Management",
+    "step2": "Subareas Management", 
+    "step3": "Data Upload",
+    "step4": "Indicators",
+    "step5": "Goals"
+  }
+} 
