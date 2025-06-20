@@ -1,6 +1,6 @@
 import { Subarea, SubareaFormData } from '@/types/subareas';
 
-const API_BASE = '/api/v1/subareas';
+const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/subareas`;
 
 export async function getSubareas(): Promise<Subarea[]> {
   const res = await fetch(API_BASE);

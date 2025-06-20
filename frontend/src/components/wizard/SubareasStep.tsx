@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { Box, Typography, Button, Alert } from '@mui/material';
 import { useWizardStore } from '@/store/wizardStore';
+import { useWizardStore as useMainWizardStore } from '@/lib/store/useWizardStore';
 import { SubareasTable } from '../common/SubareasTable';
 import { SubareaFormData } from '@/types/subareas';
 
@@ -12,6 +13,10 @@ export const SubareasStep: React.FC = () => {
   const deleteSubarea = useWizardStore((state) => state.deleteSubarea);
   const getDefaultAreaId = useWizardStore((state) => state.getDefaultAreaId);
 
+  // Main wizard store for step completion
+  const setStepCompleted = useMainWizardStore((state) => state.setStepCompleted);
+  const setStepValid = useMainWizardStore((state) => state.setStepValid);
+
   // Always treat areas as an array for safety in tests and runtime
   const safeAreas = Array.isArray(areas) ? areas : [];
   // Only show non-default areas in picker
@@ -20,6 +25,12 @@ export const SubareasStep: React.FC = () => {
 
   // Validation: at least 1 subarea required
   const isStepValid = subareas.length > 0;
+
+  // Mark step as completed and valid when validation passes
+  useEffect(() => {
+    setStepValid(2, isStepValid);
+    setStepCompleted(2, isStepValid);
+  }, [isStepValid, setStepCompleted, setStepValid]);
 
   // Effect: If manual areas are added after subareas exist, reassign subareas from default area to first manual area
   const prevManualAreasCount = useRef(manualAreas.length);

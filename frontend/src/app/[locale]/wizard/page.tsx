@@ -6,6 +6,7 @@ import { useWizardStore as useStepperStore } from '@/lib/store/useWizardStore';
 import { useWizardStore as useAreaStore } from '@/store/wizardStore';
 import { AreasStep } from '@/components/wizard/AreasStep';
 import { SubareasStep } from '@/components/wizard/SubareasStep';
+import { CsvProcessingStep } from '@/components/wizard/CsvProcessingStep';
 
 export default function WizardPage() {
   const { currentStep, setStepValid, setStepCompleted, nextStep } = useStepperStore();
@@ -43,14 +44,25 @@ export default function WizardPage() {
     stepComponent = <AreasStep />;
   } else if (currentStep === 2) {
     stepComponent = <SubareasStep />;
+  } else if (currentStep === 3) {
+    stepComponent = <CsvProcessingStep />;
   } else {
     stepComponent = <div>Step not implemented</div>;
   }
 
   return (
     <WizardContainer
-      title={`Step ${currentStep}: ${currentStep === 1 ? 'Areas Management' : currentStep === 2 ? 'Subareas Management' : ''}`}
-      subtitle={currentStep === 1 ? 'Configure the main areas for your dashboard' : currentStep === 2 ? 'Configure subareas and assign them to areas' : ''}
+      title={`Step ${currentStep}: ${
+        currentStep === 1 ? 'Areas Management' :
+        currentStep === 2 ? 'Subareas Management' :
+        currentStep === 3 ? 'Data Upload' :
+        ''}`}
+      subtitle={
+        currentStep === 1 ? 'Configure the main areas for your dashboard' :
+        currentStep === 2 ? 'Configure subareas and assign them to areas' :
+        currentStep === 3 ? 'Upload and map your indicator data from CSV' :
+        ''
+      }
       onNext={handleNext}
       nextDisabled={false}
       skipButton={skipButton}
