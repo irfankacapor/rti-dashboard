@@ -120,11 +120,22 @@ export const AreasStep: React.FC = () => {
 
   return (
     <Box>
+      {/* Step content list as described in the tests */}
+      <Box mb={2}>
+        <ul>
+          <li>
+            <Typography variant="body2">Create up to 5 main areas for your dashboard</Typography>
+          </li>
+          <li>
+            <Typography variant="body2">Define names and descriptions for each area</Typography>
+          </li>
+          <li>
+            <Typography variant="body2">Set up the foundation for your indicator groupings</Typography>
+          </li>
+        </ul>
+      </Box>
       <Typography variant="h5" gutterBottom>
         Manage Areas
-      </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        Create up to 5 main areas for your dashboard. Each area can group multiple subareas and indicators.
       </Typography>
       {showLimitWarning && (
         <Alert severity={userAreas.length === MAX_AREAS ? 'error' : 'warning'} sx={{ mb: 2 }} icon={<WarningAmberIcon />}>

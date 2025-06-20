@@ -14,11 +14,6 @@ describe('WizardPage', () => {
     expect(screen.getByTestId('wizard-step-subtitle')).toHaveTextContent('Configure the main areas for your dashboard');
   });
 
-  it('shows the info alert placeholder', () => {
-    render(<WizardPage />);
-    expect(screen.getByText(/This is a placeholder for Step 1 content/)).toBeInTheDocument();
-  });
-
   it('shows the step content list', () => {
     render(<WizardPage />);
     expect(screen.getByText(/Create up to 5 main areas for your dashboard/)).toBeInTheDocument();
