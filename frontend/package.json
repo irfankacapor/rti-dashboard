@@ -4,13 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build", 
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test:watch": "jest --watch", 
+    "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
-  },  
+  },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -34,6 +34,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.58.1",
     "recharts": "^2.15.3",
+    "uuid": "^11.1.0",
     "yup": "^1.6.1",
     "zustand": "^5.0.5"
   },
@@ -47,6 +48,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "jest": "^30.0.0",
