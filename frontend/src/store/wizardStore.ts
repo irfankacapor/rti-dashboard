@@ -3,10 +3,12 @@ import { persist } from 'zustand/middleware';
 import { Area } from '@/types/areas';
 import { slugify } from '@/utils/slugify';
 import { v4 as uuidv4 } from 'uuid';
+import { Subarea, SubareaFormData } from '@/types/subareas';
 
 interface WizardState {
   // ... existing state
   areas: Area[];
+  subareas: Subarea[];
 
   // Areas actions
   addArea: (area: Omit<Area, 'id' | 'createdAt'>) => void;
@@ -14,6 +16,15 @@ interface WizardState {
   deleteArea: (id: string) => void;
   getDefaultArea: () => Area | null;
   canAddMoreAreas: () => boolean;
+
+  // Subareas actions
+  addSubarea: (subarea: Omit<Subarea, 'id' | 'createdAt'>) => void;
+  updateSubarea: (id: string, updates: Partial<Subarea>) => void;
+  deleteSubarea: (id: string) => void;
+  getSubareasByAreaId: (areaId: string) => Subarea[];
+  getDefaultAreaId: () => string | null;
+
+  setSubareas: (subs: Subarea[]) => void;
 }
 
 const MAX_AREAS = 5;
@@ -32,6 +43,7 @@ export const useWizardStore = create<WizardState>()(
     (set, get) => ({
       // ... existing state
       areas: [],
+      subareas: [],
 
       addArea: (area) => set((state) => {
         if (state.areas.filter(a => !a.isDefault).length >= MAX_AREAS) return {};
@@ -70,6 +82,30 @@ export const useWizardStore = create<WizardState>()(
         // Only count user-created areas (not default)
         return areas.filter(a => !a.isDefault).length < MAX_AREAS;
       },
+
+      addSubarea: (subarea) => set((state) => {
+        const id = crypto.randomUUID();
+        const createdAt = new Date();
+        return { subareas: [...state.subareas, { ...subarea, id, createdAt }] };
+      }),
+
+      updateSubarea: (id, updates) => set((state) => ({
+        subareas: state.subareas.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      })),
+
+      deleteSubarea: (id) => set((state) => ({
+        subareas: state.subareas.filter((s) => s.id !== id),
+      })),
+
+      getSubareasByAreaId: (areaId) => get().subareas.filter((s) => s.areaId === areaId),
+
+      getDefaultAreaId: () => {
+        const areas = get().areas;
+        const defaultArea = areas.find((a) => a.isDefault);
+        return defaultArea ? defaultArea.id : null;
+      },
+
+      setSubareas: (subs) => set({ subareas: subs }),
     }),
     {
       name: 'wizard-storage',

@@ -5,6 +5,7 @@ import { Typography, Box, Alert } from '@mui/material';
 import { useWizardStore as useStepperStore } from '@/lib/store/useWizardStore';
 import { useWizardStore as useAreaStore } from '@/store/wizardStore';
 import { AreasStep } from '@/components/wizard/AreasStep';
+import { SubareasStep } from '@/components/wizard/SubareasStep';
 
 export default function WizardPage() {
   const { currentStep, setStepValid, setStepCompleted, nextStep } = useStepperStore();
@@ -32,20 +33,31 @@ export default function WizardPage() {
 
   const handleNext = () => {
     // This will be implemented in the next step
-    console.log('Next step logic will be implemented in Step 3');
+    // For now, just go to the next step
+    nextStep();
   };
+
+  // Step rendering logic
+  let stepComponent = null;
+  if (currentStep === 1) {
+    stepComponent = <AreasStep />;
+  } else if (currentStep === 2) {
+    stepComponent = <SubareasStep />;
+  } else {
+    stepComponent = <div>Step not implemented</div>;
+  }
 
   return (
     <WizardContainer
-      title={`Step ${currentStep}: Areas Management`}
-      subtitle="Configure the main areas for your dashboard"
+      title={`Step ${currentStep}: ${currentStep === 1 ? 'Areas Management' : currentStep === 2 ? 'Subareas Management' : ''}`}
+      subtitle={currentStep === 1 ? 'Configure the main areas for your dashboard' : currentStep === 2 ? 'Configure subareas and assign them to areas' : ''}
       onNext={handleNext}
       nextDisabled={false}
       skipButton={skipButton}
       skipDisabled={skipDisabled}
       onSkip={handleSkip}
     >
-      <AreasStep />
+      {stepComponent}
     </WizardContainer>
   );
 } 
