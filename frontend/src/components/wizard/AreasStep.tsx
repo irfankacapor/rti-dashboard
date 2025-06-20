@@ -18,19 +18,26 @@ import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { AreaCard } from './AreaCard';
 import { useWizardStore } from '@/store/wizardStore';
+import { useWizardStore as useMainWizardStore } from '@/lib/store/useWizardStore';
 import { Area, AreaFormData } from '@/types/areas';
 
 const MAX_AREAS = 5;
 
 export const AreasStep: React.FC = () => {
   const {
-    areas,
+    dirtyAreas,
     addArea,
     updateArea,
     deleteArea,
     canAddMoreAreas,
-    fetchAreas
+    fetchAreas,
+    isLoadingAreas,
+    hasUnsavedChanges
   } = useWizardStore();
+
+  // Main wizard store for step completion
+  const setStepCompleted = useMainWizardStore((state) => state.setStepCompleted);
+  const setStepValid = useMainWizardStore((state) => state.setStepValid);
 
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,16 +47,22 @@ export const AreasStep: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<Area | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   
-  // Fetch initial data
+  // Fetch initial data only once on mount
   useEffect(() => {
-    // Only fetch if areas are not loaded yet (i.e., empty or only default area)
-    if (areas.length === 0 || (areas.length === 1 && areas[0].isDefault)) {
-      fetchAreas();
-    }
-  }, [fetchAreas, areas]);
+    fetchAreas();
+  }, []); // Remove fetchAreas and areas from dependencies to prevent infinite loop
 
   // Filter out default area for UI
-  const userAreas = areas.filter(a => !a.isDefault);
+  const userAreas = dirtyAreas.filter(a => !a.isDefault);
+
+  // Validation: at least 0 areas required (can skip this step)
+  const isStepValid = true; // Areas step is always valid since it can be skipped
+
+  // Mark step as completed and valid
+  useEffect(() => {
+    setStepValid(1, isStepValid);
+    setStepCompleted(1, isStepValid);
+  }, [isStepValid, setStepCompleted, setStepValid]);
 
   // Handle add/edit dialog open
   const handleOpen = (area?: Area) => {
@@ -108,10 +121,10 @@ export const AreasStep: React.FC = () => {
 
     try {
       if (editArea) {
-        await updateArea(editArea.id, { name: form.name, description: form.description });
+        updateArea(editArea.id, { name: form.name, description: form.description });
         setSnackbar('Area updated successfully');
       } else {
-        await addArea({ name: form.name, description: form.description });
+        addArea({ name: form.name, description: form.description });
         setSnackbar('Area added successfully');
       }
       handleClose();
@@ -131,7 +144,7 @@ export const AreasStep: React.FC = () => {
     if (deleteConfirm) {
       setIsLoading(true);
       try {
-        await deleteArea(deleteConfirm.id);
+        deleteArea(deleteConfirm.id);
         setSnackbar('Area deleted');
       } catch (err) {
         setSnackbar(`Error: ${(err as Error).message}`);
@@ -165,6 +178,11 @@ export const AreasStep: React.FC = () => {
       <Typography variant="h5" gutterBottom>
         Manage Areas
       </Typography>
+      {hasUnsavedChanges() && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          You have unsaved changes. These will be saved when you proceed to the next step.
+        </Alert>
+      )}
       {showLimitWarning && (
         <Alert severity={userAreas.length === MAX_AREAS ? 'error' : 'warning'} sx={{ mb: 2 }} icon={<WarningAmberIcon />}>
           {userAreas.length === MAX_AREAS
@@ -172,27 +190,29 @@ export const AreasStep: React.FC = () => {
             : `You are approaching the 5 areas limit (${userAreas.length}/5).`}
         </Alert>
       )}
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        {userAreas.map((area) => (
-          <Grid item xs={12} sm={6} md={4} key={area.id}>
-            <AreaCard area={area} onEdit={handleOpen} onDelete={handleDelete} />
-          </Grid>
-        ))}
-      </Grid>
-      {isEmpty && !isLoading && (
+      <Box sx={{ mt: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          {userAreas.map((area) => (
+            <Box key={area.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 8px)' } }}>
+              <AreaCard area={area} onEdit={handleOpen} onDelete={handleDelete} />
+            </Box>
+          ))}
+        </Box>
+      </Box>
+      {isEmpty && !isLoadingAreas && (
         <Box mt={4} textAlign="center">
           <Typography variant="body1" color="text.secondary">
             No areas found. Add your first area to get started.
           </Typography>
         </Box>
       )}
-      {isLoading && <Box mt={4} textAlign="center"><CircularProgress /></Box>}
+      {(isLoadingAreas || isLoading) && <Box mt={4} textAlign="center"><CircularProgress /></Box>}
       <Box mt={3} display="flex" justifyContent="center">
         <Fab
           color="primary"
           aria-label="add"
           onClick={() => handleOpen()}
-          disabled={!canAdd || isLoading}
+          disabled={!canAdd || isLoading || isLoadingAreas}
           sx={{ position: 'relative' }}
         >
           <AddIcon />

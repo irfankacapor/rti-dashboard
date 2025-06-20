@@ -1,4 +1,5 @@
 import { Subarea, SubareaFormData } from '@/types/subareas';
+import { slugify } from '@/utils/slugify';
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/subareas`;
 
@@ -16,18 +17,35 @@ function mapSubareaFromApi(api: any): Subarea {
 
 export async function getSubareas(): Promise<Subarea[]> {
   const res = await fetch(API_BASE);
-  if (!res.ok) throw new Error('Failed to fetch subareas');
+  
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'Unknown error');
+    console.error('Failed to fetch subareas:', res.status, errorText);
+    throw new Error(`Failed to fetch subareas: ${res.status} - ${errorText}`);
+  }
+  
   const data = await res.json();
   return data.map(mapSubareaFromApi);
 }
 
 export async function createSubarea(form: SubareaFormData): Promise<Subarea> {
+  const requestBody = {
+    ...form,
+    code: slugify(form.name),
+  };
+
   const res = await fetch(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(form),
+    body: JSON.stringify(requestBody),
   });
-  if (!res.ok) throw new Error('Failed to create subarea');
+  
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'Unknown error');
+    console.error('Failed to create subarea:', res.status, errorText);
+    throw new Error(`Failed to create subarea: ${res.status} - ${errorText}`);
+  }
+  
   return mapSubareaFromApi(await res.json());
 }
 

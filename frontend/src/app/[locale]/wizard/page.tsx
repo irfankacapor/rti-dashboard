@@ -9,33 +9,46 @@ import { SubareasStep } from '@/components/wizard/SubareasStep';
 import { CsvProcessingStep } from '@/components/wizard/CsvProcessingStep';
 
 export default function WizardPage() {
-  const { currentStep, setStepValid, setStepCompleted, nextStep } = useStepperStore();
-  const { areas } = useAreaStore();
-
-  // Simulate step validation for demo
-  React.useEffect(() => {
-    // For demo purposes, mark step 1 as valid after a short delay
-    const timer = setTimeout(() => {
-      setStepValid(1, true);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [setStepValid]);
+  const { currentStep, setStepValid, setStepCompleted, nextStep, steps } = useStepperStore();
+  const { dirtyAreas, dirtySubareas, saveStep, hasUnsavedChanges, isSaving } = useAreaStore();
 
   // Only user-created areas (not default)
-  const userAreas = areas.filter(a => !a.isDefault);
+  const userAreas = dirtyAreas.filter(a => !a.isDefault);
   const skipButton = currentStep === 1;
   const skipDisabled = userAreas.length > 0;
+  
   const handleSkip = () => {
     setStepValid(1, true);
     setStepCompleted(1, true);
     nextStep();
   };
 
-  const handleNext = () => {
-    // This will be implemented in the next step
-    // For now, just go to the next step
+  const handleNext = async () => {
+    // Save current step data to backend first
+    if (hasUnsavedChanges()) {
+      await saveStep(currentStep);
+    }
+    
+    // Only mark step as completed after successful save
+    setStepCompleted(currentStep, true);
+    
+    // Move to next step
     nextStep();
+  };
+
+  // Check if next button should be disabled
+  const isNextDisabled = () => {
+    if (currentStep === 1) {
+      // Step 1 is always valid (can be skipped)
+      return false;
+    }
+    
+    if (currentStep === 2) {
+      // Step 2 requires at least one subarea
+      return dirtySubareas.length === 0;
+    }
+    
+    return false;
   };
 
   // Step rendering logic
@@ -64,7 +77,7 @@ export default function WizardPage() {
         ''
       }
       onNext={handleNext}
-      nextDisabled={false}
+      nextDisabled={isNextDisabled() || isSaving}
       skipButton={skipButton}
       skipDisabled={skipDisabled}
       onSkip={handleSkip}

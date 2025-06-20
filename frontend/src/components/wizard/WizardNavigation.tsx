@@ -95,7 +95,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
               variant="contained"
               endIcon={<ArrowForward />}
               onClick={handleNext}
-              disabled={nextDisabled || !canProceedNext}
+              disabled={nextDisabled}
               data-testid="wizard-next-button"
             >
               {nextLabel}
