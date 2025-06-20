@@ -1,5 +1,5 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { Box, Typography, Button, Alert } from '@mui/material';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
+import { Box, Typography, Button, Alert, CircularProgress, Snackbar } from '@mui/material';
 import { useWizardStore } from '@/store/wizardStore';
 import { useWizardStore as useMainWizardStore } from '@/lib/store/useWizardStore';
 import { SubareasTable } from '../common/SubareasTable';
@@ -12,6 +12,11 @@ export const SubareasStep: React.FC = () => {
   const updateSubarea = useWizardStore((state) => state.updateSubarea);
   const deleteSubarea = useWizardStore((state) => state.deleteSubarea);
   const getDefaultAreaId = useWizardStore((state) => state.getDefaultAreaId);
+  const fetchSubareas = useWizardStore((state) => state.fetchSubareas);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<string | null>(null);
 
   // Main wizard store for step completion
   const setStepCompleted = useMainWizardStore((state) => state.setStepCompleted);
@@ -50,14 +55,55 @@ export const SubareasStep: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manualAreas.length]);
 
+  // Fetch subareas on mount
+  useEffect(() => {
+    setIsLoading(true);
+    fetchSubareas().catch((err) => setError((err as Error).message)).finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Handler for adding subarea
-  const handleAdd = (formData: SubareaFormData) => {
+  const handleAdd = async (formData: SubareaFormData) => {
     let areaId = formData.areaId;
-    // If no manual areas, always assign to default area
     if (!showAreaColumn) {
       areaId = getDefaultAreaId() || '';
     }
-    addSubarea({ ...formData, areaId, code: '' });
+    setIsLoading(true);
+    setError(null);
+    try {
+      await addSubarea({ ...formData, areaId });
+      setSnackbar('Subarea added successfully');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdate = async (id: string, updates: Partial<SubareaFormData>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await updateSubarea(id, updates);
+      setSnackbar('Subarea updated successfully');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await deleteSubarea(id);
+      setSnackbar('Subarea deleted');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,16 +119,27 @@ export const SubareasStep: React.FC = () => {
           You must add at least one subarea to continue.
         </Alert>
       )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+      )}
+      {isLoading && <Box mt={2} mb={2}><CircularProgress /></Box>}
       <SubareasTable
         subareas={subareas}
         areas={manualAreas}
         allAreas={safeAreas}
         onAdd={handleAdd}
-        onUpdate={updateSubarea}
-        onDelete={deleteSubarea}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
         showAreaColumn={showAreaColumn}
         isWizardMode={true}
         allowEdit={true}
+      />
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar(null)}
+        message={snackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
       {/* Wizard navigation and validation handled by parent WizardLayout */}
     </Box>

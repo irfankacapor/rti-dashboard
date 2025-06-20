@@ -2,6 +2,18 @@ import { Subarea, SubareaFormData } from '@/types/subareas';
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/subareas`;
 
+function mapSubareaFromApi(api: any): Subarea {
+  return {
+    id: String(api.id),
+    code: api.code,
+    name: api.name,
+    description: api.description,
+    areaId: String(api.areaId),
+    areaName: api.areaName,
+    createdAt: new Date(api.createdAt),
+  };
+}
+
 export async function getSubareas(): Promise<Subarea[]> {
   const res = await fetch(API_BASE);
   if (!res.ok) throw new Error('Failed to fetch subareas');
@@ -19,7 +31,7 @@ export async function createSubarea(form: SubareaFormData): Promise<Subarea> {
   return mapSubareaFromApi(await res.json());
 }
 
-export async function updateSubarea(id: string, updates: Partial<Subarea>): Promise<Subarea> {
+export async function updateSubarea(id: string, updates: Partial<SubareaFormData>): Promise<Subarea> {
   const res = await fetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -32,16 +44,4 @@ export async function updateSubarea(id: string, updates: Partial<Subarea>): Prom
 export async function deleteSubarea(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete subarea');
-}
-
-function mapSubareaFromApi(api: any): Subarea {
-  return {
-    id: api.id,
-    code: api.code,
-    name: api.name,
-    description: api.description,
-    areaId: api.areaId,
-    areaName: api.areaName,
-    createdAt: new Date(api.createdAt),
-  };
 } 

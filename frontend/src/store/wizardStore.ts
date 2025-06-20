@@ -5,6 +5,7 @@ import { slugify } from '@/utils/slugify';
 import { v4 as uuidv4 } from 'uuid';
 import { Subarea, SubareaFormData } from '@/types/subareas';
 import * as areaService from '@/services/areaService';
+import * as subareaService from '@/services/subareaService';
 
 interface WizardState {
   areas: Area[];
@@ -20,13 +21,14 @@ interface WizardState {
   canAddMoreAreas: () => boolean;
 
   // Subareas actions
-  addSubarea: (subarea: Omit<Subarea, 'id' | 'createdAt'>) => void;
-  updateSubarea: (id: string, updates: Partial<Subarea>) => void;
-  deleteSubarea: (id: string) => void;
+  addSubarea: (subarea: SubareaFormData) => Promise<void>;
+  updateSubarea: (id: string, updates: Partial<SubareaFormData>) => Promise<void>;
+  deleteSubarea: (id: string) => Promise<void>;
   getSubareasByAreaId: (areaId: string) => Subarea[];
   getDefaultAreaId: () => string | null;
 
   setSubareas: (subs: Subarea[]) => void;
+  fetchSubareas: () => Promise<void>;
 }
 
 const MAX_AREAS = 5;
@@ -103,19 +105,36 @@ export const useWizardStore = create<WizardState>()(
         return areas.filter(a => !a.isDefault).length < MAX_AREAS;
       },
 
-      addSubarea: (subarea) => set((state) => {
-        const id = crypto.randomUUID();
-        const createdAt = new Date();
-        return { subareas: [...state.subareas, { ...subarea, id, createdAt }] };
-      }),
+      setSubareas: (subs) => set({ subareas: subs }),
 
-      updateSubarea: (id, updates) => set((state) => ({
-        subareas: state.subareas.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-      })),
+      fetchSubareas: async () => {
+        try {
+          const subareas = await subareaService.getSubareas();
+          set({ subareas });
+        } catch (error) {
+          console.error('Failed to fetch subareas:', error);
+          set({ subareas: [] });
+        }
+      },
 
-      deleteSubarea: (id) => set((state) => ({
-        subareas: state.subareas.filter((s) => s.id !== id),
-      })),
+      addSubarea: async (formData) => {
+        const newSubarea = await subareaService.createSubarea(formData);
+        set((state) => ({ subareas: [...state.subareas, newSubarea] }));
+      },
+
+      updateSubarea: async (id, updates) => {
+        const updated = await subareaService.updateSubarea(id, updates);
+        set((state) => ({
+          subareas: state.subareas.map((s) => (s.id === id ? updated : s)),
+        }));
+      },
+
+      deleteSubarea: async (id) => {
+        await subareaService.deleteSubarea(id);
+        set((state) => ({
+          subareas: state.subareas.filter((s) => s.id !== id),
+        }));
+      },
 
       getSubareasByAreaId: (areaId) => get().subareas.filter((s) => s.areaId === areaId),
 
@@ -124,8 +143,6 @@ export const useWizardStore = create<WizardState>()(
         const defaultArea = areas.find((a) => a.isDefault);
         return defaultArea ? defaultArea.id : null;
       },
-
-      setSubareas: (subs) => set({ subareas: subs }),
     }),
     {
       name: 'wizard-storage',
