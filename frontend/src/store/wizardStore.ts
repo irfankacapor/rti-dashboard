@@ -34,7 +34,7 @@ export const useWizardStore = create<WizardState>()(
       areas: [],
 
       addArea: (area) => set((state) => {
-        if (state.areas.length >= MAX_AREAS) return {};
+        if (state.areas.filter(a => !a.isDefault).length >= MAX_AREAS) return {};
         const code = slugify(area.name);
         const isDefault = false;
         const newArea: Area = {
@@ -67,7 +67,8 @@ export const useWizardStore = create<WizardState>()(
 
       canAddMoreAreas: () => {
         const { areas } = get();
-        return areas.length < MAX_AREAS;
+        // Only count user-created areas (not default)
+        return areas.filter(a => !a.isDefault).length < MAX_AREAS;
       },
     }),
     {

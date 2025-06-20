@@ -115,7 +115,7 @@ export const AreasStep: React.FC = () => {
 
   // UI
   const showLimitWarning = userAreas.length >= MAX_AREAS - 1;
-  const canAdd = canAddMoreAreas();
+  const canAdd = userAreas.length < MAX_AREAS;
   const isEmpty = userAreas.length === 0;
 
   return (
@@ -127,10 +127,10 @@ export const AreasStep: React.FC = () => {
         Create up to 5 main areas for your dashboard. Each area can group multiple subareas and indicators.
       </Typography>
       {showLimitWarning && (
-        <Alert severity={areas.length === MAX_AREAS ? 'error' : 'warning'} sx={{ mb: 2 }} icon={<WarningAmberIcon />}>
-          {areas.length === MAX_AREAS
+        <Alert severity={userAreas.length === MAX_AREAS ? 'error' : 'warning'} sx={{ mb: 2 }} icon={<WarningAmberIcon />}>
+          {userAreas.length === MAX_AREAS
             ? 'You have reached the maximum of 5 areas.'
-            : `You are approaching the 5 areas limit (${areas.length}/5).`}
+            : `You are approaching the 5 areas limit (${userAreas.length}/5).`}
         </Alert>
       )}
       <Grid container spacing={2} sx={{ mt: 1 }}>
