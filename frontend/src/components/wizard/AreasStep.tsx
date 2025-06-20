@@ -37,6 +37,9 @@ export const AreasStep: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<Area | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
 
+  // Filter out default area for UI
+  const userAreas = areas.filter(a => !a.isDefault);
+
   // Handle add/edit dialog open
   const handleOpen = (area?: Area) => {
     if (area) {
@@ -111,9 +114,9 @@ export const AreasStep: React.FC = () => {
   };
 
   // UI
-  const showLimitWarning = areas.length >= MAX_AREAS - 1;
+  const showLimitWarning = userAreas.length >= MAX_AREAS - 1;
   const canAdd = canAddMoreAreas();
-  const isEmpty = areas.length === 0;
+  const isEmpty = userAreas.length === 0;
 
   return (
     <Box>
@@ -131,7 +134,7 @@ export const AreasStep: React.FC = () => {
         </Alert>
       )}
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        {areas.map((area) => (
+        {userAreas.map((area) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={area.id}>
             <AreaCard area={area} onEdit={handleOpen} onDelete={handleDelete} />
           </Grid>

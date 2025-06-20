@@ -16,6 +16,9 @@ interface WizardNavigationProps {
   prevLabel?: string;
   showNext?: boolean;
   showPrev?: boolean;
+  skipButton?: boolean;
+  skipDisabled?: boolean;
+  onSkip?: () => void;
 }
 
 export const WizardNavigation: React.FC<WizardNavigationProps> = ({
@@ -26,6 +29,9 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
   prevLabel = 'Back',
   showNext = true,
   showPrev = true,
+  skipButton = false,
+  skipDisabled = false,
+  onSkip,
 }) => {
   const { 
     currentStep, 
@@ -72,7 +78,18 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
           )}
         </Box>
 
-        <Box>
+        <Box display="flex" gap={2}>
+          {skipButton && !isLastStep && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={onSkip}
+              disabled={skipDisabled}
+              data-testid="wizard-skip-button"
+            >
+              Skip
+            </Button>
+          )}
           {showNext && !isLastStep && (
             <Button
               variant="contained"

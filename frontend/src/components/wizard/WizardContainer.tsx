@@ -14,6 +14,9 @@ interface WizardContainerProps {
   nextDisabled?: boolean;
   nextLabel?: string;
   showNavigation?: boolean;
+  skipButton?: boolean;
+  skipDisabled?: boolean;
+  onSkip?: () => void;
 }
 
 export const WizardContainer: React.FC<WizardContainerProps> = ({
@@ -25,6 +28,9 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   nextDisabled,
   nextLabel,
   showNavigation = true,
+  skipButton = false,
+  skipDisabled = false,
+  onSkip,
 }) => {
   const { currentStep, steps, isLoading } = useWizardStore();
   const currentStepData = steps.find(s => s.id === currentStep);
@@ -57,6 +63,9 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
             onPrev={onPrev}
             nextDisabled={nextDisabled}
             nextLabel={nextLabel}
+            skipButton={skipButton}
+            skipDisabled={skipDisabled}
+            onSkip={onSkip}
           />
         )}
       </Paper>
