@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.exception.JDBCConnectionException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +23,8 @@ import io.dashboard.exception.BadRequestException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
@@ -40,6 +46,28 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
     
+    @ExceptionHandler(LazyInitializationException.class)
+    public ResponseEntity<ErrorResponse> handleLazyInitializationException(LazyInitializationException ex) {
+        logger.error("Lazy initialization error", ex);
+        ErrorResponse errorResponse = new ErrorResponse(
+            "Database relationship loading error: " + ex.getMessage(),
+            "Database Error",
+            HttpStatus.INTERNAL_SERVER_ERROR.value()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    @ExceptionHandler(JDBCConnectionException.class)
+    public ResponseEntity<ErrorResponse> handleJDBCConnectionException(JDBCConnectionException ex) {
+        logger.error("Database connection error", ex);
+        ErrorResponse errorResponse = new ErrorResponse(
+            "Database connection error: " + ex.getMessage(),
+            "Database Error",
+            HttpStatus.INTERNAL_SERVER_ERROR.value()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -59,8 +87,9 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        logger.error("Unexpected error occurred", ex);
         ErrorResponse errorResponse = new ErrorResponse(
-            "An unexpected error occurred",
+            "An unexpected error occurred: " + ex.getMessage(),
             "Internal Server Error",
             HttpStatus.INTERNAL_SERVER_ERROR.value()
         );

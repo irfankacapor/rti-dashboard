@@ -24,7 +24,11 @@ public class SubareaService {
     private final AreaRepository areaRepository;
 
     public List<SubareaResponse> findAll() {
-        return subareaRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+        try {
+            return subareaRepository.findAllWithAreaAndIndicators().stream().map(this::toResponse).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch subareas: " + e.getMessage(), e);
+        }
     }
 
     public List<SubareaResponse> findByAreaId(Long areaId) {
