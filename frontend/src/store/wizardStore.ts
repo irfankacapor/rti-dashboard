@@ -1,19 +1,21 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Area } from '@/types/areas';
+import { Area, AreaFormData } from '@/types/areas';
 import { slugify } from '@/utils/slugify';
 import { v4 as uuidv4 } from 'uuid';
 import { Subarea, SubareaFormData } from '@/types/subareas';
+import * as areaService from '@/services/areaService';
 
 interface WizardState {
-  // ... existing state
   areas: Area[];
   subareas: Subarea[];
 
   // Areas actions
-  addArea: (area: Omit<Area, 'id' | 'createdAt'>) => void;
-  updateArea: (id: string, updates: Partial<Area>) => void;
-  deleteArea: (id: string) => void;
+  setAreas: (areas: Area[]) => void;
+  fetchAreas: () => Promise<void>;
+  addArea: (area: AreaFormData) => Promise<void>;
+  updateArea: (id: string, updates: Partial<AreaFormData>) => Promise<void>;
+  deleteArea: (id: string) => Promise<void>;
   getDefaultArea: () => Area | null;
   canAddMoreAreas: () => boolean;
 
@@ -41,36 +43,55 @@ const createDefaultArea = (): Area => ({
 export const useWizardStore = create<WizardState>()(
   persist(
     (set, get) => ({
-      // ... existing state
       areas: [],
       subareas: [],
 
-      addArea: (area) => set((state) => {
-        if (state.areas.filter(a => !a.isDefault).length >= MAX_AREAS) return {};
-        const code = slugify(area.name);
-        const isDefault = false;
-        const newArea: Area = {
-          ...area,
-          id: uuidv4(),
-          code,
-          isDefault,
-          createdAt: new Date(),
-        };
-        return { areas: [...state.areas, newArea] };
-      }),
+      setAreas: (areas) => set({ areas }),
 
-      updateArea: (id, updates) => set((state) => ({
-        areas: state.areas.map((area) =>
-          area.id === id
-            ? { ...area, ...updates, code: updates.name ? slugify(updates.name) : area.code }
-            : area
-        ),
-      })),
+      fetchAreas: async () => {
+        try {
+          const areas = await areaService.getAreas();
+          if (areas.length === 0) {
+            set({ areas: [createDefaultArea()] });
+          } else {
+            set({ areas });
+          }
+        } catch (error) {
+          console.error("Failed to fetch areas:", error);
+          set({ areas: [createDefaultArea()] });
+        }
+      },
 
-      deleteArea: (id) => set((state) => {
-        const filtered = state.areas.filter((area) => area.id !== id);
-        return { areas: filtered.length === 0 ? [createDefaultArea()] : filtered };
-      }),
+      addArea: async (areaForm) => {
+        if (get().areas.filter(a => !a.isDefault).length >= MAX_AREAS) {
+            throw new Error(`You can only add up to ${MAX_AREAS} areas.`);
+        }
+        const newArea = await areaService.createArea(areaForm);
+        set((state) => {
+            const existingUserAreas = state.areas.filter(a => !a.isDefault);
+            return { areas: [...existingUserAreas, newArea] };
+        });
+      },
+
+      updateArea: async (id, updates) => {
+          const updatedArea = await areaService.updateArea(id, updates);
+          set((state) => ({
+            areas: state.areas.map((area) =>
+              area.id === id ? updatedArea : area
+            ),
+          }));
+      },
+
+      deleteArea: async (id) => {
+        await areaService.deleteArea(id);
+        set((state) => {
+          const filtered = state.areas.filter((area) => area.id !== id);
+          if (filtered.filter(a => !a.isDefault).length === 0) {
+            return { areas: [createDefaultArea()] };
+          }
+          return { areas: filtered };
+        });
+      },
 
       getDefaultArea: () => {
         const { areas } = get();
@@ -79,7 +100,6 @@ export const useWizardStore = create<WizardState>()(
 
       canAddMoreAreas: () => {
         const { areas } = get();
-        // Only count user-created areas (not default)
         return areas.filter(a => !a.isDefault).length < MAX_AREAS;
       },
 
