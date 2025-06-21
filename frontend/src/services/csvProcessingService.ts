@@ -7,7 +7,7 @@ import {
   DimensionMapping 
 } from '@/types/csvProcessing';
 
-const API_BASE = '/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const csvProcessingService = {
   // Upload CSV file
