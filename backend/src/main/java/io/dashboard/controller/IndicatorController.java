@@ -4,6 +4,7 @@ import io.dashboard.dto.IndicatorCreateRequest;
 import io.dashboard.dto.IndicatorResponse;
 import io.dashboard.dto.IndicatorUpdateRequest;
 import io.dashboard.dto.SubareaIndicatorRequest;
+import io.dashboard.dto.BatchIndicatorsRequest;
 import io.dashboard.service.IndicatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,12 @@ public class IndicatorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/indicators/batch")
+    public ResponseEntity<List<IndicatorResponse>> createIndicatorsBatch(@Valid @RequestBody BatchIndicatorsRequest request) {
+        List<IndicatorResponse> responses = indicatorService.createBatch(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
     @PutMapping("/indicators/{id}")
     public IndicatorResponse updateIndicator(@PathVariable Long id, @Valid @RequestBody IndicatorUpdateRequest request) {
         return indicatorService.update(id, request);
@@ -51,20 +58,20 @@ public class IndicatorController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/indicators/{id}/subareas/{subareaId}")
+    @PostMapping("/indicators/{indicatorId}/subareas/{subareaId}")
     public ResponseEntity<Void> assignIndicatorToSubarea(
-            @PathVariable Long id,
+            @PathVariable Long indicatorId,
             @PathVariable Long subareaId,
             @Valid @RequestBody SubareaIndicatorRequest request) {
-        indicatorService.assignToSubarea(id, subareaId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        indicatorService.assignToSubarea(indicatorId, subareaId, request);
+        return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/indicators/{id}/subareas/{subareaId}")
+    @DeleteMapping("/indicators/{indicatorId}/subareas/{subareaId}")
     public ResponseEntity<Void> removeIndicatorFromSubarea(
-            @PathVariable Long id,
+            @PathVariable Long indicatorId,
             @PathVariable Long subareaId) {
-        indicatorService.removeFromSubarea(id, subareaId);
+        indicatorService.removeFromSubarea(indicatorId, subareaId);
         return ResponseEntity.noContent().build();
     }
 } 
