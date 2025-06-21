@@ -26,7 +26,7 @@ public class DimGeneric {
     @Column(name = "dimension_name", length = 100)
     private String dimensionName; // Name of the dimension (e.g., "Category", "Sector")
     
-    @Column(name = "value", nullable = false, length = 255)
+    @Column(name = "\"value\"", nullable = false, length = 255)
     private String value;
     
     @Column(name = "category", length = 50)

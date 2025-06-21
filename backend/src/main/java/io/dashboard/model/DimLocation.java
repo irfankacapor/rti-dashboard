@@ -26,7 +26,7 @@ public class DimLocation {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
     
-    @Column(name = "value", length = 100)
+    @Column(name = "\"value\"", length = 100)
     private String value; // Original location value from CSV
     
     @Enumerated(EnumType.STRING)

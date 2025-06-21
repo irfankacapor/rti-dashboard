@@ -1,76 +1,46 @@
 import { 
-  CsvUploadResponse, 
-  CsvPreviewResponse, 
-  DimensionMappingRequest, 
-  ProcessedIndicatorsResponse,
-  BatchIndicatorsRequest,
-  DimensionMapping 
+  ProcessedIndicator,
+  IndicatorBatchResponse
 } from '@/types/csvProcessing';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const csvProcessingService = {
-  // Upload CSV file
-  uploadCsv: async (file: File): Promise<CsvUploadResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await fetch(`${API_BASE}/upload-csv`, {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to upload CSV: ${error}`);
-    }
-    
-    return response.json();
-  },
-  
-  // Get CSV preview data
-  getCsvPreview: async (jobId: string): Promise<CsvPreviewResponse> => {
-    const response = await fetch(`${API_BASE}/uploads/${jobId}/csv-preview`);
-    
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to get CSV preview: ${error}`);
-    }
-    
-    return response.json();
-  },
-  
-  // Submit dimension mappings and process data
-  processDimensions: async (jobId: string, mappings: DimensionMapping[]): Promise<ProcessedIndicatorsResponse> => {
-    const request: DimensionMappingRequest = { jobId, mappings };
-    
-    const response = await fetch(`${API_BASE}/uploads/${jobId}/dimension-mapping`, {
+  // Submit processed indicators to the new simplified endpoint
+  submitProcessedIndicators: async (indicators: ProcessedIndicator[]): Promise<IndicatorBatchResponse> => {
+    const request = {
+      indicators: indicators.map(indicator => ({
+        name: indicator.name,
+        description: indicator.description,
+        unit: indicator.unit,
+        source: indicator.source,
+        subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
+        direction: indicator.direction?.toUpperCase(),
+        aggregationWeight: 1.0,
+        values: indicator.dataPoints || [] // The dimensional data from frontend processing
+      }))
+    };
+
+    console.log('Submitting indicators to backend:', request);
+    console.log('API_BASE:', API_BASE);
+
+    const response = await fetch(`${API_BASE}/indicators/create-from-csv`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request)
     });
-    
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to process dimensions: ${error}`);
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      console.error('Backend error:', errorData);
+      throw new Error(`Failed to create indicators: ${errorData.message}`);
     }
-    
-    return response.json();
-  },
-  
-  // Submit final indicators with subarea assignments
-  submitIndicators: async (indicators: any[]): Promise<void> => {
-    const request: BatchIndicatorsRequest = { indicators };
-    
-    const response = await fetch(`${API_BASE}/indicators/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request)
-    });
-    
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to submit indicators: ${error}`);
-    }
+
+    const result = await response.json();
+    console.log('Backend response:', result);
+    return result;
   }
 }; 

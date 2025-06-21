@@ -7,8 +7,6 @@ import io.dashboard.dto.IndicatorUpdateRequest;
 import io.dashboard.dto.SubareaIndicatorRequest;
 import io.dashboard.dto.SubareaIndicatorResponse;
 import io.dashboard.dto.UnitResponse;
-import io.dashboard.dto.BatchIndicatorsRequest;
-import io.dashboard.dto.ProcessedIndicatorRequest;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.DataType;
@@ -27,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,98 +76,6 @@ public class IndicatorService {
         
         Indicator saved = indicatorRepository.save(indicator);
         return toResponse(saved);
-    }
-
-    @Transactional
-    public List<IndicatorResponse> createBatch(BatchIndicatorsRequest request) {
-        return request.getIndicators().stream()
-                .map(this::createFromProcessedIndicator)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public IndicatorResponse createFromProcessedIndicator(ProcessedIndicatorRequest request) {
-        // Generate a unique code from the name
-        String code = generateCodeFromName(request.getName());
-        
-        // Check if code already exists, if so, make it unique
-        int counter = 1;
-        String uniqueCode = code;
-        while (indicatorRepository.existsByCode(uniqueCode)) {
-            uniqueCode = code + "_" + counter++;
-        }
-        
-        Indicator indicator = new Indicator();
-        indicator.setCode(uniqueCode);
-        indicator.setName(request.getName());
-        indicator.setDescription("Generated from CSV processing");
-        indicator.setIsComposite(false);
-        
-        // If unit is provided, try to find it
-        if (request.getUnit() != null && !request.getUnit().trim().isEmpty()) {
-            Optional<Unit> unit = unitRepository.findByCode(request.getUnit());
-            unit.ifPresent(indicator::setUnit);
-        }
-        
-        Indicator saved = indicatorRepository.save(indicator);
-        
-        // If subareaId is provided, assign the indicator to the subarea
-        if (request.getSubareaId() != null && !request.getSubareaId().trim().isEmpty()) {
-            try {
-                Long subareaId = Long.parseLong(request.getSubareaId());
-                Subarea subarea = subareaRepository.findById(subareaId)
-                        .orElse(null);
-                
-                if (subarea != null) {
-                    SubareaIndicator subareaIndicator = new SubareaIndicator();
-                    SubareaIndicator.SubareaIndicatorId id = new SubareaIndicator.SubareaIndicatorId();
-                    id.setSubareaId(subareaId);
-                    id.setIndicatorId(saved.getId());
-                    subareaIndicator.setId(id);
-                    subareaIndicator.setSubarea(subarea);
-                    subareaIndicator.setIndicator(saved);
-                    
-                    // Set direction based on request
-                    if ("input".equals(request.getDirection())) {
-                        subareaIndicator.setDirection(Direction.INPUT);
-                    } else if ("output".equals(request.getDirection())) {
-                        subareaIndicator.setDirection(Direction.OUTPUT);
-                    } else {
-                        subareaIndicator.setDirection(Direction.INPUT); // Default
-                    }
-                    
-                    subareaIndicator.setAggregationWeight(1.0); // Default weight
-                    subareaIndicatorRepository.save(subareaIndicator);
-                }
-            } catch (NumberFormatException e) {
-                // Ignore invalid subareaId
-            }
-        }
-        
-        return toResponse(saved);
-    }
-
-    private String generateCodeFromName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            return "IND_" + System.currentTimeMillis();
-        }
-        
-        // Convert to uppercase, replace spaces and special chars with underscores
-        String code = name.trim()
-                .toUpperCase()
-                .replaceAll("[^A-Z0-9\\s]", "")
-                .replaceAll("\\s+", "_");
-        
-        // Limit length and ensure it starts with a letter
-        if (code.length() > 50) {
-            code = code.substring(0, 50);
-        }
-        
-        if (!code.matches("^[A-Z].*")) {
-            code = "IND_" + code;
-        }
-        
-        return code;
     }
 
     @Transactional
@@ -289,21 +194,19 @@ public class IndicatorService {
             resp.setDataType(dataTypeResp);
         }
         
-        if (indicator.getSubareaIndicators() != null) {
-            List<SubareaIndicatorResponse> subareaIndicators = indicator.getSubareaIndicators().stream()
-                    .map(this::toSubareaIndicatorResponse)
-                    .collect(Collectors.toList());
-            resp.setSubareaIndicators(subareaIndicators);
-        }
+        // Get subarea indicators
+        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findByIndicatorId(indicator.getId());
+        List<SubareaIndicatorResponse> subareaIndicatorResponses = subareaIndicators.stream()
+                .map(this::toSubareaIndicatorResponse)
+                .collect(Collectors.toList());
+        resp.setSubareaIndicators(subareaIndicatorResponses);
         
         return resp;
     }
 
     private SubareaIndicatorResponse toSubareaIndicatorResponse(SubareaIndicator subareaIndicator) {
         SubareaIndicatorResponse resp = new SubareaIndicatorResponse();
-        resp.setSubareaId(subareaIndicator.getSubarea().getId());
-        resp.setSubareaCode(subareaIndicator.getSubarea().getCode());
-        resp.setSubareaName(subareaIndicator.getSubarea().getName());
+        resp.setSubareaId(subareaIndicator.getId().getSubareaId());
         resp.setDirection(subareaIndicator.getDirection());
         resp.setAggregationWeight(subareaIndicator.getAggregationWeight());
         resp.setCreatedAt(subareaIndicator.getCreatedAt());

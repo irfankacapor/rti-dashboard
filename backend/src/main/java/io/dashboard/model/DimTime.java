@@ -20,20 +20,20 @@ public class DimTime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "value", length = 100)
+    @Column(name = "\"value\"")
     private String value; // Original time value from CSV
     
     @Enumerated(EnumType.STRING)
     @Column(name = "time_type")
     private DimensionType timeType; // Type of time dimension
     
-    @Column(name = "year", nullable = false)
+    @Column(name = "\"year\"")
     private Integer year;
     
-    @Column(name = "month")
+    @Column(name = "\"month\"")
     private Integer month;
     
-    @Column(name = "day")
+    @Column(name = "\"day\"")
     private Integer day;
     
     @Column(name = "quarter")

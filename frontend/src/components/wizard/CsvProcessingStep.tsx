@@ -101,7 +101,7 @@ export const CsvProcessingStep: React.FC = () => {
     }
   };
 
-  const handleFileRemoved = () => {
+  const handleFileRemoved = (fileId: string) => {
     setState({
       currentPhase: 'upload',
       csvFile: undefined,
@@ -171,12 +171,34 @@ export const CsvProcessingStep: React.FC = () => {
             dimensions: Object.keys(tuple.coordinates).filter(key => key !== 'indicator_names'),
             valueCount: 0,
             unit: tuple.coordinates.unit,
-            source: tuple.coordinates.source
+            source: tuple.coordinates.source,
+            dataPoints: [] // Initialize empty array for data points
           });
         }
         
         const indicator = indicatorMap.get(indicatorName)!;
         indicator.valueCount++;
+        
+        // Add the actual data point with dimensional context
+        const dataPoint = {
+          value: parseFloat(tuple.value) || 0,
+          timeValue: tuple.coordinates.time,
+          timeType: 'year', // Default to year, could be made configurable
+          locationValue: tuple.coordinates.locations,
+          locationType: 'state', // Default to state, could be made configurable
+          customDimensions: Object.entries(tuple.coordinates)
+            .filter(([key, value]) => 
+              key !== 'indicator_names' && 
+              key !== 'time' && 
+              key !== 'locations' && 
+              key !== 'unit' && 
+              key !== 'source' && 
+              value
+            )
+            .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
+        };
+        
+        indicator.dataPoints!.push(dataPoint);
       });
 
       const processedIndicators = Array.from(indicatorMap.values());
@@ -208,17 +230,31 @@ export const CsvProcessingStep: React.FC = () => {
   };
 
   const handleSubmitIndicators = async () => {
+    console.log('Starting submit indicators...');
+    console.log('Processed indicators:', state.processedIndicators);
+    
     setState(prev => ({ ...prev, isLoading: true, error: undefined }));
 
     try {
       // Submit to backend
-      await csvProcessingService.submitIndicators(state.processedIndicators);
+      const response = await csvProcessingService.submitProcessedIndicators(state.processedIndicators);
       
       // Mark step as completed
-      // This would typically update the wizard store
-      console.log('Indicators submitted successfully');
+      console.log('Indicators submitted successfully:', response);
+      
+      // Set loading to false and show success
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: undefined
+      }));
+      
+      // You could also show a success message here
+      // For now, we'll just log it
+      console.log(`Successfully created ${response.createdIndicators.length} indicators with ${response.totalFactRecords} fact records`);
       
     } catch (error) {
+      console.error('Error submitting indicators:', error);
       setState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Failed to submit indicators',

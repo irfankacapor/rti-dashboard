@@ -4,7 +4,6 @@ import io.dashboard.dto.IndicatorCreateRequest;
 import io.dashboard.dto.IndicatorResponse;
 import io.dashboard.dto.IndicatorUpdateRequest;
 import io.dashboard.dto.SubareaIndicatorRequest;
-import io.dashboard.dto.BatchIndicatorsRequest;
 import io.dashboard.service.IndicatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,12 +38,6 @@ public class IndicatorController {
     public ResponseEntity<IndicatorResponse> createIndicator(@Valid @RequestBody IndicatorCreateRequest request) {
         IndicatorResponse response = indicatorService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PostMapping("/indicators/batch")
-    public ResponseEntity<List<IndicatorResponse>> createIndicatorsBatch(@Valid @RequestBody BatchIndicatorsRequest request) {
-        List<IndicatorResponse> responses = indicatorService.createBatch(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 
     @PutMapping("/indicators/{id}")
