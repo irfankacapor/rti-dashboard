@@ -147,7 +147,12 @@ export const AreasStep: React.FC = () => {
         deleteArea(deleteConfirm.id);
         setSnackbar('Area deleted');
       } catch (err) {
-        setSnackbar(`Error: ${(err as Error).message}`);
+        const errorMessage = (err as Error).message;
+        if (errorMessage.includes('Cannot delete area with subareas')) {
+          setSnackbar('Cannot delete area that contains subareas. Please remove or reassign the subareas first.');
+        } else {
+          setSnackbar(`Error: ${errorMessage}`);
+        }
       } finally {
         setIsLoading(false);
         setDeleteConfirm(null);
@@ -264,11 +269,26 @@ export const AreasStep: React.FC = () => {
       <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete the area "{deleteConfirm?.name}"? This cannot be undone.</Typography>
+          <Typography>
+            Are you sure you want to delete the area "{deleteConfirm?.name}"? This cannot be undone.
+            {deleteConfirm?.subareaCount && deleteConfirm.subareaCount > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="body2" color="warning.main">
+                  ⚠️ This area contains {deleteConfirm.subareaCount} subarea{deleteConfirm.subareaCount === 1 ? '' : 's'}. 
+                  You must remove or reassign these subareas before deleting the area.
+                </Typography>
+              </Box>
+            )}
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirm(null)} disabled={isLoading}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained" disabled={isLoading}>
+          <Button 
+            onClick={confirmDelete} 
+            color="error" 
+            variant="contained" 
+            disabled={isLoading || (deleteConfirm?.subareaCount || 0) > 0}
+          >
             {isLoading ? <CircularProgress size={24} /> : 'Delete'}
           </Button>
         </DialogActions>

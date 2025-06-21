@@ -11,6 +11,8 @@ interface AreaCardProps {
 }
 
 export const AreaCard: React.FC<AreaCardProps> = ({ area, onEdit, onDelete }) => {
+  const hasSubareas = (area.subareaCount || 0) > 0;
+  
   return (
     <Paper elevation={1} sx={{ p: 2, position: 'relative', minHeight: 160 }}>
       <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -23,10 +25,17 @@ export const AreaCard: React.FC<AreaCardProps> = ({ area, onEdit, onDelete }) =>
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Delete Area">
-            <IconButton aria-label="delete" onClick={() => onDelete(area)} size="small" disabled={area.isDefault}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+          <Tooltip title={hasSubareas ? "Cannot delete area with subareas" : "Delete Area"}>
+            <span>
+              <IconButton 
+                aria-label="delete" 
+                onClick={() => onDelete(area)} 
+                size="small" 
+                disabled={area.isDefault || hasSubareas}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>
@@ -37,6 +46,14 @@ export const AreaCard: React.FC<AreaCardProps> = ({ area, onEdit, onDelete }) =>
         <Chip label={area.code} size="small" color="default" variant="outlined" />
         {area.isDefault && (
           <Chip label="Default Area" size="small" color="primary" variant="filled" />
+        )}
+        {hasSubareas && (
+          <Chip 
+            label={`${area.subareaCount} subarea${area.subareaCount === 1 ? '' : 's'}`} 
+            size="small" 
+            color="secondary" 
+            variant="outlined" 
+          />
         )}
       </Box>
       <Typography variant="caption" color="text.disabled" sx={{ position: 'absolute', bottom: 8, right: 8 }}>

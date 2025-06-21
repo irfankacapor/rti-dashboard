@@ -57,6 +57,7 @@ const createDefaultArea = (): Area => ({
   description: 'This is the default area grouping all subareas.',
   isDefault: true,
   createdAt: new Date(),
+  subareaCount: 0,
 });
 
 export const useWizardStore = create<WizardState>()(
@@ -132,31 +133,15 @@ export const useWizardStore = create<WizardState>()(
         set({ isSaving: true });
         
         try {
-          // Create a mapping from temporary area IDs to real area IDs
-          const areaIdMapping = new Map<string, string>();
-          dirtyAreas.forEach(dirtyArea => {
-            const backendArea = areas.find(area => 
-              area.name === dirtyArea.name && 
-              area.description === dirtyArea.description
-            );
-            if (backendArea) {
-              areaIdMapping.set(dirtyArea.id, backendArea.id);
-            }
-          });
-
-          // Find new areas (not in backend state)
+          // Find new areas (areas in dirtyAreas that don't exist in backend by ID)
           const newAreas = dirtyAreas.filter(dirtyArea => 
-            !areas.some(backendArea => 
-              backendArea.name === dirtyArea.name && 
-              backendArea.description === dirtyArea.description
-            )
+            !areas.some(backendArea => backendArea.id === dirtyArea.id)
           );
           
-          // Find updated areas
+          // Find updated areas (areas that exist in both but have different content)
           const updatedAreas = dirtyAreas.filter(dirtyArea => 
             areas.some(backendArea => 
-              backendArea.name === dirtyArea.name && 
-              backendArea.description === dirtyArea.description &&
+              backendArea.id === dirtyArea.id && 
               (backendArea.name !== dirtyArea.name || backendArea.description !== dirtyArea.description)
             )
           );
@@ -165,10 +150,7 @@ export const useWizardStore = create<WizardState>()(
           // Exclude default areas from deletion since they're handled specially
           const deletedAreas = areas.filter(backendArea => 
             !backendArea.isDefault && // Don't delete default areas
-            !dirtyAreas.some(dirtyArea => 
-              dirtyArea.name === backendArea.name && 
-              dirtyArea.description === backendArea.description
-            )
+            !dirtyAreas.some(dirtyArea => dirtyArea.id === backendArea.id)
           );
 
           // Process deletions first
@@ -178,16 +160,10 @@ export const useWizardStore = create<WizardState>()(
 
           // Process updates
           for (const area of updatedAreas) {
-            const backendArea = areas.find(backendArea => 
-              backendArea.name === area.name && 
-              backendArea.description === area.description
-            );
-            if (backendArea) {
-              await areaService.updateArea(backendArea.id, {
-                name: area.name,
-                description: area.description
-              });
-            }
+            await areaService.updateArea(area.id, {
+              name: area.name,
+              description: area.description
+            });
           }
 
           // Process creations

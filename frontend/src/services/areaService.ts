@@ -11,6 +11,7 @@ function mapAreaFromApi(apiArea: any): Area {
     description: apiArea.description,
     isDefault: false,
     createdAt: new Date(apiArea.createdAt),
+    subareaCount: apiArea.subareaCount || 0,
   };
 }
 
@@ -63,6 +64,11 @@ export async function deleteArea(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(errorText || 'Failed to delete the area.');
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.message || 'Failed to delete the area.');
+    } catch {
+      throw new Error(errorText || 'Failed to delete the area.');
+    }
   }
 } 

@@ -5,6 +5,7 @@ export interface Area {
   description: string;
   isDefault: boolean; // Track if this is the default area
   createdAt: Date;
+  subareaCount?: number; // Number of subareas in this area
 }
 
 export interface AreaFormData {
