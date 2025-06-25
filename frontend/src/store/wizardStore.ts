@@ -4,8 +4,16 @@ import { Area, AreaFormData } from '@/types/areas';
 import { slugify } from '@/utils/slugify';
 import { v4 as uuidv4 } from 'uuid';
 import { Subarea, SubareaFormData } from '@/types/subareas';
+import { 
+  ManagedIndicator, 
+  IndicatorFormData, 
+  ManualIndicatorData,
+  convertProcessedToManaged 
+} from '@/types/indicators';
+import { ProcessedIndicator } from '@/types/csvProcessing';
 import * as areaService from '@/services/areaService';
 import * as subareaService from '@/services/subareaService';
+import indicatorManagementService from '@/services/indicatorManagementService';
 
 interface WizardState {
   // Backend state (persisted)
@@ -16,9 +24,14 @@ interface WizardState {
   dirtyAreas: Area[];
   dirtySubareas: Subarea[];
   
+  // Indicator management state
+  managedIndicators: ManagedIndicator[];
+  dirtyIndicators: ManagedIndicator[];
+  
   // Loading states
   isLoadingAreas: boolean;
   isLoadingSubareas: boolean;
+  isLoadingIndicators: boolean;
   isSaving: boolean;
 
   // Areas actions
@@ -42,6 +55,20 @@ interface WizardState {
   getDefaultAreaId: () => string | null;
   saveSubareas: () => Promise<void>; // New: save to backend
   resetSubareas: () => void; // New: reset to backend state
+
+  // Indicator management actions
+  setManagedIndicators: (indicators: ManagedIndicator[]) => void;
+  fetchManagedIndicators: () => Promise<void>;
+  updateManagedIndicator: (id: string, updates: Partial<ManagedIndicator>) => void;
+  addManualIndicator: (indicator: ManualIndicatorData) => void;
+  deleteManagedIndicator: (id: string) => void;
+  bulkUpdateIndicators: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
+  bulkDeleteIndicators: (ids: string[]) => void;
+  markIndicatorsAsModified: () => void;
+  validateIndicatorData: () => { isValid: boolean; errors: string[] };
+  mergeNewCsvIndicators: (newIndicators: ProcessedIndicator[]) => void;
+  saveIndicators: () => Promise<void>;
+  resetIndicators: () => void;
 
   // Step management
   saveStep: (stepId: number) => Promise<void>; // New: save current step data
@@ -67,8 +94,11 @@ export const useWizardStore = create<WizardState>()(
       subareas: [],
       dirtyAreas: [],
       dirtySubareas: [],
+      managedIndicators: [],
+      dirtyIndicators: [],
       isLoadingAreas: false,
       isLoadingSubareas: false,
+      isLoadingIndicators: false,
       isSaving: false,
 
       setAreas: (areas) => set({ areas, dirtyAreas: areas }),
@@ -345,7 +375,7 @@ export const useWizardStore = create<WizardState>()(
       },
 
       hasUnsavedChanges: () => {
-        const { areas, dirtyAreas, subareas, dirtySubareas } = get();
+        const { areas, dirtyAreas, subareas, dirtySubareas, managedIndicators, dirtyIndicators } = get();
         
         // Check if areas have changed
         if (areas.length !== dirtyAreas.length) return true;
@@ -380,8 +410,207 @@ export const useWizardStore = create<WizardState>()(
             subarea.areaId === dirtySubarea.areaId
           )
         );
+
+        // Check if indicators have changed
+        if (managedIndicators.length !== dirtyIndicators.length) return true;
+        const indicatorsChanged = managedIndicators.some(indicator => 
+          !dirtyIndicators.some(dirtyIndicator => 
+            dirtyIndicator.id === indicator.id && 
+            dirtyIndicator.name === indicator.name && 
+            dirtyIndicator.description === indicator.description &&
+            dirtyIndicator.unit === indicator.unit &&
+            dirtyIndicator.source === indicator.source &&
+            dirtyIndicator.subareaId === indicator.subareaId &&
+            dirtyIndicator.direction === indicator.direction
+          )
+        ) || dirtyIndicators.some(dirtyIndicator => 
+          !managedIndicators.some(indicator => 
+            indicator.id === dirtyIndicator.id && 
+            indicator.name === dirtyIndicator.name && 
+            indicator.description === dirtyIndicator.description &&
+            indicator.unit === dirtyIndicator.unit &&
+            indicator.source === dirtyIndicator.source &&
+            indicator.subareaId === dirtyIndicator.subareaId &&
+            indicator.direction === dirtyIndicator.direction
+          )
+        );
         
-        return areasChanged || subareasChanged;
+        return areasChanged || subareasChanged || indicatorsChanged;
+      },
+
+      setManagedIndicators: (indicators) => set({ managedIndicators: indicators, dirtyIndicators: indicators }),
+
+      fetchManagedIndicators: async () => {
+        set({ isLoadingIndicators: true });
+        try {
+          const indicators = await indicatorManagementService.getIndicators();
+          set({ managedIndicators: indicators, dirtyIndicators: indicators });
+        } catch (error) {
+          console.error('Failed to fetch indicators:', error);
+          set({ managedIndicators: [], dirtyIndicators: [] });
+        } finally {
+          set({ isLoadingIndicators: false });
+        }
+      },
+
+      updateManagedIndicator: (id, updates) => {
+        set((state) => ({
+          dirtyIndicators: state.dirtyIndicators.map((i) =>
+            i.id === id ? { ...i, ...updates, isModified: true } : i
+          ),
+        }));
+      },
+
+      addManualIndicator: (indicatorData) => {
+        const newIndicator: ManagedIndicator = {
+          id: uuidv4(),
+          name: indicatorData.name,
+          description: indicatorData.description,
+          unit: indicatorData.unit,
+          source: indicatorData.source,
+          dataType: indicatorData.dataType || 'decimal',
+          subareaId: indicatorData.subareaId,
+          direction: indicatorData.direction || 'input',
+          aggregationWeight: indicatorData.aggregationWeight || 1.0,
+          valueCount: indicatorData.estimatedValues || 0,
+          dimensions: [],
+          isFromCsv: false,
+          isManual: true,
+          isModified: false,
+          createdAt: new Date(),
+        };
+        set((state) => ({
+          dirtyIndicators: [...state.dirtyIndicators, newIndicator]
+        }));
+      },
+
+      deleteManagedIndicator: (id) => {
+        set((state) => ({
+          dirtyIndicators: state.dirtyIndicators.filter((i) => i.id !== id),
+        }));
+      },
+
+      bulkUpdateIndicators: (updates) => {
+        set((state) => ({
+          dirtyIndicators: state.dirtyIndicators.map((i) => {
+            const update = updates.find(u => u.id === i.id);
+            return update ? { ...i, ...update.updates, isModified: true } : i;
+          }),
+        }));
+      },
+
+      bulkDeleteIndicators: (ids) => {
+        set((state) => ({
+          dirtyIndicators: state.dirtyIndicators.filter((i) => !ids.includes(i.id)),
+        }));
+      },
+
+      markIndicatorsAsModified: () => {
+        set((state) => ({
+          dirtyIndicators: state.dirtyIndicators.map((i) => ({ ...i, isModified: true })),
+        }));
+      },
+
+      validateIndicatorData: () => {
+        const { dirtyIndicators } = get();
+        const errors: string[] = [];
+        const isValid = dirtyIndicators.every(i => {
+          if (!i.name || i.name.trim().length < 3) {
+            errors.push(`Indicator "${i.name}" must have a name at least 3 characters long`);
+            return false;
+          }
+          if (!i.description || i.description.trim().length < 10) {
+            errors.push(`Indicator "${i.name}" must have a description at least 10 characters long`);
+            return false;
+          }
+          return true;
+        });
+        return { isValid, errors };
+      },
+
+      mergeNewCsvIndicators: (newIndicators) => {
+        const convertedIndicators = newIndicators.map(convertProcessedToManaged);
+        set((state) => ({
+          managedIndicators: [...state.managedIndicators, ...convertedIndicators],
+          dirtyIndicators: [...state.dirtyIndicators, ...convertedIndicators],
+        }));
+      },
+
+      saveIndicators: async () => {
+        const { managedIndicators, dirtyIndicators } = get();
+        set({ isSaving: true });
+        
+        try {
+          // Find new indicators
+          const newIndicators = dirtyIndicators.filter(dirtyIndicator => 
+            !managedIndicators.some(managedIndicator => managedIndicator.id === dirtyIndicator.id)
+          );
+          
+          // Find updated indicators
+          const updatedIndicators = dirtyIndicators.filter(dirtyIndicator => 
+            managedIndicators.some(managedIndicator => 
+              managedIndicator.id === dirtyIndicator.id && 
+              (managedIndicator.name !== dirtyIndicator.name || 
+               managedIndicator.description !== dirtyIndicator.description ||
+               managedIndicator.unit !== dirtyIndicator.unit ||
+               managedIndicator.source !== dirtyIndicator.source ||
+               managedIndicator.subareaId !== dirtyIndicator.subareaId ||
+               managedIndicator.direction !== dirtyIndicator.direction)
+            )
+          );
+          
+          // Find deleted indicators
+          const deletedIndicators = managedIndicators.filter(managedIndicator => 
+            !dirtyIndicators.some(dirtyIndicator => dirtyIndicator.id === managedIndicator.id)
+          );
+
+          // Process deletions first
+          for (const indicator of deletedIndicators) {
+            await indicatorManagementService.deleteIndicator(indicator.id);
+          }
+
+          // Process updates
+          for (const indicator of updatedIndicators) {
+            await indicatorManagementService.updateIndicator(indicator.id, {
+              name: indicator.name,
+              description: indicator.description,
+              unit: indicator.unit,
+              source: indicator.source,
+              subareaId: indicator.subareaId,
+              direction: indicator.direction,
+              dataType: indicator.dataType,
+              aggregationWeight: indicator.aggregationWeight
+            });
+          }
+
+          // Process creations
+          for (const indicator of newIndicators) {
+            await indicatorManagementService.createIndicator({
+              name: indicator.name,
+              description: indicator.description,
+              unit: indicator.unit,
+              source: indicator.source,
+              subareaId: indicator.subareaId,
+              direction: indicator.direction,
+              dataType: indicator.dataType,
+              aggregationWeight: indicator.aggregationWeight
+            });
+          }
+
+          // Refresh from backend
+          const freshIndicators = await indicatorManagementService.getIndicators();
+          set({ managedIndicators: freshIndicators, dirtyIndicators: freshIndicators });
+        } catch (error) {
+          console.error("Failed to save indicators:", error);
+          throw error;
+        } finally {
+          set({ isSaving: false });
+        }
+      },
+
+      resetIndicators: () => {
+        const { managedIndicators } = get();
+        set({ dirtyIndicators: managedIndicators });
       },
     }),
     {
@@ -391,6 +620,8 @@ export const useWizardStore = create<WizardState>()(
         subareas: state.subareas,
         dirtyAreas: state.dirtyAreas,
         dirtySubareas: state.dirtySubareas,
+        managedIndicators: state.managedIndicators,
+        dirtyIndicators: state.dirtyIndicators,
       }),
     }
   )
