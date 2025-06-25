@@ -74,4 +74,17 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     // Get value statistics for an indicator
     @Query("SELECT MIN(f.value), MAX(f.value), AVG(f.value), COUNT(f.value) FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId")
     Object[] getValueStatistics(@Param("indicatorId") Long indicatorId);
+    
+    // Find distinct dimension types for a given indicator
+    @Query(value = 
+        "SELECT 'time' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND time_id IS NOT NULL) " +
+        "UNION ALL " +
+        "SELECT 'location' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND location_id IS NOT NULL) " +
+        "UNION ALL " +
+        "SELECT 'generic' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND generic_id IS NOT NULL)",
+        nativeQuery = true)
+    List<String> findDimensionsByIndicatorId(@Param("indicatorId") Long indicatorId);
 } 

@@ -16,6 +16,7 @@ import io.dashboard.model.Subarea;
 import io.dashboard.model.SubareaIndicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.DataTypeRepository;
+import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
@@ -35,6 +36,7 @@ public class IndicatorService {
     private final DataTypeRepository dataTypeRepository;
     private final SubareaRepository subareaRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
+    private final FactIndicatorValueRepository factIndicatorValueRepository;
 
     public List<IndicatorResponse> findAll() {
         return indicatorRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
@@ -195,11 +197,25 @@ public class IndicatorService {
         }
         
         // Get subarea indicators
-        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findByIndicatorId(indicator.getId());
+        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findByIndicatorIdWithSubarea(indicator.getId());
         List<SubareaIndicatorResponse> subareaIndicatorResponses = subareaIndicators.stream()
                 .map(this::toSubareaIndicatorResponse)
                 .collect(Collectors.toList());
         resp.setSubareaIndicators(subareaIndicatorResponses);
+        
+        // Set subareaId, subareaName, direction from first subareaIndicator if present
+        if (!subareaIndicators.isEmpty()) {
+            SubareaIndicator si = subareaIndicators.get(0);
+            resp.setSubareaId(si.getSubarea().getId());
+            resp.setSubareaName(si.getSubarea().getName());
+            resp.setDirection(si.getDirection() != null ? si.getDirection().name() : null);
+        }
+        
+        // Set valueCount and dimensions
+        long valueCount = factIndicatorValueRepository.countByIndicatorId(indicator.getId());
+        resp.setValueCount(valueCount);
+        List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorId(indicator.getId());
+        resp.setDimensions(dimensions);
         
         return resp;
     }

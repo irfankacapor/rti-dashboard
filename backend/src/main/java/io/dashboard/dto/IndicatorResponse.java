@@ -15,4 +15,9 @@ public class IndicatorResponse {
     private UnitResponse unit;
     private DataTypeResponse dataType;
     private List<SubareaIndicatorResponse> subareaIndicators;
+    private Long valueCount;
+    private List<String> dimensions;
+    private Long subareaId;
+    private String subareaName;
+    private String direction;
 } 

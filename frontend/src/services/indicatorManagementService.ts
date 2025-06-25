@@ -15,7 +15,27 @@ export const indicatorManagementService = {
     if (!response.ok) {
       throw new Error(`Failed to fetch indicators: ${response.statusText}`);
     }
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      code: item.code,
+      unit: item.unit?.code || '',
+      source: item.source || '',
+      dataType: item.dataType?.code || 'decimal',
+      subareaId: item.subareaId?.toString() || '',
+      subareaName: item.subareaName || '',
+      direction: item.direction || 'input',
+      aggregationWeight: item.aggregationWeight || 1.0,
+      valueCount: item.valueCount || 0,
+      dimensions: item.dimensions || [],
+      isFromCsv: false,
+      isManual: false,
+      isModified: false,
+      createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+      lastModified: item.lastModified ? new Date(item.lastModified) : undefined,
+    }));
   },
 
   // Get single indicator
