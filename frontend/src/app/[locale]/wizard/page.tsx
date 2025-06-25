@@ -8,6 +8,7 @@ import { AreasStep } from '@/components/wizard/AreasStep';
 import { SubareasStep } from '@/components/wizard/SubareasStep';
 import { CsvProcessingStep } from '@/components/wizard/CsvProcessingStep';
 import { IndicatorManagementStep } from '@/components/wizard/IndicatorManagementStep';
+import { GoalManagementStep } from '@/components/wizard/GoalManagementStep';
 
 export default function WizardPage() {
   const { currentStep, setStepValid, setStepCompleted, nextStep, steps, setCurrentStep } = useStepperStore();
@@ -72,6 +73,8 @@ export default function WizardPage() {
     stepComponent = <CsvProcessingStep />;
   } else if (currentStep === 4) {
     stepComponent = <IndicatorManagementStep onNavigateToStep={handleNavigateToStep} />;
+  } else if (currentStep === 5) {
+    stepComponent = <GoalManagementStep />;
   } else {
     stepComponent = <div>Step not implemented</div>;
   }
@@ -83,12 +86,15 @@ export default function WizardPage() {
         currentStep === 2 ? 'Subareas Management' :
         currentStep === 3 ? 'Data Upload' :
         currentStep === 4 ? 'Indicator Review & Management' :
-        ''}`}
+        currentStep === 5 ? 'Goal Management' :
+        ''
+      }`}
       subtitle={
         currentStep === 1 ? 'Configure the main areas for your dashboard' :
         currentStep === 2 ? 'Configure subareas and assign them to areas' :
         currentStep === 3 ? 'Upload and map your indicator data from CSV' :
         currentStep === 4 ? 'Review, edit, and manage your indicators before proceeding to goals' :
+        currentStep === 5 ? 'Manage your goals' :
         ''
       }
       onNext={handleNext}
