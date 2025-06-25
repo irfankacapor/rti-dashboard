@@ -13,6 +13,7 @@ export interface WizardState {
   currentStep: number;
   steps: WizardStep[];
   isLoading: boolean;
+  managedIndicators: any[];
   
   // Actions
   setCurrentStep: (step: number) => void;
@@ -39,6 +40,7 @@ export const useWizardStore = create<WizardState>()(
       currentStep: 1,
       steps: initialSteps,
       isLoading: false,
+      managedIndicators: [],
 
       setCurrentStep: (step: number) => {
         if (get().canProceedToStep(step)) {
@@ -80,9 +82,10 @@ export const useWizardStore = create<WizardState>()(
       setLoading: (loading: boolean) => set({ isLoading: loading }),
 
       canProceedToStep: (stepId: number) => {
-        const { steps } = get();
+        const { steps, managedIndicators } = get();
         if (stepId === 1) return true;
-        
+        // Allow direct access to step 4 if indicators exist
+        if (stepId === 4 && managedIndicators && managedIndicators.length > 0) return true;
         // Can proceed if all previous steps are completed
         for (let i = 1; i < stepId; i++) {
           const step = steps.find(s => s.id === i);
@@ -96,6 +99,7 @@ export const useWizardStore = create<WizardState>()(
           currentStep: 1,
           steps: initialSteps,
           isLoading: false,
+          managedIndicators: [],
         }),
     }),
     {

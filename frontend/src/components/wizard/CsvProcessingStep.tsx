@@ -36,6 +36,7 @@ import {
   generateTuplePreview 
 } from '@/utils/coordinateProcessor';
 import { getSubareas } from '@/services/subareaService';
+import { useWizardStore } from '@/lib/store/useWizardStore';
 
 const PHASES = [
   { id: 'upload', label: 'Upload CSV File' },
@@ -59,6 +60,9 @@ export const CsvProcessingStep: React.FC = () => {
   const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
   const [currentSelection, setCurrentSelection] = useState<CellSelection | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const { setCurrentStep } = useWizardStore();
 
   // Load subareas on component mount
   useEffect(() => {
@@ -253,6 +257,7 @@ export const CsvProcessingStep: React.FC = () => {
       // For now, we'll just log it
       console.log(`Successfully created ${response.createdIndicators.length} indicators with ${response.totalFactRecords} fact records`);
       
+      setShowConfirmation(true);
     } catch (error) {
       console.error('Error submitting indicators:', error);
       setState(prev => ({
@@ -340,13 +345,30 @@ export const CsvProcessingStep: React.FC = () => {
 
       case 'assignment':
         return (
-          <IndicatorAssignment
-            indicators={state.processedIndicators}
-            subareas={subareas}
-            onAssign={handleIndicatorAssign}
-            onSubmit={handleSubmitIndicators}
-            isLoading={state.isLoading}
-          />
+          <>
+            <IndicatorAssignment
+              indicators={state.processedIndicators}
+              subareas={subareas}
+              onAssign={handleIndicatorAssign}
+              onSubmit={handleSubmitIndicators}
+              isLoading={state.isLoading}
+            />
+            {showConfirmation && (
+              <Box mt={3}>
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Indicators submitted successfully!
+                </Alert>
+                <Box display="flex" gap={2}>
+                  <Button variant="contained" color="primary" onClick={() => setCurrentStep(4)}>
+                    Go to Indicator Overview
+                  </Button>
+                  <Button variant="outlined" color="secondary" onClick={() => { setShowConfirmation(false); setState(prev => ({ ...prev, currentPhase: 'upload' })); }}>
+                    Upload More Indicators
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </>
         );
 
       default:

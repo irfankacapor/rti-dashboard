@@ -519,10 +519,6 @@ export const useWizardStore = create<WizardState>()(
             errors.push(`Indicator "${i.name}" must have a name at least 3 characters long`);
             return false;
           }
-          if (!i.description || i.description.trim().length < 10) {
-            errors.push(`Indicator "${i.name}" must have a description at least 10 characters long`);
-            return false;
-          }
           return true;
         });
         return { isValid, errors };
