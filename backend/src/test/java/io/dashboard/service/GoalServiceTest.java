@@ -1,5 +1,7 @@
 package io.dashboard.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dashboard.dto.GoalResponse;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
@@ -41,9 +43,14 @@ class GoalServiceTest {
     private GoalGroup testGoalGroup;
     private Goal testGoal;
     private GoalResponse expectedResponse;
+    private ObjectMapper objectMapper;
+    private JsonNode testAttributes;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        objectMapper = new ObjectMapper();
+        testAttributes = objectMapper.readTree("{\"key\": \"value\"}");
+        
         testGoalGroup = GoalGroup.builder()
                 .id(1L)
                 .name("SDGs")
@@ -58,7 +65,7 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes("{\"key\": \"value\"}")
+                .attributes(testAttributes)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -68,7 +75,7 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes("{\"key\": \"value\"}")
+                .attributes(testAttributes)
                 .createdAt(testGoal.getCreatedAt())
                 .targetCount(0L)
                 .build();
@@ -143,7 +150,7 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes("{\"key\": \"value\"}")
+                .attributes(testAttributes)
                 .build();
 
         when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
@@ -178,8 +185,9 @@ class GoalServiceTest {
     }
 
     @Test
-    void update_ShouldUpdateGoal_WhenValidData() {
+    void update_ShouldUpdateGoal_WhenValidData() throws Exception {
         // Given
+        JsonNode updatedAttributes = objectMapper.readTree("{\"updated\": \"value\"}");
         GoalUpdateRequest request = GoalUpdateRequest.builder()
                 .goalGroupId(2L)
                 .type("quantitative")
@@ -187,7 +195,7 @@ class GoalServiceTest {
                 .url("https://updated.com")
                 .year(2026)
                 .description("Updated description")
-                .attributes("{\"updated\": \"value\"}")
+                .attributes(updatedAttributes)
                 .build();
 
         when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
@@ -200,6 +208,7 @@ class GoalServiceTest {
 
         // Then
         assertNotNull(result);
+        assertEquals(expectedResponse.getName(), result.getName());
         verify(goalRepository).findById(1L);
         verify(goalGroupRepository).findById(2L);
         verify(goalRepository).save(any(Goal.class));

@@ -1,5 +1,6 @@
 package io.dashboard.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,7 +56,8 @@ public class Goal {
     private String description;
     
     @Column(columnDefinition = "JSONB")
-    private String attributes;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private JsonNode attributes;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

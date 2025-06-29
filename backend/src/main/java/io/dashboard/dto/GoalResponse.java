@@ -1,5 +1,6 @@
 package io.dashboard.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -19,7 +20,7 @@ public class GoalResponse {
     private String url;
     private Integer year;
     private String description;
-    private String attributes;
+    private JsonNode attributes;
     private LocalDateTime createdAt;
     private Long targetCount;
     private String type; // 'quantitative' or 'qualitative'

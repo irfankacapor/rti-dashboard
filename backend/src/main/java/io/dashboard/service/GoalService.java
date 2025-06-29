@@ -96,9 +96,14 @@ public class GoalService {
         log.debug("Updating goal with ID: {}", id);
         Goal goal = goalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal", "id", id));
-        GoalGroup goalGroup = goalGroupRepository.findById(request.getGoalGroupId())
-                .orElseThrow(() -> new ResourceNotFoundException("GoalGroup", "id", request.getGoalGroupId()));
-        goal.setGoalGroup(goalGroup);
+        
+        // Only update goal group if provided
+        if (request.getGoalGroupId() != null) {
+            GoalGroup goalGroup = goalGroupRepository.findById(request.getGoalGroupId())
+                    .orElseThrow(() -> new ResourceNotFoundException("GoalGroup", "id", request.getGoalGroupId()));
+            goal.setGoalGroup(goalGroup);
+        }
+        
         goal.setType(request.getType());
         goal.setName(request.getName());
         goal.setUrl(request.getUrl());

@@ -1,5 +1,7 @@
 package io.dashboard.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dashboard.dto.GoalTargetResponse;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
@@ -48,9 +50,14 @@ class GoalTargetServiceTest {
     private Indicator testIndicator;
     private GoalTarget testTarget;
     private GoalTargetResponse expectedResponse;
+    private ObjectMapper objectMapper;
+    private JsonNode testAttributes;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        objectMapper = new ObjectMapper();
+        testAttributes = objectMapper.readTree("{\"key\": \"value\"}");
+
         testGoalGroup = GoalGroup.builder()
                 .id(1L)
                 .name("SDGs")
@@ -65,7 +72,7 @@ class GoalTargetServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes("{\"key\": \"value\"}")
+                .attributes(testAttributes)
                 .createdAt(LocalDateTime.now())
                 .build();
 

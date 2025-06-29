@@ -1,5 +1,6 @@
 package io.dashboard.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -14,7 +15,6 @@ import lombok.Builder;
 @Builder
 public class GoalUpdateRequest {
     
-    @NotNull(message = "Goal group ID is required")
     private Long goalGroupId;
     
     @NotNull(message = "Goal type is required")
@@ -33,5 +33,5 @@ public class GoalUpdateRequest {
     @Size(max = 1000, message = "Goal description must not exceed 1000 characters")
     private String description;
     
-    private String attributes;
+    private JsonNode attributes;
 } 
