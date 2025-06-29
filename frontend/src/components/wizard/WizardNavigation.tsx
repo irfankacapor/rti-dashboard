@@ -6,6 +6,7 @@ import {
   Divider,
 } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 import { useWizardStore } from '@/lib/store/useWizardStore';
 
 interface WizardNavigationProps {
@@ -19,6 +20,7 @@ interface WizardNavigationProps {
   skipButton?: boolean;
   skipDisabled?: boolean;
   onSkip?: () => void;
+  onComplete?: () => void;
 }
 
 export const WizardNavigation: React.FC<WizardNavigationProps> = ({
@@ -32,6 +34,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
   skipButton = false,
   skipDisabled = false,
   onSkip,
+  onComplete,
 }) => {
   const { 
     currentStep, 
@@ -40,6 +43,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
     prevStep,
     canProceedToStep 
   } = useWizardStore();
+  const router = useRouter();
 
   const isFirstStep = currentStep === 1;
   const isLastStep = currentStep === steps.length;
@@ -58,6 +62,15 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
       onPrev();
     } else {
       prevStep();
+    }
+  };
+
+  const handleComplete = () => {
+    if (onComplete) {
+      onComplete();
+    } else {
+      // Default behavior: redirect to dashboard
+      router.push('/en/dashboard');
     }
   };
 
@@ -104,7 +117,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
           {isLastStep && (
             <Button
               variant="contained"
-              onClick={handleNext}
+              onClick={handleComplete}
               disabled={nextDisabled}
               data-testid="wizard-finish-button"
             >

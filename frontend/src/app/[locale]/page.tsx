@@ -8,7 +8,7 @@ import {
   Paper,
   Stack
 } from '@mui/material';
-import { PlayArrow } from '@mui/icons-material';
+import { PlayArrow, Dashboard } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -18,6 +18,10 @@ export default function LandingPage() {
 
   const handleStartConfiguration = () => {
     router.push('/en/wizard');
+  };
+
+  const handleGoToDashboard = () => {
+    router.push('/en/dashboard');
   };
 
   return (
@@ -66,22 +70,41 @@ export default function LandingPage() {
               Create comprehensive indicator dashboards with multi-dimensional data analysis
             </Typography>
 
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<PlayArrow />}
-              onClick={handleStartConfiguration}
-              sx={{ 
-                px: 4, 
-                py: 2, 
-                fontSize: '1.2rem',
-                borderRadius: 3,
-                textTransform: 'none'
-              }}
-              data-testid="start-configuration-button"
-            >
-              Start Configuration
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<PlayArrow />}
+                onClick={handleStartConfiguration}
+                sx={{ 
+                  px: 4, 
+                  py: 2, 
+                  fontSize: '1.2rem',
+                  borderRadius: 3,
+                  textTransform: 'none'
+                }}
+                data-testid="start-configuration-button"
+              >
+                Start Configuration
+              </Button>
+              
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<Dashboard />}
+                onClick={handleGoToDashboard}
+                sx={{ 
+                  px: 4, 
+                  py: 2, 
+                  fontSize: '1.2rem',
+                  borderRadius: 3,
+                  textTransform: 'none'
+                }}
+                data-testid="go-to-dashboard-button"
+              >
+                Go to Dashboard
+              </Button>
+            </Stack>
           </Stack>
         </Paper>
       </Box>
