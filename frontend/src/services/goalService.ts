@@ -4,6 +4,20 @@ export interface Goal {
   name: string;
   description?: string;
   type?: string;
+  goalGroup?: GoalGroup;
+  url?: string;
+  year?: number;
+  attributes?: any;
+  createdAt?: string;
+  targetCount?: number;
+}
+
+export interface GoalGroup {
+  id: number;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  goalCount?: number;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -16,7 +30,7 @@ export const goalService = {
     }
     return response.json();
   },
-  createGoal: async (goal: Partial<Goal>) => {
+  createGoal: async (goal: any) => {
     const response = await fetch(`${API_BASE}/goals`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,7 +41,7 @@ export const goalService = {
     }
     return response.json();
   },
-  updateGoal: async (id: number, goal: Partial<Goal>) => {
+  updateGoal: async (id: number, goal: any) => {
     const response = await fetch(`${API_BASE}/goals/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -47,18 +61,18 @@ export const goalService = {
     }
     return true;
   },
-  getGroups: async (): Promise<string[]> => {
+  getGroups: async (): Promise<GoalGroup[]> => {
     const response = await fetch(`${API_BASE}/goal-groups`);
     if (!response.ok) {
       throw new Error('Failed to fetch goal groups');
     }
     return response.json();
   },
-  createGroup: async (name: string): Promise<string> => {
+  createGroup: async (name: string, description?: string): Promise<GoalGroup> => {
     const response = await fetch(`${API_BASE}/goal-groups`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, description }),
     });
     if (!response.ok) {
       throw new Error('Failed to create goal group');

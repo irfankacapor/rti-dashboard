@@ -6,6 +6,7 @@ import { indicatorManagementService } from '@/services/indicatorManagementServic
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { GoalGroup } from '@/services/goalService';
 
 interface Goal {
   id: number;
@@ -14,7 +15,9 @@ interface Goal {
   type?: string;
   indicators?: number[];
   targets?: GoalTarget[];
-  group?: string;
+  group?: number;
+  goalGroup?: GoalGroup;
+  year: number;
 }
 
 interface GoalTarget {
@@ -37,8 +40,12 @@ export const GoalManagementStep: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [indicators, setIndicators] = useState<Indicator[]>([]);
-  const [groups, setGroups] = useState<string[]>([]);
+  const [groups, setGroups] = useState<GoalGroup[]>([]);
+  const [addGroupModalOpen, setAddGroupModalOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [groupCreateStatus, setGroupCreateStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [groupCreateError, setGroupCreateError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -54,7 +61,11 @@ export const GoalManagementStep: React.FC = () => {
       goalService.getGroups()
     ])
       .then(([goals, indicators, groups]) => {
-        setGoals(goals);
+        setGoals(goals.map(g => ({ 
+          year: (g as any).year ?? new Date().getFullYear(), 
+          ...g,
+          group: g.goalGroup?.id // Map goalGroup to group for consistency
+        })));
         setIndicators(indicators.map((i: any) => ({ id: i.id, name: i.name })));
         setGroups(groups);
       })
@@ -69,12 +80,27 @@ export const GoalManagementStep: React.FC = () => {
   };
 
   const handleAddGoal = () => {
-    setEditingGoal({ id: 0, name: '', description: '', type: '', indicators: [], targets: [], group: undefined });
+    const defaultGroup = groups.length > 0 ? groups[0].id : undefined;
+    setEditingGoal({ 
+      id: 0, 
+      name: '', 
+      description: '', 
+      type: '', 
+      indicators: [], 
+      targets: [], 
+      group: defaultGroup, 
+      year: new Date().getFullYear() 
+    });
     setOpenDialog(true);
   };
 
   const handleEditGoal = (goal: Goal) => {
-    setEditingGoal(goal);
+    // Map the goalGroup to the group field for the form
+    const goalForEdit = {
+      ...goal,
+      group: goal.goalGroup?.id
+    };
+    setEditingGoal(goalForEdit);
     setOpenDialog(true);
   };
 
@@ -84,7 +110,11 @@ export const GoalManagementStep: React.FC = () => {
     try {
       await goalService.deleteGoal(goalId);
       const updatedGoals = await goalService.getGoals();
-      setGoals(updatedGoals);
+      setGoals(updatedGoals.map(g => ({ 
+        year: (g as any).year ?? new Date().getFullYear(), 
+        ...g,
+        group: g.goalGroup?.id // Map goalGroup to group for consistency
+      })));
     } catch (e: any) {
       setError(e.message || 'Failed to delete goal');
     } finally {
@@ -102,13 +132,35 @@ export const GoalManagementStep: React.FC = () => {
     setError(null);
     try {
       if (editingGoal) {
+        // Use the selected group or fall back to the existing goal group
+        const goalGroupId = editingGoal.group || editingGoal.goalGroup?.id;
+        
+        // Validate that a goal group is selected
+        if (!goalGroupId) {
+          setError('Please select a goal group');
+          setLoading(false);
+          return;
+        }
+        
+        const payload = {
+          ...editingGoal,
+          goalGroupId: goalGroupId,
+          year: editingGoal.year,
+        };
+        delete payload.group;
+        delete payload.goalGroup;
+        
         if (editingGoal.id === 0) {
-          await goalService.createGoal(editingGoal);
+          await goalService.createGoal(payload);
         } else {
-          await goalService.updateGoal(editingGoal.id, editingGoal);
+          await goalService.updateGoal(editingGoal.id, payload);
         }
         const updatedGoals = await goalService.getGoals();
-        setGoals(updatedGoals);
+        setGoals(updatedGoals.map(g => ({ 
+          year: (g as any).year ?? new Date().getFullYear(), 
+          ...g,
+          group: g.goalGroup?.id // Map goalGroup to group for consistency
+        })));
       }
       setOpenDialog(false);
       setEditingGoal(null);
@@ -194,6 +246,49 @@ export const GoalManagementStep: React.FC = () => {
             required
             sx={{ mb: 2 }}
           />
+          <FormControl fullWidth sx={{ mb: 2 }} required error={!editingGoal?.group && editingGoal?.id === 0}>
+            <InputLabel>Goal Group *</InputLabel>
+            <Select
+              value={editingGoal?.group !== undefined ? String(editingGoal.group) : ''}
+              onChange={e => {
+                if (e.target.value === '__add_new__') {
+                  setAddGroupModalOpen(true);
+                } else {
+                  setEditingGoal(editingGoal ? { ...editingGoal, group: Number(e.target.value) } : null);
+                }
+              }}
+              input={<OutlinedInput label="Goal Group *" />}
+              renderValue={selected => {
+                if (selected === '' || selected === '__add_new__') return '';
+                const group = groups.find(g => g.id === Number(selected));
+                return group ? group.name : '';
+              }}
+            >
+              {groups.map(group => (
+                <MenuItem key={group.id} value={String(group.id)}>{group.name}</MenuItem>
+              ))}
+              <MenuItem value="__add_new__">
+                <Box display="flex" alignItems="center">
+                  <AddCircleOutlineIcon fontSize="small" sx={{ mr: 1 }} />
+                  Add new group
+                </Box>
+              </MenuItem>
+            </Select>
+            {!editingGoal?.group && editingGoal?.id === 0 && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                Goal group is required
+              </Typography>
+            )}
+          </FormControl>
+          <TextField
+            label="Year"
+            type="number"
+            value={editingGoal?.year || ''}
+            onChange={e => setEditingGoal(editingGoal ? { ...editingGoal, year: Number(e.target.value) } : null)}
+            fullWidth
+            required
+            sx={{ mb: 2 }}
+          />
           <TextField
             label="Description"
             value={editingGoal?.description || ''}
@@ -266,63 +361,61 @@ export const GoalManagementStep: React.FC = () => {
             </List>
             <Button onClick={handleAddTarget} variant="outlined" size="small">Add Target</Button>
           </Box>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Goal Group</InputLabel>
-            <Select
-              value={editingGoal?.group || ''}
-              onChange={e => {
-                if (e.target.value === '__add_new__') return;
-                setEditingGoal(editingGoal ? { ...editingGoal, group: e.target.value } : null);
-              }}
-              input={<OutlinedInput label="Goal Group" />}
-              renderValue={selected => selected}
-            >
-              {groups.map(group => (
-                <MenuItem key={group} value={group}>{group}</MenuItem>
-              ))}
-              <MenuItem value="__add_new__">
-                <Box display="flex" alignItems="center">
-                  <AddCircleOutlineIcon fontSize="small" sx={{ mr: 1 }} />
-                  Add new group
-                </Box>
-              </MenuItem>
-            </Select>
-          </FormControl>
-          {editingGoal?.group === undefined && (
-            <Box display="flex" alignItems="center" mb={2}>
-              <TextField
-                label="New Group Name"
-                value={newGroupName}
-                onChange={e => setNewGroupName(e.target.value)}
-                sx={{ mr: 2 }}
-              />
-              <Button
-                variant="outlined"
-                onClick={async () => {
-                  if (newGroupName.trim()) {
-                    setLoading(true);
-                    try {
-                      await goalService.createGroup(newGroupName.trim());
-                      const updatedGroups = await goalService.getGroups();
-                      setGroups(updatedGroups);
-                      setEditingGoal(editingGoal ? { ...editingGoal, group: newGroupName.trim() } : null);
-                      setNewGroupName('');
-                    } catch (e: any) {
-                      setError(e.message || 'Failed to create group');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }
-                }}
-              >
-                Add Group
-              </Button>
-            </Box>
-          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDialogClose}>Cancel</Button>
           <Button onClick={handleDialogSave} variant="contained">Save</Button>
+        </DialogActions>
+      </Dialog>
+      {/* Add Group Modal */}
+      <Dialog open={addGroupModalOpen} onClose={() => { setAddGroupModalOpen(false); setGroupCreateStatus('idle'); setGroupCreateError(null); }}>
+        <DialogTitle>Add New Goal Group</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Group Name"
+            value={newGroupName}
+            onChange={e => setNewGroupName(e.target.value)}
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Description (optional)"
+            value={newGroupDescription}
+            onChange={e => setNewGroupDescription(e.target.value)}
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          {groupCreateStatus === 'success' && (
+            <Alert severity="success">Goal group created successfully.</Alert>
+          )}
+          {groupCreateStatus === 'error' && (
+            <Alert severity="error">{groupCreateError}</Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setAddGroupModalOpen(false); setGroupCreateStatus('idle'); setGroupCreateError(null); }}>Close</Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              setGroupCreateStatus('idle');
+              setGroupCreateError(null);
+              try {
+                const newGroup = await goalService.createGroup(newGroupName, newGroupDescription);
+                setGroups(prev => [...prev, newGroup]);
+                setGroupCreateStatus('success');
+                setNewGroupName('');
+                setNewGroupDescription('');
+                // Select the new group in the goal form
+                setEditingGoal(editingGoal ? { ...editingGoal, group: newGroup.id } : null);
+              } catch (e: any) {
+                setGroupCreateStatus('error');
+                setGroupCreateError(e.message || 'Failed to create group');
+              }
+            }}
+            disabled={!newGroupName.trim()}
+          >
+            Add
+          </Button>
         </DialogActions>
       </Dialog>
       <Button
@@ -332,25 +425,33 @@ export const GoalManagementStep: React.FC = () => {
           setSubmitting(true);
           setError(null);
           try {
-            // Find new groups to create
-            const uniqueGroups = Array.from(new Set(goals.map(g => g.group).filter((g): g is string => typeof g === 'string')));
-            const newGroups = uniqueGroups.filter(g => typeof g === 'string' && !groups.includes(g));
-            for (const group of newGroups) {
-              if (typeof group === 'string') {
-                await goalService.createGroup(group);
-              }
+            // Validate that all goals have goal groups
+            const goalsWithoutGroups = goals.filter(goal => !(goal.group || goal.goalGroup?.id));
+            if (goalsWithoutGroups.length > 0) {
+              setError(`The following goals are missing goal groups: ${goalsWithoutGroups.map(g => g.name).join(', ')}`);
+              setSubmitting(false);
+              return;
             }
+            
             // Submit all goals
             for (const goal of goals) {
+              const goalGroupId = goal.group || goal.goalGroup?.id;
+              const payload = { ...goal, goalGroupId: goalGroupId, year: goal.year };
+              delete payload.group;
+              delete payload.goalGroup;
               if (!goal.id || goal.id === 0) {
-                await goalService.createGoal(goal);
+                await goalService.createGoal(payload);
               } else {
-                await goalService.updateGoal(goal.id, goal);
+                await goalService.updateGoal(goal.id, payload);
               }
             }
             // Refresh
             const updatedGoals = await goalService.getGoals();
-            setGoals(updatedGoals);
+            setGoals(updatedGoals.map(g => ({ 
+              year: (g as any).year ?? new Date().getFullYear(), 
+              ...g,
+              group: g.goalGroup?.id // Map goalGroup to group for consistency
+            })));
             const updatedGroups = await goalService.getGroups();
             setGroups(updatedGroups);
           } catch (e: any) {
