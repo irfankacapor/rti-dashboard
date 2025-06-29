@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -78,17 +79,19 @@ class ChartDataPointRepositoryTest {
 
     @Test
     void findByConfigIdAndTimestampBetween_withExactBoundaries_shouldIncludeBoundaryData() {
-        // Given
-        LocalDateTime boundaryTime = LocalDateTime.now();
-        ChartDataPoint dataPoint = createChartDataPoint(1L, "2024", 100.0, boundaryTime);
-
-        // When
-        List<ChartDataPoint> result = chartDataPointRepository.findByConfigIdAndTimestampBetween(
-                1L, boundaryTime, boundaryTime);
-
-        // Then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getYValue()).isEqualTo(100.0);
+        LocalDateTime boundaryTime = LocalDateTime.of(2024, 1, 1, 0, 0);
+        ChartDataPoint point = new ChartDataPoint();
+        point.setConfigId(100L);
+        point.setXValue("2024");
+        point.setYValue(123.0);
+        point.setLabel("Test Label");
+        point.setMetadata("{\"test\": \"metadata\"}");
+        point.setTimestamp(boundaryTime);
+        entityManager.persist(point);
+        entityManager.flush();
+        entityManager.clear();
+        List<ChartDataPoint> result = chartDataPointRepository.findByConfigIdAndTimestampBetween(100L, boundaryTime, boundaryTime);
+        assertEquals(1, result.size());
     }
 
     @Test

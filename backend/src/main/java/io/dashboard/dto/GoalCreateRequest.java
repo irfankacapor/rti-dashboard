@@ -14,8 +14,11 @@ import lombok.Builder;
 @Builder
 public class GoalCreateRequest {
     
-    @NotNull(message = "Goal type ID is required")
-    private Long goalTypeId;
+    @NotNull(message = "Goal group ID is required")
+    private Long goalGroupId;
+    
+    @NotNull(message = "Goal type is required")
+    private String type; // 'quantitative' or 'qualitative'
     
     @NotBlank(message = "Goal name is required")
     @Size(max = 200, message = "Goal name must not exceed 200 characters")

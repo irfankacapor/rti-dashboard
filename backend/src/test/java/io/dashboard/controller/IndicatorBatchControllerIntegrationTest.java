@@ -72,7 +72,7 @@ class IndicatorBatchControllerIntegrationTest {
         IndicatorBatchRequest request = IndicatorBatchRequest.builder()
             .indicators(List.of(
                 CsvIndicatorData.builder()
-                    .name("KMU mit zumindest grundlegender Digitalisierungsintensität")
+                    .name("KMU mit grundlegender Digitalisierungsintensitaet")
                     .description("Small and medium enterprises with at least basic digitalization intensity")
                     .unit("Percent")
                     .source("Austrian Statistical Office")
@@ -120,7 +120,7 @@ class IndicatorBatchControllerIntegrationTest {
         
         // Verify the created indicator
         var createdIndicator = batchResponse.getCreatedIndicators().get(0);
-        assertThat(createdIndicator.getName()).isEqualTo("KMU mit zumindest grundlegender Digitalisierungsintensität");
+        assertThat(createdIndicator.getName()).isEqualTo("KMU mit grundlegender Digitalisierungsintensitaet");
         assertThat(createdIndicator.getDescription()).isEqualTo("Small and medium enterprises with at least basic digitalization intensity");
         assertThat(createdIndicator.getIsComposite()).isFalse();
     }

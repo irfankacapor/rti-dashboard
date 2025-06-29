@@ -61,8 +61,12 @@ public class IndicatorBatchService {
                 int factCount = processIndicatorValues(indicator, csvIndicator.getValues());
                 totalFactRecords += factCount;
                 
-                // 4. Add to response
-                createdIndicators.add(mapToResponse(indicator, factCount));
+                // 4. Add to response only if not already added (for duplicates)
+                boolean alreadyAdded = createdIndicators.stream()
+                    .anyMatch(response -> response.getId().equals(indicator.getId()));
+                if (!alreadyAdded) {
+                    createdIndicators.add(mapToResponse(indicator, factCount));
+                }
                 
             } catch (Exception e) {
                 log.error("Failed to process indicator: {}", csvIndicator.getName(), e);

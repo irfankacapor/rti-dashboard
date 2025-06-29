@@ -5,7 +5,7 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalTarget;
-import io.dashboard.model.GoalType;
+import io.dashboard.model.GoalGroup;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.TargetType;
 import io.dashboard.repository.GoalRepository;
@@ -43,7 +43,7 @@ class GoalTargetServiceTest {
     @InjectMocks
     private GoalTargetService goalTargetService;
 
-    private GoalType testGoalType;
+    private GoalGroup testGoalGroup;
     private Goal testGoal;
     private Indicator testIndicator;
     private GoalTarget testTarget;
@@ -51,7 +51,7 @@ class GoalTargetServiceTest {
 
     @BeforeEach
     void setUp() {
-        testGoalType = GoalType.builder()
+        testGoalGroup = GoalGroup.builder()
                 .id(1L)
                 .name("SDGs")
                 .description("Sustainable Development Goals")
@@ -60,7 +60,7 @@ class GoalTargetServiceTest {
 
         testGoal = Goal.builder()
                 .id(1L)
-                .goalType(testGoalType)
+                .goalGroup(testGoalGroup)
                 .name("Goal 1")
                 .url("https://example.com")
                 .year(2025)

@@ -17,6 +17,7 @@ import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 import io.dashboard.repository.UnitRepository;
+import io.dashboard.repository.FactIndicatorValueRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -43,12 +44,15 @@ class IndicatorServiceTest {
     private SubareaRepository subareaRepository;
     @Mock
     private SubareaIndicatorRepository subareaIndicatorRepository;
+    @Mock
+    private FactIndicatorValueRepository factIndicatorValueRepository;
     @InjectMocks
     private IndicatorService indicatorService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        when(factIndicatorValueRepository.countByIndicatorId(anyLong())).thenReturn(0L);
     }
 
     @Test

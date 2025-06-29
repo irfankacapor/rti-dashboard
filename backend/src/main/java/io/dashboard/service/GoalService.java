@@ -1,13 +1,15 @@
 package io.dashboard.service;
 
 import io.dashboard.dto.GoalResponse;
-import io.dashboard.dto.GoalTypeResponse;
+import io.dashboard.dto.GoalGroupResponse;
+import io.dashboard.dto.GoalCreateRequest;
+import io.dashboard.dto.GoalUpdateRequest;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
-import io.dashboard.model.GoalType;
+import io.dashboard.model.GoalGroup;
 import io.dashboard.repository.GoalRepository;
-import io.dashboard.repository.GoalTypeRepository;
+import io.dashboard.repository.GoalGroupRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +24,7 @@ import java.util.stream.Collectors;
 public class GoalService {
     
     private final GoalRepository goalRepository;
-    private final GoalTypeRepository goalTypeRepository;
+    private final GoalGroupRepository goalGroupRepository;
     
     @Transactional(readOnly = true)
     public List<GoalResponse> findAll() {
@@ -34,9 +36,9 @@ public class GoalService {
     }
     
     @Transactional(readOnly = true)
-    public List<GoalResponse> findByGoalTypeId(Long goalTypeId) {
-        log.debug("Finding goals by goal type ID: {}", goalTypeId);
-        List<Goal> goals = goalRepository.findByGoalTypeIdWithTargets(goalTypeId);
+    public List<GoalResponse> findByGoalGroupId(Long goalGroupId) {
+        log.debug("Finding goals by goal group ID: {}", goalGroupId);
+        List<Goal> goals = goalRepository.findByGoalGroupId(goalGroupId);
         return goals.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -71,40 +73,39 @@ public class GoalService {
     }
     
     @Transactional
-    public GoalResponse create(Goal goal) {
-        log.debug("Creating new goal: {}", goal.getName());
-        
-        // Validate goal type exists
-        GoalType goalType = goalTypeRepository.findById(goal.getGoalType().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("GoalType", "id", goal.getGoalType().getId()));
-        
-        goal.setGoalType(goalType);
+    public GoalResponse create(GoalCreateRequest request) {
+        log.debug("Creating new goal: {}", request.getName());
+        GoalGroup goalGroup = goalGroupRepository.findById(request.getGoalGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("GoalGroup", "id", request.getGoalGroupId()));
+        Goal goal = Goal.builder()
+                .goalGroup(goalGroup)
+                .type(request.getType())
+                .name(request.getName())
+                .url(request.getUrl())
+                .year(request.getYear())
+                .description(request.getDescription())
+                .attributes(request.getAttributes())
+                .build();
         Goal savedGoal = goalRepository.save(goal);
         log.info("Created goal with ID: {}", savedGoal.getId());
         return mapToResponse(savedGoal);
     }
     
     @Transactional
-    public GoalResponse update(Long id, Goal goal) {
+    public GoalResponse update(Long id, GoalUpdateRequest request) {
         log.debug("Updating goal with ID: {}", id);
-        
-        Goal existingGoal = goalRepository.findById(id)
+        Goal goal = goalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal", "id", id));
-        
-        // Validate goal type exists if changed
-        if (!existingGoal.getGoalType().getId().equals(goal.getGoalType().getId())) {
-            GoalType goalType = goalTypeRepository.findById(goal.getGoalType().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("GoalType", "id", goal.getGoalType().getId()));
-            existingGoal.setGoalType(goalType);
-        }
-        
-        existingGoal.setName(goal.getName());
-        existingGoal.setUrl(goal.getUrl());
-        existingGoal.setYear(goal.getYear());
-        existingGoal.setDescription(goal.getDescription());
-        existingGoal.setAttributes(goal.getAttributes());
-        
-        Goal updatedGoal = goalRepository.save(existingGoal);
+        GoalGroup goalGroup = goalGroupRepository.findById(request.getGoalGroupId())
+                .orElseThrow(() -> new ResourceNotFoundException("GoalGroup", "id", request.getGoalGroupId()));
+        goal.setGoalGroup(goalGroup);
+        goal.setType(request.getType());
+        goal.setName(request.getName());
+        goal.setUrl(request.getUrl());
+        goal.setYear(request.getYear());
+        goal.setDescription(request.getDescription());
+        goal.setAttributes(request.getAttributes());
+        Goal updatedGoal = goalRepository.save(goal);
         log.info("Updated goal with ID: {}", id);
         return mapToResponse(updatedGoal);
     }
@@ -140,18 +141,17 @@ public class GoalService {
     
     private GoalResponse mapToResponse(Goal goal) {
         long targetCount = goalRepository.countTargetsByGoalId(goal.getId());
-        
-        GoalTypeResponse goalTypeResponse = GoalTypeResponse.builder()
-                .id(goal.getGoalType().getId())
-                .name(goal.getGoalType().getName())
-                .description(goal.getGoalType().getDescription())
-                .createdAt(goal.getGoalType().getCreatedAt())
-                .goalCount(null) // Will be calculated separately if needed
+        GoalGroupResponse goalGroupResponse = GoalGroupResponse.builder()
+                .id(goal.getGoalGroup().getId())
+                .name(goal.getGoalGroup().getName())
+                .description(goal.getGoalGroup().getDescription())
+                .createdAt(goal.getGoalGroup().getCreatedAt())
+                .goalCount(null)
                 .build();
-        
         return GoalResponse.builder()
                 .id(goal.getId())
-                .goalType(goalTypeResponse)
+                .goalGroup(goalGroupResponse)
+                .type(goal.getType())
                 .name(goal.getName())
                 .url(goal.getUrl())
                 .year(goal.getYear())

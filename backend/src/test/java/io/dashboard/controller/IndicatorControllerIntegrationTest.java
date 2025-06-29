@@ -10,12 +10,20 @@ import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;
 import io.dashboard.model.Unit;
 import io.dashboard.model.Area;
+import io.dashboard.model.DimTime;
+import io.dashboard.model.DimLocation;
+import io.dashboard.model.DimGeneric;
+import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.repository.DataTypeRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 import io.dashboard.repository.UnitRepository;
 import io.dashboard.repository.AreaRepository;
+import io.dashboard.repository.FactIndicatorValueRepository;
+import io.dashboard.repository.DimTimeRepository;
+import io.dashboard.repository.DimLocationRepository;
+import io.dashboard.repository.DimGenericRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +33,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -51,47 +63,93 @@ class IndicatorControllerIntegrationTest {
     private SubareaIndicatorRepository subareaIndicatorRepository;
     @Autowired
     private AreaRepository areaRepository;
+    @Autowired
+    private FactIndicatorValueRepository factIndicatorValueRepository;
+    @Autowired
+    private DimTimeRepository dimTimeRepository;
+    @Autowired
+    private DimLocationRepository dimLocationRepository;
+    @Autowired
+    private DimGenericRepository dimGenericRepository;
 
     private Unit unit;
     private DataType dataType;
     private Subarea subarea;
+    private Area area;
+    private DimTime dimTime;
+    private DimLocation dimLocation;
+    private DimGeneric dimGeneric;
+    
+    // Use atomic counter to ensure unique codes across tests
+    private static final AtomicLong testCounter = new AtomicLong(1);
 
     @BeforeEach
     void setup() {
+        // Clean up all data in reverse dependency order
+        factIndicatorValueRepository.deleteAll();
         subareaIndicatorRepository.deleteAll();
         indicatorRepository.deleteAll();
+        subareaRepository.deleteAll();
+        areaRepository.deleteAll();
         unitRepository.deleteAll();
         dataTypeRepository.deleteAll();
-        subareaRepository.deleteAll();
+        dimTimeRepository.deleteAll();
+        dimLocationRepository.deleteAll();
+        dimGenericRepository.deleteAll();
         
-        // Create test data
+        // Create test data with unique codes
+        long counter = testCounter.getAndIncrement();
+        
         unit = new Unit();
-        unit.setCode("UNIT1");
-        unit.setDescription("Test Unit");
+        unit.setCode("UNIT" + counter);
+        unit.setDescription("Test Unit " + counter);
         unit = unitRepository.save(unit);
         
         dataType = new DataType();
-        dataType.setName("TYPE1");
+        dataType.setName("TYPE" + counter);
         dataType = dataTypeRepository.save(dataType);
         
+        // Create dimension tables to ensure they exist
+        dimTime = new DimTime();
+        dimTime.setYear(2024);
+        dimTime.setMonth(1);
+        dimTime.setDay(1);
+        dimTime.setQuarter(1);
+        dimTime = dimTimeRepository.save(dimTime);
+        
+        dimLocation = new DimLocation();
+        dimLocation.setName("Test Location");
+        dimLocation.setValue("Test Value");
+        dimLocation.setType(DimLocation.LocationType.CITY);
+        dimLocation.setLevel(2);
+        dimLocation = dimLocationRepository.save(dimLocation);
+        
+        dimGeneric = new DimGeneric();
+        dimGeneric.setName("Test Generic");
+        dimGeneric.setDimensionName("Test Dimension");
+        dimGeneric.setValue("Test Value");
+        dimGeneric.setCategory("Test Category");
+        dimGeneric = dimGenericRepository.save(dimGeneric);
+        
         // Create a subarea for testing relationships
-        Area area = new Area();
-        area.setCode("AREA1");
-        area.setName("Test Area");
+        area = new Area();
+        area.setCode("AREA" + counter);
+        area.setName("Test Area " + counter);
         area = areaRepository.save(area);
         
         subarea = new Subarea();
-        subarea.setCode("SUB1");
-        subarea.setName("Test Subarea");
+        subarea.setCode("SUB" + counter);
+        subarea.setName("Test Subarea " + counter);
         subarea.setArea(area);
         subarea = subareaRepository.save(subarea);
     }
 
     @Test
     void createIndicator_shouldSucceed() throws Exception {
+        long counter = testCounter.getAndIncrement();
         IndicatorCreateRequest req = new IndicatorCreateRequest();
-        req.setCode("IND1");
-        req.setName("Indicator 1");
+        req.setCode("IND" + counter);
+        req.setName("Indicator " + counter);
         req.setIsComposite(false);
         req.setUnitId(unit.getId());
         req.setDataTypeId(dataType.getId());
@@ -100,23 +158,24 @@ class IndicatorControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.code").value("IND1"))
+                .andExpect(jsonPath("$.code").value("IND" + counter))
                 .andExpect(jsonPath("$.unit.id").value(unit.getId()))
                 .andExpect(jsonPath("$.dataType.id").value(dataType.getId()));
         
-        assertThat(indicatorRepository.findByCode("IND1")).isPresent();
+        assertThat(indicatorRepository.findByCode("IND" + counter)).isPresent();
     }
 
     @Test
     void createIndicator_shouldFail_duplicateCode() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("DUP");
+        indicator.setCode("DUP" + counter);
         indicator.setName("Indicator");
         indicator.setIsComposite(false);
         indicatorRepository.save(indicator);
         
         IndicatorCreateRequest req = new IndicatorCreateRequest();
-        req.setCode("DUP");
+        req.setCode("DUP" + counter);
         req.setName("Another");
         req.setIsComposite(false);
         
@@ -129,9 +188,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void createIndicator_shouldFail_invalidUnit() throws Exception {
+        long counter = testCounter.getAndIncrement();
         IndicatorCreateRequest req = new IndicatorCreateRequest();
-        req.setCode("IND1");
-        req.setName("Indicator 1");
+        req.setCode("IND" + counter);
+        req.setName("Indicator " + counter);
         req.setUnitId(9999L);
         
         mockMvc.perform(post("/api/v1/indicators")
@@ -143,28 +203,30 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void getAllIndicators_shouldReturnList() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicatorRepository.save(indicator);
         
         mockMvc.perform(get("/api/v1/indicators"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("IND1"));
+                .andExpect(jsonPath("$[0].code").value("IND" + counter));
     }
 
     @Test
     void getIndicatorById_shouldReturnIndicator() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         
         mockMvc.perform(get("/api/v1/indicators/" + indicator.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("IND1"));
+                .andExpect(jsonPath("$.code").value("IND" + counter));
     }
 
     @Test
@@ -175,9 +237,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void getIndicatorsBySubarea_shouldReturnList() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         
@@ -194,13 +257,14 @@ class IndicatorControllerIntegrationTest {
         
         mockMvc.perform(get("/api/v1/subareas/" + subarea.getId() + "/indicators"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("IND1"));
+                .andExpect(jsonPath("$[0].code").value("IND" + counter));
     }
 
     @Test
     void updateIndicator_shouldUpdateFields() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
+        indicator.setCode("IND" + counter);
         indicator.setName("Old");
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
@@ -232,9 +296,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void deleteIndicator_shouldDelete() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         
@@ -246,9 +311,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void assignIndicatorToSubarea_shouldSucceed() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         
@@ -266,9 +332,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void assignIndicatorToSubarea_shouldFail_alreadyAssigned() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         
@@ -295,9 +362,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void removeIndicatorFromSubarea_shouldSucceed() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         
@@ -320,9 +388,10 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     void removeIndicatorFromSubarea_shouldReturn404_whenNotAssigned() throws Exception {
+        long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
+        indicator.setCode("IND" + counter);
+        indicator.setName("Indicator " + counter);
         indicator.setIsComposite(false);
         indicator = indicatorRepository.save(indicator);
         

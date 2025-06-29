@@ -27,10 +27,14 @@ public class Goal {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @NotNull(message = "Goal type is required")
+    @NotNull(message = "Goal group is required")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "goal_type_id", nullable = false)
-    private GoalType goalType;
+    @JoinColumn(name = "goal_group_id", nullable = false)
+    private GoalGroup goalGroup;
+    
+    @NotNull(message = "Goal type is required")
+    @Column(nullable = false)
+    private String type; // 'quantitative' or 'qualitative'
     
     @NotBlank(message = "Goal name is required")
     @Size(max = 200, message = "Goal name must not exceed 200 characters")

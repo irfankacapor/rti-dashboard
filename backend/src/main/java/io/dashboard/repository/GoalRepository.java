@@ -10,8 +10,6 @@ import java.util.List;
 @Repository
 public interface GoalRepository extends JpaRepository<Goal, Long> {
     
-    List<Goal> findByGoalTypeId(Long goalTypeId);
-    
     @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.targets WHERE g.id = :goalId")
     Goal findByIdWithTargets(Long goalId);
     
@@ -21,9 +19,11 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.goalSubareas gs LEFT JOIN FETCH gs.subarea WHERE g.id = :goalId")
     Goal findByIdWithSubareas(Long goalId);
     
-    @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.targets WHERE g.goalType.id = :goalTypeId")
-    List<Goal> findByGoalTypeIdWithTargets(Long goalTypeId);
-    
     @Query("SELECT COUNT(gt) FROM GoalTarget gt WHERE gt.goal.id = :goalId")
     long countTargetsByGoalId(Long goalId);
+
+    List<Goal> findByGoalGroupId(Long goalGroupId);
+
+    @Query("SELECT g FROM Goal g LEFT JOIN FETCH g.targets WHERE g.goalGroup.id = :goalGroupId")
+    List<Goal> findByGoalGroupIdWithTargets(Long goalGroupId);
 } 

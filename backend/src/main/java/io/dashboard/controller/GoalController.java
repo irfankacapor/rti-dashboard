@@ -5,7 +5,7 @@ import io.dashboard.dto.GoalResponse;
 import io.dashboard.dto.GoalTargetResponse;
 import io.dashboard.dto.GoalUpdateRequest;
 import io.dashboard.model.Goal;
-import io.dashboard.model.GoalType;
+import io.dashboard.model.GoalGroup;
 import io.dashboard.service.GoalService;
 import io.dashboard.service.GoalTargetService;
 import lombok.RequiredArgsConstructor;
@@ -40,29 +40,17 @@ public class GoalController {
         return ResponseEntity.ok(goal);
     }
     
-    @GetMapping("/goal-types/{typeId}/goals")
-    public ResponseEntity<List<GoalResponse>> getGoalsByType(@PathVariable Long typeId) {
-        log.debug("Getting goals by type ID: {}", typeId);
-        List<GoalResponse> goals = goalService.findByGoalTypeId(typeId);
+    @GetMapping("/goal-groups/{groupId}/goals")
+    public ResponseEntity<List<GoalResponse>> getGoalsByGroup(@PathVariable Long groupId) {
+        log.debug("Getting goals by group ID: {}", groupId);
+        List<GoalResponse> goals = goalService.findByGoalGroupId(groupId);
         return ResponseEntity.ok(goals);
     }
     
     @PostMapping
     public ResponseEntity<GoalResponse> createGoal(@Valid @RequestBody GoalCreateRequest request) {
         log.debug("Creating new goal: {}", request.getName());
-        
-        GoalType goalType = GoalType.builder().id(request.getGoalTypeId()).build();
-        
-        Goal goal = Goal.builder()
-                .goalType(goalType)
-                .name(request.getName())
-                .url(request.getUrl())
-                .year(request.getYear())
-                .description(request.getDescription())
-                .attributes(request.getAttributes())
-                .build();
-        
-        GoalResponse response = goalService.create(goal);
+        GoalResponse response = goalService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
@@ -70,19 +58,7 @@ public class GoalController {
     public ResponseEntity<GoalResponse> updateGoal(@PathVariable Long id, 
                                                   @Valid @RequestBody GoalUpdateRequest request) {
         log.debug("Updating goal with ID: {}", id);
-        
-        GoalType goalType = GoalType.builder().id(request.getGoalTypeId()).build();
-        
-        Goal goal = Goal.builder()
-                .goalType(goalType)
-                .name(request.getName())
-                .url(request.getUrl())
-                .year(request.getYear())
-                .description(request.getDescription())
-                .attributes(request.getAttributes())
-                .build();
-        
-        GoalResponse response = goalService.update(id, goal);
+        GoalResponse response = goalService.update(id, request);
         return ResponseEntity.ok(response);
     }
     

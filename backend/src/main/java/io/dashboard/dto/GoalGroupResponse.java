@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GoalTypeResponse {
+public class GoalGroupResponse {
     
     private Long id;
     private String name;

@@ -4,7 +4,7 @@ import io.dashboard.dto.GoalSubareaLinkResponse;
 import io.dashboard.model.Area;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalSubarea;
-import io.dashboard.model.GoalType;
+import io.dashboard.model.GoalGroup;
 import io.dashboard.model.Subarea;
 import io.dashboard.service.GoalSubareaService;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,20 +35,20 @@ class GoalSubareaControllerIntegrationTest {
 
     private Goal goal;
     private Subarea subarea;
-    private GoalType goalType;
+    private GoalGroup goalGroup;
     private Area area;
     private GoalSubarea goalSubarea;
 
     @BeforeEach
     void setUp() {
-        goalType = new GoalType();
-        goalType.setId(1L);
-        goalType.setName("SDGs");
+        goalGroup = new GoalGroup();
+        goalGroup.setId(1L);
+        goalGroup.setName("SDGs");
 
         goal = new Goal();
         goal.setId(1L);
         goal.setName("Test Goal");
-        goal.setGoalType(goalType);
+        goal.setGoalGroup(goalGroup);
 
         area = new Area();
         area.setId(1L);

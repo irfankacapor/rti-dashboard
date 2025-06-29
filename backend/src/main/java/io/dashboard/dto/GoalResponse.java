@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class GoalResponse {
     
     private Long id;
-    private GoalTypeResponse goalType;
+    private GoalGroupResponse goalGroup;
     private String name;
     private String url;
     private Integer year;
@@ -22,4 +22,5 @@ public class GoalResponse {
     private String attributes;
     private LocalDateTime createdAt;
     private Long targetCount;
+    private String type; // 'quantitative' or 'qualitative'
 } 

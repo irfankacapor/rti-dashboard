@@ -127,7 +127,7 @@ class AreaControllerIntegrationTest {
         area = areaRepository.save(area);
         // Add a subarea
         io.dashboard.model.Subarea subarea = new io.dashboard.model.Subarea();
-        subarea.setCode("S1");
+        subarea.setCode("S1" + System.nanoTime());
         subarea.setName("Subarea 1");
         subarea.setArea(area);
         area.getSubareas().add(subarea);

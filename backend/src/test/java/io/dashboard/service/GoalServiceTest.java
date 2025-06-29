@@ -4,9 +4,9 @@ import io.dashboard.dto.GoalResponse;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
-import io.dashboard.model.GoalType;
+import io.dashboard.model.GoalGroup;
+import io.dashboard.repository.GoalGroupRepository;
 import io.dashboard.repository.GoalRepository;
-import io.dashboard.repository.GoalTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import io.dashboard.dto.GoalCreateRequest;
+import io.dashboard.dto.GoalUpdateRequest;
+
 @ExtendWith(MockitoExtension.class)
 class GoalServiceTest {
 
@@ -30,18 +33,18 @@ class GoalServiceTest {
     private GoalRepository goalRepository;
 
     @Mock
-    private GoalTypeRepository goalTypeRepository;
+    private GoalGroupRepository goalGroupRepository;
 
     @InjectMocks
     private GoalService goalService;
 
-    private GoalType testGoalType;
+    private GoalGroup testGoalGroup;
     private Goal testGoal;
     private GoalResponse expectedResponse;
 
     @BeforeEach
     void setUp() {
-        testGoalType = GoalType.builder()
+        testGoalGroup = GoalGroup.builder()
                 .id(1L)
                 .name("SDGs")
                 .description("Sustainable Development Goals")
@@ -50,7 +53,7 @@ class GoalServiceTest {
 
         testGoal = Goal.builder()
                 .id(1L)
-                .goalType(testGoalType)
+                .goalGroup(testGoalGroup)
                 .name("Goal 1")
                 .url("https://example.com")
                 .year(2025)
@@ -89,20 +92,20 @@ class GoalServiceTest {
     }
 
     @Test
-    void findByGoalTypeId_ShouldReturnGoalsForType() {
+    void findByGoalGroupId_ShouldReturnGoalsForGroup() {
         // Given
         List<Goal> goals = Arrays.asList(testGoal);
-        when(goalRepository.findByGoalTypeIdWithTargets(1L)).thenReturn(goals);
+        when(goalRepository.findByGoalGroupId(anyLong())).thenReturn(goals);
         when(goalRepository.countTargetsByGoalId(1L)).thenReturn(0L);
 
         // When
-        List<GoalResponse> result = goalService.findByGoalTypeId(1L);
+        List<GoalResponse> result = goalService.findByGoalGroupId(1L);
 
         // Then
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(expectedResponse.getName(), result.get(0).getName());
-        verify(goalRepository).findByGoalTypeIdWithTargets(1L);
+        verify(goalRepository).findByGoalGroupId(1L);
     }
 
     @Test
@@ -133,8 +136,9 @@ class GoalServiceTest {
     @Test
     void create_ShouldCreateGoal_WhenValidData() {
         // Given
-        Goal goalToCreate = Goal.builder()
-                .goalType(GoalType.builder().id(1L).build())
+        GoalCreateRequest request = GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
                 .name("Goal 1")
                 .url("https://example.com")
                 .year(2025)
@@ -142,41 +146,43 @@ class GoalServiceTest {
                 .attributes("{\"key\": \"value\"}")
                 .build();
 
-        when(goalTypeRepository.findById(1L)).thenReturn(Optional.of(testGoalType));
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
         when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
         when(goalRepository.countTargetsByGoalId(1L)).thenReturn(0L);
 
         // When
-        GoalResponse result = goalService.create(goalToCreate);
+        GoalResponse result = goalService.create(request);
 
         // Then
         assertNotNull(result);
         assertEquals(expectedResponse.getName(), result.getName());
-        verify(goalTypeRepository).findById(1L);
+        verify(goalGroupRepository).findById(1L);
         verify(goalRepository).save(any(Goal.class));
     }
 
     @Test
-    void create_ShouldThrowException_WhenGoalTypeNotFound() {
+    void create_ShouldThrowException_WhenGoalGroupNotFound() {
         // Given
-        Goal goalToCreate = Goal.builder()
-                .goalType(GoalType.builder().id(1L).build())
+        GoalCreateRequest request = GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
                 .name("Goal 1")
                 .build();
 
-        when(goalTypeRepository.findById(1L)).thenReturn(Optional.empty());
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(ResourceNotFoundException.class, () -> goalService.create(goalToCreate));
-        verify(goalTypeRepository).findById(1L);
+        assertThrows(ResourceNotFoundException.class, () -> goalService.create(request));
+        verify(goalGroupRepository).findById(1L);
         verify(goalRepository, never()).save(any());
     }
 
     @Test
     void update_ShouldUpdateGoal_WhenValidData() {
         // Given
-        Goal goalToUpdate = Goal.builder()
-                .goalType(GoalType.builder().id(2L).build())
+        GoalUpdateRequest request = GoalUpdateRequest.builder()
+                .goalGroupId(2L)
+                .type("quantitative")
                 .name("Updated Goal")
                 .url("https://updated.com")
                 .year(2026)
@@ -185,32 +191,33 @@ class GoalServiceTest {
                 .build();
 
         when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
-        when(goalTypeRepository.findById(2L)).thenReturn(Optional.of(testGoalType));
+        when(goalGroupRepository.findById(2L)).thenReturn(Optional.of(testGoalGroup));
         when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
         when(goalRepository.countTargetsByGoalId(1L)).thenReturn(0L);
 
         // When
-        GoalResponse result = goalService.update(1L, goalToUpdate);
+        GoalResponse result = goalService.update(1L, request);
 
         // Then
         assertNotNull(result);
         verify(goalRepository).findById(1L);
-        verify(goalTypeRepository).findById(2L);
+        verify(goalGroupRepository).findById(2L);
         verify(goalRepository).save(any(Goal.class));
     }
 
     @Test
     void update_ShouldThrowException_WhenGoalNotFound() {
         // Given
-        Goal goalToUpdate = Goal.builder()
-                .goalType(GoalType.builder().id(1L).build())
+        GoalUpdateRequest request = GoalUpdateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
                 .name("Updated Goal")
                 .build();
 
         when(goalRepository.findById(1L)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(ResourceNotFoundException.class, () -> goalService.update(1L, goalToUpdate));
+        assertThrows(ResourceNotFoundException.class, () -> goalService.update(1L, request));
         verify(goalRepository).findById(1L);
         verify(goalRepository, never()).save(any());
     }

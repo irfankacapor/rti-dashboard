@@ -47,4 +47,22 @@ export const goalService = {
     }
     return true;
   },
+  getGroups: async (): Promise<string[]> => {
+    const response = await fetch(`${API_BASE}/goal-groups`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch goal groups');
+    }
+    return response.json();
+  },
+  createGroup: async (name: string): Promise<string> => {
+    const response = await fetch(`${API_BASE}/goal-groups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to create goal group');
+    }
+    return response.json();
+  },
 }; 

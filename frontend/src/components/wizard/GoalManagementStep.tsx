@@ -5,6 +5,7 @@ import { goalService } from '@/services/goalService';
 import { indicatorManagementService } from '@/services/indicatorManagementService';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 interface Goal {
   id: number;
@@ -13,12 +14,14 @@ interface Goal {
   type?: string;
   indicators?: number[];
   targets?: GoalTarget[];
+  group?: string;
 }
 
 interface GoalTarget {
   id?: number;
   value: number;
   deadline?: string;
+  unit?: string;
 }
 
 interface Indicator {
@@ -34,6 +37,9 @@ export const GoalManagementStep: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [groups, setGroups] = useState<string[]>([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setStepValid(5, true); // Always valid (optional step)
@@ -44,11 +50,13 @@ export const GoalManagementStep: React.FC = () => {
     setLoading(true);
     Promise.all([
       goalService.getGoals(),
-      indicatorManagementService.getIndicators()
+      indicatorManagementService.getIndicators(),
+      goalService.getGroups()
     ])
-      .then(([goals, indicators]) => {
+      .then(([goals, indicators, groups]) => {
         setGoals(goals);
         setIndicators(indicators.map((i: any) => ({ id: i.id, name: i.name })));
+        setGroups(groups);
       })
       .catch((e: any) => setError(e.message || 'Failed to fetch data'))
       .finally(() => setLoading(false));
@@ -61,7 +69,7 @@ export const GoalManagementStep: React.FC = () => {
   };
 
   const handleAddGoal = () => {
-    setEditingGoal({ id: 0, name: '', description: '', type: '', indicators: [], targets: [] });
+    setEditingGoal({ id: 0, name: '', description: '', type: '', indicators: [], targets: [], group: undefined });
     setOpenDialog(true);
   };
 
@@ -121,7 +129,7 @@ export const GoalManagementStep: React.FC = () => {
   // Target management
   const handleAddTarget = () => {
     if (editingGoal) {
-      setEditingGoal({ ...editingGoal, targets: [...(editingGoal.targets || []), { value: 0, deadline: '' }] });
+      setEditingGoal({ ...editingGoal, targets: [...(editingGoal.targets || []), { value: 0, deadline: '', unit: '' }] });
     }
   };
   const handleTargetChange = (idx: number, field: string, value: any) => {
@@ -244,6 +252,12 @@ export const GoalManagementStep: React.FC = () => {
                     InputLabelProps={{ shrink: true }}
                     sx={{ mr: 2 }}
                   />
+                  <TextField
+                    label="Unit"
+                    value={target.unit || ''}
+                    onChange={e => handleTargetChange(idx, 'unit', e.target.value)}
+                    sx={{ mr: 2 }}
+                  />
                   <ListItemSecondaryAction>
                     <IconButton edge="end" onClick={() => handleDeleteTarget(idx)}><DeleteIcon /></IconButton>
                   </ListItemSecondaryAction>
@@ -252,12 +266,104 @@ export const GoalManagementStep: React.FC = () => {
             </List>
             <Button onClick={handleAddTarget} variant="outlined" size="small">Add Target</Button>
           </Box>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Goal Group</InputLabel>
+            <Select
+              value={editingGoal?.group || ''}
+              onChange={e => {
+                if (e.target.value === '__add_new__') return;
+                setEditingGoal(editingGoal ? { ...editingGoal, group: e.target.value } : null);
+              }}
+              input={<OutlinedInput label="Goal Group" />}
+              renderValue={selected => selected}
+            >
+              {groups.map(group => (
+                <MenuItem key={group} value={group}>{group}</MenuItem>
+              ))}
+              <MenuItem value="__add_new__">
+                <Box display="flex" alignItems="center">
+                  <AddCircleOutlineIcon fontSize="small" sx={{ mr: 1 }} />
+                  Add new group
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
+          {editingGoal?.group === undefined && (
+            <Box display="flex" alignItems="center" mb={2}>
+              <TextField
+                label="New Group Name"
+                value={newGroupName}
+                onChange={e => setNewGroupName(e.target.value)}
+                sx={{ mr: 2 }}
+              />
+              <Button
+                variant="outlined"
+                onClick={async () => {
+                  if (newGroupName.trim()) {
+                    setLoading(true);
+                    try {
+                      await goalService.createGroup(newGroupName.trim());
+                      const updatedGroups = await goalService.getGroups();
+                      setGroups(updatedGroups);
+                      setEditingGoal(editingGoal ? { ...editingGoal, group: newGroupName.trim() } : null);
+                      setNewGroupName('');
+                    } catch (e: any) {
+                      setError(e.message || 'Failed to create group');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }
+                }}
+              >
+                Add Group
+              </Button>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDialogClose}>Cancel</Button>
           <Button onClick={handleDialogSave} variant="contained">Save</Button>
         </DialogActions>
       </Dialog>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={async () => {
+          setSubmitting(true);
+          setError(null);
+          try {
+            // Find new groups to create
+            const uniqueGroups = Array.from(new Set(goals.map(g => g.group).filter((g): g is string => typeof g === 'string')));
+            const newGroups = uniqueGroups.filter(g => typeof g === 'string' && !groups.includes(g));
+            for (const group of newGroups) {
+              if (typeof group === 'string') {
+                await goalService.createGroup(group);
+              }
+            }
+            // Submit all goals
+            for (const goal of goals) {
+              if (!goal.id || goal.id === 0) {
+                await goalService.createGoal(goal);
+              } else {
+                await goalService.updateGoal(goal.id, goal);
+              }
+            }
+            // Refresh
+            const updatedGoals = await goalService.getGoals();
+            setGoals(updatedGoals);
+            const updatedGroups = await goalService.getGroups();
+            setGroups(updatedGroups);
+          } catch (e: any) {
+            setError(e.message || 'Failed to submit goals');
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+        disabled={submitting || loading}
+        sx={{ mt: 3 }}
+      >
+        Submit Goals
+      </Button>
     </Box>
   );
 }; 

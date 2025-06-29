@@ -44,7 +44,7 @@ public class FactIndicatorValue {
     @JoinColumn(name = "generic_id")
     private DimGeneric generic;
     
-    @Column(name = "value", nullable = false, precision = 19, scale = 6)
+    @Column(name = "numeric_value", nullable = false, precision = 19, scale = 6)
     private BigDecimal value;
     
     @ManyToOne(fetch = FetchType.LAZY)

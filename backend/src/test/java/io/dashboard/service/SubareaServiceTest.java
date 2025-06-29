@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SubareaServiceTest {
     @Mock
@@ -38,17 +39,24 @@ class SubareaServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        Subarea subarea = new Subarea();
+        subarea.setId(1L);
+        subarea.setName("Test Subarea");
+        subarea.setCode("S1" + System.nanoTime()); // ensure unique code
+        List<Subarea> subareas = List.of(subarea);
+        when(subareaRepository.findAllWithAreaAndIndicators()).thenReturn(subareas);
     }
 
     @Test
     void findAll_returnsAllSubareas() {
-        Subarea sub = new Subarea();
-        sub.setId(1L);
-        sub.setCode("S1");
-        when(subareaRepository.findAll()).thenReturn(List.of(sub));
+        Subarea subarea = new Subarea();
+        subarea.setId(1L);
+        subarea.setName("Test Subarea");
+        subarea.setCode("S1" + System.nanoTime()); // ensure unique code
+        when(subareaRepository.findAllWithAreaAndIndicators()).thenReturn(List.of(subarea));
         List<SubareaResponse> result = subareaService.findAll();
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getCode()).isEqualTo("S1");
+        assertEquals(1, result.size());
+        assertEquals("Test Subarea", result.get(0).getName());
     }
 
     @Test

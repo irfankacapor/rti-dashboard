@@ -6,7 +6,7 @@ import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Area;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalSubarea;
-import io.dashboard.model.GoalType;
+import io.dashboard.model.GoalGroup;
 import io.dashboard.model.Subarea;
 import io.dashboard.repository.GoalRepository;
 import io.dashboard.repository.GoalSubareaRepository;
@@ -43,19 +43,19 @@ class GoalSubareaServiceTest {
 
     private Goal goal;
     private Subarea subarea;
-    private GoalType goalType;
+    private GoalGroup goalGroup;
     private Area area;
 
     @BeforeEach
     void setUp() {
-        goalType = new GoalType();
-        goalType.setId(1L);
-        goalType.setName("SDGs");
+        goalGroup = new GoalGroup();
+        goalGroup.setId(1L);
+        goalGroup.setName("SDGs");
 
         goal = new Goal();
         goal.setId(1L);
         goal.setName("Test Goal");
-        goal.setGoalType(goalType);
+        goal.setGoalGroup(goalGroup);
 
         area = new Area();
         area.setId(1L);

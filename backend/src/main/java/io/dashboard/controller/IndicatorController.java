@@ -57,7 +57,7 @@ public class IndicatorController {
             @PathVariable Long subareaId,
             @Valid @RequestBody SubareaIndicatorRequest request) {
         indicatorService.assignToSubarea(indicatorId, subareaId, request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @DeleteMapping("/indicators/{indicatorId}/subareas/{subareaId}")

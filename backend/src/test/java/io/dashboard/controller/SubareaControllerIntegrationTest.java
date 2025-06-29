@@ -98,13 +98,13 @@ class SubareaControllerIntegrationTest {
     @Test
     void getAllSubareas_shouldReturnList() throws Exception {
         Subarea sub = new Subarea();
-        sub.setCode("S1");
+        sub.setCode("S1" + System.nanoTime());
         sub.setName("Sub 1");
         sub.setArea(area);
         subareaRepository.save(sub);
         mockMvc.perform(get("/api/v1/subareas"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("S1"));
+                .andExpect(jsonPath("$[0].code").value(sub.getCode()));
     }
 
     @Test
