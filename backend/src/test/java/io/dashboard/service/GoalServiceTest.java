@@ -198,9 +198,21 @@ class GoalServiceTest {
                 .attributes(updatedAttributes)
                 .build();
 
+        // Create an updated goal that reflects the changes
+        Goal updatedGoal = Goal.builder()
+                .id(1L)
+                .goalGroup(testGoalGroup)
+                .name("Updated Goal")
+                .url("https://updated.com")
+                .year(2026)
+                .description("Updated description")
+                .attributes(updatedAttributes)
+                .createdAt(testGoal.getCreatedAt())
+                .build();
+
         when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
         when(goalGroupRepository.findById(2L)).thenReturn(Optional.of(testGoalGroup));
-        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+        when(goalRepository.save(any(Goal.class))).thenReturn(updatedGoal);
         when(goalRepository.countTargetsByGoalId(1L)).thenReturn(0L);
 
         // When
@@ -208,7 +220,10 @@ class GoalServiceTest {
 
         // Then
         assertNotNull(result);
-        assertEquals(expectedResponse.getName(), result.getName());
+        assertEquals("Updated Goal", result.getName());
+        assertEquals("https://updated.com", result.getUrl());
+        assertEquals(2026, result.getYear());
+        assertEquals("Updated description", result.getDescription());
         verify(goalRepository).findById(1L);
         verify(goalGroupRepository).findById(2L);
         verify(goalRepository).save(any(Goal.class));
