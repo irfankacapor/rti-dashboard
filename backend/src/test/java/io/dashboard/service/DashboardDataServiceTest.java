@@ -355,7 +355,8 @@ class DashboardDataServiceTest {
     @Test
     void getHistoricalData_Success() {
         // Given
-        when(factIndicatorValueRepository.findByIndicatorId(1L)).thenReturn(Arrays.asList(testFactValue));
+        when(indicatorRepository.existsById(1L)).thenReturn(true);
+        when(factIndicatorValueRepository.findByIndicatorIdWithTime(1L)).thenReturn(Arrays.asList(testFactValue));
 
         // When
         HistoricalDataResponse result = dashboardDataService.getHistoricalData(1L, 6);
@@ -366,13 +367,14 @@ class DashboardDataServiceTest {
         assertEquals(1, result.getDataPoints().size());
         assertNotNull(result.getStartDate());
         assertNotNull(result.getEndDate());
-        verify(factIndicatorValueRepository).findByIndicatorId(1L);
+        verify(factIndicatorValueRepository).findByIndicatorIdWithTime(1L);
     }
 
     @Test
     void getHistoricalData_EmptyData() {
         // Given
-        when(factIndicatorValueRepository.findByIndicatorId(1L)).thenReturn(Collections.emptyList());
+        when(indicatorRepository.existsById(1L)).thenReturn(true);
+        when(factIndicatorValueRepository.findByIndicatorIdWithTime(1L)).thenReturn(Collections.emptyList());
 
         // When
         HistoricalDataResponse result = dashboardDataService.getHistoricalData(1L, 6);
@@ -516,7 +518,8 @@ class DashboardDataServiceTest {
         time2.setValue("2023-01-02");
         value2.setTime(time2);
 
-        when(factIndicatorValueRepository.findByIndicatorId(1L)).thenReturn(Arrays.asList(testFactValue, value2));
+        when(indicatorRepository.existsById(1L)).thenReturn(true);
+        when(factIndicatorValueRepository.findByIndicatorIdWithTime(1L)).thenReturn(Arrays.asList(testFactValue, value2));
 
         // When
         HistoricalDataResponse result = dashboardDataService.getHistoricalData(1L, 6);
@@ -577,7 +580,8 @@ class DashboardDataServiceTest {
     @Test
     void getHistoricalData_RepositoryException() {
         // Given
-        when(factIndicatorValueRepository.findByIndicatorId(1L)).thenThrow(new RuntimeException("Database error"));
+        when(indicatorRepository.existsById(1L)).thenReturn(true);
+        when(factIndicatorValueRepository.findByIndicatorIdWithTime(1L)).thenThrow(new RuntimeException("Database error"));
 
         // When & Then
         assertThrows(RuntimeException.class, () -> {

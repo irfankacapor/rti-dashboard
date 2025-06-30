@@ -46,6 +46,8 @@ class IndicatorServiceTest {
     private SubareaIndicatorRepository subareaIndicatorRepository;
     @Mock
     private FactIndicatorValueRepository factIndicatorValueRepository;
+    @Mock
+    private AggregationService aggregationService;
     @InjectMocks
     private IndicatorService indicatorService;
 
@@ -53,6 +55,7 @@ class IndicatorServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(factIndicatorValueRepository.countByIndicatorId(anyLong())).thenReturn(0L);
+        when(aggregationService.calculateIndicatorAggregatedValue(anyLong())).thenReturn(0.0);
     }
 
     @Test

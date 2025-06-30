@@ -52,7 +52,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDashboardData(1L)).thenReturn(mockResponse);
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", 1L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastUpdated").exists());
     }
@@ -63,21 +63,21 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDashboardData(1L)).thenThrow(new RuntimeException("Dashboard not found"));
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", 1L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void getDashboardData_shouldHandleInvalidDashboardId() throws Exception {
         // No stubbing needed, controller should return 400 before calling service
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", -1L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", -1L))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getDashboardData_shouldHandleZeroDashboardId() throws Exception {
         // No stubbing needed, controller should return 400 before calling service
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", 0L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 0L))
                 .andExpect(status().isBadRequest());
     }
 
@@ -87,7 +87,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDashboardData(1L)).thenThrow(new RuntimeException("Service error"));
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", 1L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isNotFound());
     }
 
@@ -99,7 +99,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDashboardData(Long.MAX_VALUE)).thenReturn(mockResponse);
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", Long.MAX_VALUE))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", Long.MAX_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastUpdated").exists());
     }
@@ -115,7 +115,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getPerformanceMetrics(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/performance-metrics/{areaId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/performance-metrics/{areaId}", 1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.areaId").value(1))
@@ -127,7 +127,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getPerformanceMetrics_shouldHandleInvalidAreaId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/performance-metrics/{areaId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/performance-metrics/{areaId}", -1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
         verify(dashboardDataService, never()).getPerformanceMetrics(anyLong());
@@ -138,7 +138,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getPerformanceMetrics(1L))
                 .thenThrow(new RuntimeException("Service error"));
 
-        mockMvc.perform(get("/api/dashboard-data/performance-metrics/{areaId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/performance-metrics/{areaId}", 1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError());
 
@@ -160,7 +160,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDataAggregation(eq(1L), eq("SUM"), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/aggregation")
+        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
                 .param("indicatorId", "1")
                 .param("aggregationType", "SUM")
                 .param("startDate", "2023-01-01T00:00:00")
@@ -177,7 +177,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataAggregation_shouldHandleMissingParameters() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/aggregation")
+        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
         verify(dashboardDataService, never()).getDataAggregation(anyLong(), anyString(), any(LocalDateTime.class), any(LocalDateTime.class));
@@ -185,7 +185,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataAggregation_shouldHandleInvalidIndicatorId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/aggregation")
+        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
                 .param("indicatorId", "-1")
                 .param("aggregationType", "SUM")
                 .param("startDate", "2023-01-01T00:00:00")
@@ -197,7 +197,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataAggregation_shouldHandleInvalidDateFormats() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/aggregation")
+        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
                 .param("indicatorId", "1")
                 .param("aggregationType", "SUM")
                 .param("startDate", "invalid-date")
@@ -219,7 +219,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDataAggregation(eq(1L), eq("AVERAGE"), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/aggregation")
+        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
                 .param("indicatorId", "1")
                 .param("aggregationType", "AVERAGE")
                 .param("startDate", "2023-01-01T00:00:00")
@@ -243,7 +243,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getRealTimeUpdates(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/real-time-updates/{dashboardId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/real-time-updates/{dashboardId}", 1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dashboardId").value(1))
@@ -255,7 +255,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getRealTimeUpdates_shouldHandleInvalidDashboardId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/real-time-updates/{dashboardId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/real-time-updates/{dashboardId}", -1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
@@ -272,7 +272,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getHistoricalData(1L, 6)).thenReturn(mockResponse);
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/historical/{indicatorId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
                 .param("months", "6"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.indicatorId").value(1));
@@ -280,7 +280,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getHistoricalData_shouldHandleInvalidIndicatorId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/historical/{indicatorId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", -1L)
                 .param("months", "12")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -289,7 +289,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getHistoricalData_shouldHandleInvalidMonths() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/historical/{indicatorId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
                 .param("months", "-1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -298,7 +298,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getHistoricalData_shouldHandleZeroMonths() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/historical/{indicatorId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
                 .param("months", "0")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -315,7 +315,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getHistoricalData(1L, 100)).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/historical/{indicatorId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
                 .param("months", "100")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -336,7 +336,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getDataExport(1L, "JSON")).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/export/{dashboardId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/export/{dashboardId}", 1L)
                 .param("format", "JSON")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -350,7 +350,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataExport_shouldHandleInvalidDashboardId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/export/{dashboardId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/export/{dashboardId}", -1L)
                 .param("format", "JSON")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -367,7 +367,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getDataExport(1L, "CSV")).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/export/{dashboardId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/export/{dashboardId}", 1L)
                 .param("format", "CSV")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -390,7 +390,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getDataValidation(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/validation/{indicatorId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/validation/{indicatorId}", 1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.indicatorId").value(1))
@@ -405,7 +405,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataValidation_shouldHandleInvalidIndicatorId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/validation/{indicatorId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/validation/{indicatorId}", -1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
         verify(dashboardDataService, never()).getDataValidation(anyLong());
@@ -425,7 +425,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getDataQualityMetrics(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/quality-metrics/{dashboardId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/quality-metrics/{dashboardId}", 1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dashboardId").value(1))
@@ -440,7 +440,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataQualityMetrics_shouldHandleInvalidDashboardId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/quality-metrics/{dashboardId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/quality-metrics/{dashboardId}", -1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
         verify(dashboardDataService, never()).getDataQualityMetrics(anyLong());
@@ -460,7 +460,7 @@ class DashboardDataControllerTest {
         
         when(dashboardDataService.getDataRefreshStatus(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/refresh-status/{dashboardId}", 1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/refresh-status/{dashboardId}", 1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dashboardId").value(1))
@@ -475,7 +475,7 @@ class DashboardDataControllerTest {
 
     @Test
     void getDataRefreshStatus_shouldHandleInvalidDashboardId() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/refresh-status/{dashboardId}", -1L)
+        mockMvc.perform(get("/api/v1/dashboard-data/refresh-status/{dashboardId}", -1L)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
@@ -487,54 +487,54 @@ class DashboardDataControllerTest {
     @Test
     void allEndpoints_shouldHandleUnsupportedHttpMethods() throws Exception {
         // Test POST on GET endpoints
-        mockMvc.perform(post("/api/dashboard-data/1")
+        mockMvc.perform(post("/api/v1/dashboard-data/1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isMethodNotAllowed());
 
-        mockMvc.perform(put("/api/dashboard-data/1")
+        mockMvc.perform(put("/api/v1/dashboard-data/1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isMethodNotAllowed());
 
-        mockMvc.perform(delete("/api/dashboard-data/1")
+        mockMvc.perform(delete("/api/v1/dashboard-data/1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isMethodNotAllowed());
 
-        mockMvc.perform(patch("/api/dashboard-data/1")
+        mockMvc.perform(patch("/api/v1/dashboard-data/1")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isMethodNotAllowed());
     }
 
     @Test
     void allEndpoints_shouldHandleInvalidContentType() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/1")
+        mockMvc.perform(get("/api/v1/dashboard-data/1")
                 .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(status().isOk()); // Should still work as GET doesn't require specific content type
     }
 
     @Test
     void allEndpoints_shouldHandleMissingContentType() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/1"))
+        mockMvc.perform(get("/api/v1/dashboard-data/1"))
                 .andExpect(status().isOk()); // Should still work as GET doesn't require content type
     }
 
     @Test
     void allEndpoints_shouldHandleMalformedUrls() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/invalid")
+        mockMvc.perform(get("/api/v1/dashboard-data/invalid")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void allEndpoints_shouldHandleNonNumericIds() throws Exception {
-        mockMvc.perform(get("/api/dashboard-data/abc")
+        mockMvc.perform(get("/api/v1/dashboard-data/abc")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(get("/api/dashboard-data/performance-metrics/abc")
+        mockMvc.perform(get("/api/v1/dashboard-data/performance-metrics/abc")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(get("/api/dashboard-data/historical/abc")
+        mockMvc.perform(get("/api/v1/dashboard-data/historical/abc")
                 .param("months", "12")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -550,7 +550,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDashboardData(1L)).thenReturn(mockResponse);
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", 1L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastUpdated").exists());
     }
@@ -567,7 +567,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDataAggregation(eq(1L), eq("SUM"), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/dashboard-data/aggregation")
+        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
                 .param("indicatorId", "1")
                 .param("aggregationType", "SUM")
                 .param("startDate", "2020-01-01T00:00:00")
@@ -589,7 +589,7 @@ class DashboardDataControllerTest {
         when(dashboardDataService.getDashboardData(1L)).thenReturn(mockResponse);
 
         // When & Then
-        mockMvc.perform(get("/api/dashboard-data/{dashboardId}", 1L))
+        mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastUpdated").exists());
     }
