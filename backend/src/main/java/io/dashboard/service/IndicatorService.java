@@ -11,6 +11,7 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.DataType;
 import io.dashboard.model.Direction;
+import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;
 import io.dashboard.model.SubareaIndicator;
@@ -23,6 +24,7 @@ import io.dashboard.repository.SubareaRepository;
 import io.dashboard.repository.UnitRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class IndicatorService {
     private final IndicatorRepository indicatorRepository;
     private final UnitRepository unitRepository;
@@ -37,6 +40,7 @@ public class IndicatorService {
     private final SubareaRepository subareaRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
     private final FactIndicatorValueRepository factIndicatorValueRepository;
+    private final AggregationService aggregationService;
 
     public List<IndicatorResponse> findAll() {
         return indicatorRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
@@ -217,7 +221,41 @@ public class IndicatorService {
         List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorId(indicator.getId());
         resp.setDimensions(dimensions);
         
+        // Calculate and set latest value
+        calculateAndSetLatestValue(resp, indicator.getId());
+        
         return resp;
+    }
+    
+    private void calculateAndSetLatestValue(IndicatorResponse resp, Long indicatorId) {
+        try {
+            // Use the aggregation service to calculate the proper aggregated value
+            double aggregatedValue = aggregationService.calculateIndicatorAggregatedValue(indicatorId);
+            
+            if (aggregatedValue == 0.0) {
+                resp.setLatestValue(null);
+                resp.setLatestValueUnit(null);
+                resp.setAggregationMethod("NO_DATA");
+                return;
+            }
+            
+            resp.setLatestValue(aggregatedValue);
+            
+            // Get the unit from the first fact value or indicator
+            List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorId(indicatorId);
+            if (!values.isEmpty() && values.get(0).getUnit() != null) {
+                resp.setLatestValueUnit(values.get(0).getUnit().getCode());
+            } else if (resp.getUnit() != null) {
+                resp.setLatestValueUnit(resp.getUnit().getCode());
+            }
+            
+            resp.setAggregationMethod("AGGREGATED");
+        } catch (Exception e) {
+            log.warn("Error calculating latest value for indicator {}: {}", indicatorId, e.getMessage());
+            resp.setLatestValue(null);
+            resp.setLatestValueUnit(null);
+            resp.setAggregationMethod("ERROR");
+        }
     }
 
     private SubareaIndicatorResponse toSubareaIndicatorResponse(SubareaIndicator subareaIndicator) {

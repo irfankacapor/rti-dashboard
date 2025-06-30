@@ -6,22 +6,32 @@ import io.dashboard.dto.SubareaUpdateRequest;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Area;
+import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Subarea;
+import io.dashboard.model.SubareaIndicator;
 import io.dashboard.repository.AreaRepository;
+import io.dashboard.repository.FactIndicatorValueRepository;
+import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubareaService {
     private final SubareaRepository subareaRepository;
     private final AreaRepository areaRepository;
+    private final FactIndicatorValueRepository factIndicatorValueRepository;
+    private final SubareaIndicatorRepository subareaIndicatorRepository;
+    private final AggregationService aggregationService;
 
     public List<SubareaResponse> findAll() {
         try {
@@ -39,6 +49,10 @@ public class SubareaService {
         Subarea subarea = subareaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", id));
         return toResponse(subarea);
+    }
+
+    public boolean existsById(Long id) {
+        return subareaRepository.existsById(id);
     }
 
     @Transactional
@@ -91,5 +105,56 @@ public class SubareaService {
         resp.setAreaName(subarea.getArea() != null ? subarea.getArea().getName() : null);
         resp.setIndicatorCount(subarea.getSubareaIndicators() != null ? subarea.getSubareaIndicators().size() : 0);
         return resp;
+    }
+
+    public double calculateAggregatedValue(Long subareaId) {
+        try {
+            log.debug("Calculating aggregated value for subarea ID: {}", subareaId);
+            
+            // First check if subarea exists
+            if (!subareaRepository.existsById(subareaId)) {
+                log.warn("Subarea with ID {} not found", subareaId);
+                throw new ResourceNotFoundException("Subarea", "id", subareaId);
+            }
+            
+            double aggregatedValue = aggregationService.calculateSubareaAggregatedValue(subareaId);
+            log.debug("Calculated aggregated value {} for subarea ID: {}", aggregatedValue, subareaId);
+            return aggregatedValue;
+        } catch (Exception e) {
+            log.error("Error calculating aggregated value for subarea ID {}: {}", subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to calculate aggregated value for subarea: " + e.getMessage(), e);
+        }
+    }
+    
+    public Map<String, Double> getAggregatedByTime(Long subareaId) {
+        try {
+            log.debug("Getting aggregated data by time for subarea ID: {}", subareaId);
+            
+            if (!subareaRepository.existsById(subareaId)) {
+                log.warn("Subarea with ID {} not found", subareaId);
+                throw new ResourceNotFoundException("Subarea", "id", subareaId);
+            }
+            
+            return aggregationService.getSubareaAggregatedByTime(subareaId);
+        } catch (Exception e) {
+            log.error("Error getting aggregated data by time for subarea ID {}: {}", subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get aggregated data by time for subarea: " + e.getMessage(), e);
+        }
+    }
+    
+    public Map<String, Double> getAggregatedByLocation(Long subareaId) {
+        try {
+            log.debug("Getting aggregated data by location for subarea ID: {}", subareaId);
+            
+            if (!subareaRepository.existsById(subareaId)) {
+                log.warn("Subarea with ID {} not found", subareaId);
+                throw new ResourceNotFoundException("Subarea", "id", subareaId);
+            }
+            
+            return aggregationService.getSubareaAggregatedByLocation(subareaId);
+        } catch (Exception e) {
+            log.error("Error getting aggregated data by location for subarea ID {}: {}", subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get aggregated data by location for subarea: " + e.getMessage(), e);
+        }
     }
 } 

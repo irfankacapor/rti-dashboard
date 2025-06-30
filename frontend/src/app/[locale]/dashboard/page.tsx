@@ -24,12 +24,13 @@ import {
 import { CircularLayout, GoalsSidebar } from '@/components/dashboard';
 import { useDashboardData, useGoalsData } from '@/hooks';
 import { DashboardGoal } from '@/types/dashboard';
+import { useRouter } from 'next/navigation';
 
 const DRAWER_WIDTH = 320;
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedSubarea, setSelectedSubarea] = useState<string | null>(null);
   const [highlightedGoals, setHighlightedGoals] = useState<string[]>([]);
   const [highlightedSubareas, setHighlightedSubareas] = useState<string[]>([]);
 
@@ -50,7 +51,7 @@ export default function DashboardPage() {
   } = useGoalsData();
 
   const handleSubareaClick = (subareaId: string) => {
-    setSelectedSubarea(subareaId);
+    router.push(`/en/dashboard/subarea/${subareaId}`);
   };
 
   const handleGoalHover = (goalIds: string[]) => {
@@ -162,13 +163,6 @@ export default function DashboardPage() {
           )}
         </Box>
       </Box>
-
-      {/* Subarea Detail Modal - TODO: Implement */}
-      {selectedSubarea && (
-        <Box>
-          {/* This will be implemented as a separate component */}
-        </Box>
-      )}
     </Box>
   );
 } 

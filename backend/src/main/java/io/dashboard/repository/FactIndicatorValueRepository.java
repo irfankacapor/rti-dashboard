@@ -14,6 +14,18 @@ import java.util.Optional;
 @Repository
 public interface FactIndicatorValueRepository extends JpaRepository<FactIndicatorValue, Long> {
     
+    // Find by indicator with eager loading of time dimension
+    @Query("SELECT f FROM FactIndicatorValue f JOIN FETCH f.time WHERE f.indicator.id = :indicatorId")
+    List<FactIndicatorValue> findByIndicatorIdWithTime(@Param("indicatorId") Long indicatorId);
+    
+    // Find by subarea ID
+    @Query("SELECT f FROM FactIndicatorValue f JOIN f.indicator i JOIN i.subareaIndicators si WHERE si.subarea.id = :subareaId")
+    List<FactIndicatorValue> findBySubareaId(@Param("subareaId") Long subareaId);
+    
+    // Find by indicator with eager loading of time dimension for latest value calculation
+    @Query("SELECT f FROM FactIndicatorValue f LEFT JOIN FETCH f.time WHERE f.indicator.id = :indicatorId")
+    List<FactIndicatorValue> findByIndicatorIdWithTimeEager(@Param("indicatorId") Long indicatorId);
+    
     // Find by indicator
     List<FactIndicatorValue> findByIndicatorId(Long indicatorId);
     
@@ -87,4 +99,22 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
         "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND generic_id IS NOT NULL)",
         nativeQuery = true)
     List<String> findDimensionsByIndicatorId(@Param("indicatorId") Long indicatorId);
+    
+    // Find by subarea ID with eager loading of all required relationships
+    @Query("SELECT f FROM FactIndicatorValue f " +
+           "JOIN FETCH f.indicator i " +
+           "LEFT JOIN FETCH f.time " +
+           "LEFT JOIN FETCH f.location " +
+           "LEFT JOIN FETCH f.unit " +
+           "JOIN i.subareaIndicators si " +
+           "WHERE si.subarea.id = :subareaId")
+    List<FactIndicatorValue> findBySubareaIdWithEagerLoading(@Param("subareaId") Long subareaId);
+    
+    // Find by indicator with eager loading of all required relationships
+    @Query("SELECT f FROM FactIndicatorValue f " +
+           "LEFT JOIN FETCH f.time " +
+           "LEFT JOIN FETCH f.location " +
+           "LEFT JOIN FETCH f.unit " +
+           "WHERE f.indicator.id = :indicatorId")
+    List<FactIndicatorValue> findByIndicatorIdWithEagerLoading(@Param("indicatorId") Long indicatorId);
 } 

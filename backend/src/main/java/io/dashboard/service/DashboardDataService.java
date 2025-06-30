@@ -179,12 +179,23 @@ public class DashboardDataService {
         LocalDateTime endDate = LocalDateTime.now();
         LocalDateTime startDate = endDate.minusMonths(months);
         
-        List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorId(indicatorId);
+        // Check if indicator exists first
+        if (!indicatorRepository.existsById(indicatorId)) {
+            log.warn("Indicator with ID {} not found", indicatorId);
+            HistoricalDataResponse response = new HistoricalDataResponse();
+            response.setIndicatorId(indicatorId);
+            response.setDataPoints(new ArrayList<>());
+            response.setStartDate(startDate);
+            response.setEndDate(endDate);
+            return response;
+        }
+        
+        List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdWithTime(indicatorId);
         
         List<HistoricalDataPoint> dataPoints = values.stream()
                 .map(v -> {
                     HistoricalDataPoint point = new HistoricalDataPoint();
-                    point.setTimestamp(v.getTime() != null ? v.getTime().toString() : "Unknown");
+                    point.setTimestamp(v.getTime() != null ? v.getTime().getValue() : "Unknown");
                     point.setValue(v.getValue().doubleValue());
                     return point;
                 })
