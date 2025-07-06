@@ -8,8 +8,12 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalGroup;
+import io.dashboard.model.GoalIndicator;
+import io.dashboard.model.ImpactDirection;
 import io.dashboard.repository.GoalRepository;
 import io.dashboard.repository.GoalGroupRepository;
+import io.dashboard.repository.GoalIndicatorRepository;
+import io.dashboard.repository.IndicatorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,8 @@ public class GoalService {
     
     private final GoalRepository goalRepository;
     private final GoalGroupRepository goalGroupRepository;
+    private final GoalIndicatorRepository goalIndicatorRepository;
+    private final IndicatorRepository indicatorRepository;
     
     @Transactional(readOnly = true)
     public List<GoalResponse> findAll() {
@@ -62,15 +68,7 @@ public class GoalService {
         return goal;
     }
     
-    @Transactional(readOnly = true)
-    public Goal findGoalWithSubareas(Long goalId) {
-        log.debug("Finding goal with subareas by ID: {}", goalId);
-        Goal goal = goalRepository.findByIdWithSubareas(goalId);
-        if (goal == null) {
-            throw new ResourceNotFoundException("Goal", "id", goalId);
-        }
-        return goal;
-    }
+
     
     @Transactional
     public GoalResponse create(GoalCreateRequest request) {
@@ -87,6 +85,12 @@ public class GoalService {
                 .attributes(request.getAttributes())
                 .build();
         Goal savedGoal = goalRepository.save(goal);
+        
+        // Handle indicator relationships if provided
+        if (request.getIndicators() != null && !request.getIndicators().isEmpty()) {
+            createGoalIndicatorRelationships(savedGoal.getId(), request.getIndicators());
+        }
+        
         log.info("Created goal with ID: {}", savedGoal.getId());
         return mapToResponse(savedGoal);
     }
@@ -111,6 +115,17 @@ public class GoalService {
         goal.setDescription(request.getDescription());
         goal.setAttributes(request.getAttributes());
         Goal updatedGoal = goalRepository.save(goal);
+        
+        // Handle indicator relationships if provided
+        if (request.getIndicators() != null) {
+            // Remove existing relationships
+            goalIndicatorRepository.deleteByGoalId(id);
+            // Create new relationships
+            if (!request.getIndicators().isEmpty()) {
+                createGoalIndicatorRelationships(id, request.getIndicators());
+            }
+        }
+        
         log.info("Updated goal with ID: {}", id);
         return mapToResponse(updatedGoal);
     }
@@ -165,5 +180,45 @@ public class GoalService {
                 .createdAt(goal.getCreatedAt())
                 .targetCount(targetCount)
                 .build();
+    }
+    
+    private void createGoalIndicatorRelationships(Long goalId, List<Long> indicatorIds) {
+        log.debug("Creating goal-indicator relationships for goal {} with {} indicators", goalId, indicatorIds.size());
+        
+        for (Long indicatorId : indicatorIds) {
+            // Check if indicator exists
+            if (!indicatorRepository.existsById(indicatorId)) {
+                log.warn("Indicator with ID {} does not exist, skipping", indicatorId);
+                continue;
+            }
+            
+            // Check if relationship already exists
+            if (goalIndicatorRepository.existsByGoalIdAndIndicatorId(goalId, indicatorId)) {
+                log.debug("Goal-indicator relationship already exists for goal {} and indicator {}", goalId, indicatorId);
+                continue;
+            }
+            
+            // Create the relationship
+            GoalIndicator goalIndicator = new GoalIndicator();
+            GoalIndicator.GoalIndicatorId id = new GoalIndicator.GoalIndicatorId();
+            id.setGoalId(goalId);
+            id.setIndicatorId(indicatorId);
+            goalIndicator.setId(id);
+            
+            // Set the relationships properly - these are required for @MapsId to work
+            Goal goal = goalRepository.findById(goalId).orElse(null);
+            var indicator = indicatorRepository.findById(indicatorId).orElse(null);
+            if (goal != null && indicator != null) {
+                goalIndicator.setGoal(goal);
+                goalIndicator.setIndicator(indicator);
+            }
+            
+            // Set default values
+            goalIndicator.setAggregationWeight(1.0); // Default weight
+            goalIndicator.setImpactDirection(ImpactDirection.POSITIVE); // Default direction
+            
+            goalIndicatorRepository.save(goalIndicator);
+            log.debug("Created goal-indicator relationship for goal {} and indicator {}", goalId, indicatorId);
+        }
     }
 } 

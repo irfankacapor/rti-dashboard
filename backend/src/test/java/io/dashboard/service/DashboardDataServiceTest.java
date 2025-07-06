@@ -42,6 +42,21 @@ class DashboardDataServiceTest {
     @Mock
     private FactIndicatorValueRepository factIndicatorValueRepository;
 
+    @Mock
+    private GoalService goalService;
+
+    @Mock
+    private GoalGroupService goalGroupService;
+
+    @Mock
+    private GoalIndicatorService goalIndicatorService;
+
+    @Mock
+    private SubareaService subareaService;
+
+    @Mock
+    private SubareaIndicatorRepository subareaIndicatorRepository;
+
     @InjectMocks
     private DashboardDataService dashboardDataService;
 
@@ -52,6 +67,11 @@ class DashboardDataServiceTest {
     private Area testArea;
     private Indicator testIndicator;
     private FactIndicatorValue testFactValue;
+    private SubareaResponse testSubareaResponse;
+    private GoalResponse testGoalResponse;
+    private GoalGroupResponse testGoalGroupResponse;
+    private GoalIndicatorResponse testGoalIndicatorResponse;
+    private SubareaIndicator testSubareaIndicator;
 
     @BeforeEach
     void setUp() {
@@ -101,6 +121,48 @@ class DashboardDataServiceTest {
         DimTime time = new DimTime();
         time.setValue("2023-01-01");
         testFactValue.setTime(time);
+
+        // Setup test data for relationships
+        testSubareaResponse = new SubareaResponse();
+        testSubareaResponse.setId(1L);
+        testSubareaResponse.setName("Test Subarea");
+        testSubareaResponse.setDescription("Test Subarea Description");
+        testSubareaResponse.setCode("TEST_SUB");
+        testSubareaResponse.setAreaId(1L);
+        testSubareaResponse.setAreaName("Test Area");
+
+        testGoalResponse = GoalResponse.builder()
+                .id(1L)
+                .name("Test Goal")
+                .description("Test Goal Description")
+                .type("quantitative")
+                .year(2024)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        testGoalGroupResponse = GoalGroupResponse.builder()
+                .id(1L)
+                .name("Test Goal Group")
+                .description("Test Goal Group Description")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        testGoalIndicatorResponse = new GoalIndicatorResponse();
+        testGoalIndicatorResponse.setGoalId(1L);
+        testGoalIndicatorResponse.setIndicatorId(1L);
+        testGoalIndicatorResponse.setGoalName("Test Goal");
+        testGoalIndicatorResponse.setIndicatorName("Test Indicator");
+        testGoalIndicatorResponse.setIndicatorCode("TEST_IND");
+        testGoalIndicatorResponse.setAggregationWeight(1.0);
+        testGoalIndicatorResponse.setImpactDirection(ImpactDirection.POSITIVE);
+        testGoalIndicatorResponse.setCreatedAt(LocalDateTime.now());
+
+        testSubareaIndicator = new SubareaIndicator();
+        testSubareaIndicator.setSubarea(testSubarea);
+        SubareaIndicator.SubareaIndicatorId subareaIndicatorId = new SubareaIndicator.SubareaIndicatorId();
+        subareaIndicatorId.setSubareaId(1L);
+        subareaIndicatorId.setIndicatorId(1L);
+        testSubareaIndicator.setId(subareaIndicatorId);
     }
 
     @Test
@@ -609,5 +671,186 @@ class DashboardDataServiceTest {
         assertThrows(RuntimeException.class, () -> {
             dashboardDataService.getDataRefreshStatus(1L);
         });
+    }
+
+    @Test
+    void getDashboardWithRelationships_ShouldReturnCompleteData() {
+        // Given
+        List<Area> areas = Arrays.asList(testArea);
+        List<SubareaResponse> subareas = Arrays.asList(testSubareaResponse);
+        List<GoalResponse> goals = Arrays.asList(testGoalResponse);
+        List<GoalGroupResponse> goalGroups = Arrays.asList(testGoalGroupResponse);
+        List<GoalIndicatorResponse> goalIndicators = Arrays.asList(testGoalIndicatorResponse);
+        List<SubareaIndicator> subareaIndicators = Arrays.asList(testSubareaIndicator);
+
+        when(areaRepository.findAll()).thenReturn(areas);
+        when(subareaService.findAll()).thenReturn(subareas);
+        when(goalService.findAll()).thenReturn(goals);
+        when(goalGroupService.findAll()).thenReturn(goalGroups);
+        when(goalIndicatorService.findIndicatorsByGoal(1L)).thenReturn(goalIndicators);
+        when(subareaIndicatorRepository.findByIndicatorId(1L)).thenReturn(subareaIndicators);
+
+        // When
+        DashboardWithRelationshipsResponse result = dashboardDataService.getDashboardWithRelationships();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getAreas().size());
+        assertEquals(1, result.getSubareas().size());
+        assertEquals(1, result.getGoals().size());
+        assertEquals(1, result.getGoalGroups().size());
+        assertNotNull(result.getRelationships());
+        assertEquals(1, result.getRelationships().getGoalToSubareas().size());
+        assertEquals(1, result.getRelationships().getSubareaToGoals().size());
+        assertNotNull(result.getLastUpdated());
+    }
+
+    @Test
+    void getDashboardWithRelationships_WithNoRelationships_ShouldReturnEmptyMappings() {
+        // Given
+        List<Area> areas = Arrays.asList(testArea);
+        List<SubareaResponse> subareas = Arrays.asList(testSubareaResponse);
+        List<GoalResponse> goals = Arrays.asList(testGoalResponse);
+        List<GoalGroupResponse> goalGroups = Arrays.asList(testGoalGroupResponse);
+
+        when(areaRepository.findAll()).thenReturn(areas);
+        when(subareaService.findAll()).thenReturn(subareas);
+        when(goalService.findAll()).thenReturn(goals);
+        when(goalGroupService.findAll()).thenReturn(goalGroups);
+        when(goalIndicatorService.findIndicatorsByGoal(1L)).thenReturn(Arrays.asList());
+
+        // When
+        DashboardWithRelationshipsResponse result = dashboardDataService.getDashboardWithRelationships();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getAreas().size());
+        assertEquals(1, result.getSubareas().size());
+        assertEquals(1, result.getGoals().size());
+        assertEquals(1, result.getGoalGroups().size());
+        assertNotNull(result.getRelationships());
+        assertEquals(1, result.getRelationships().getGoalToSubareas().size());
+        assertEquals(0, result.getRelationships().getSubareaToGoals().size());
+    }
+
+    @Test
+    void getDashboardWithRelationships_WithMultipleGoalsAndIndicators_ShouldBuildCorrectMappings() {
+        // Given
+        GoalResponse goal1 = GoalResponse.builder().id(1L).name("Goal 1").build();
+        GoalResponse goal2 = GoalResponse.builder().id(2L).name("Goal 2").build();
+        
+        GoalIndicatorResponse indicator1 = new GoalIndicatorResponse();
+        indicator1.setGoalId(1L);
+        indicator1.setIndicatorId(1L);
+        
+        GoalIndicatorResponse indicator2 = new GoalIndicatorResponse();
+        indicator2.setGoalId(1L);
+        indicator2.setIndicatorId(2L);
+        
+        GoalIndicatorResponse indicator3 = new GoalIndicatorResponse();
+        indicator3.setGoalId(2L);
+        indicator3.setIndicatorId(1L);
+
+        SubareaIndicator subareaIndicator1 = new SubareaIndicator();
+        subareaIndicator1.setSubarea(testSubarea);
+        
+        SubareaIndicator subareaIndicator2 = new SubareaIndicator();
+        Subarea subarea2 = new Subarea();
+        subarea2.setId(2L);
+        subareaIndicator2.setSubarea(subarea2);
+
+        List<Area> areas = Arrays.asList(testArea);
+        List<SubareaResponse> subareas = Arrays.asList(testSubareaResponse);
+        List<GoalResponse> goals = Arrays.asList(goal1, goal2);
+        List<GoalGroupResponse> goalGroups = Arrays.asList(testGoalGroupResponse);
+
+        when(areaRepository.findAll()).thenReturn(areas);
+        when(subareaService.findAll()).thenReturn(subareas);
+        when(goalService.findAll()).thenReturn(goals);
+        when(goalGroupService.findAll()).thenReturn(goalGroups);
+        when(goalIndicatorService.findIndicatorsByGoal(1L)).thenReturn(Arrays.asList(indicator1, indicator2));
+        when(goalIndicatorService.findIndicatorsByGoal(2L)).thenReturn(Arrays.asList(indicator3));
+        when(subareaIndicatorRepository.findByIndicatorId(1L)).thenReturn(Arrays.asList(subareaIndicator1));
+        when(subareaIndicatorRepository.findByIndicatorId(2L)).thenReturn(Arrays.asList(subareaIndicator2));
+
+        // When
+        DashboardWithRelationshipsResponse result = dashboardDataService.getDashboardWithRelationships();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.getRelationships().getGoalToSubareas().size());
+        assertEquals(2, result.getRelationships().getSubareaToGoals().size());
+        
+        // Goal 1 should be connected to subareas 1 and 2
+        List<String> goal1Subareas = result.getRelationships().getGoalToSubareas().get("1");
+        assertEquals(2, goal1Subareas.size());
+        assertTrue(goal1Subareas.contains("1"));
+        assertTrue(goal1Subareas.contains("2"));
+        
+        // Goal 2 should be connected to subarea 1
+        List<String> goal2Subareas = result.getRelationships().getGoalToSubareas().get("2");
+        assertEquals(1, goal2Subareas.size());
+        assertTrue(goal2Subareas.contains("1"));
+        
+        // Subarea 1 should be connected to goals 1 and 2
+        List<String> subarea1Goals = result.getRelationships().getSubareaToGoals().get("1");
+        assertEquals(2, subarea1Goals.size());
+        assertTrue(subarea1Goals.contains("1"));
+        assertTrue(subarea1Goals.contains("2"));
+        
+        // Subarea 2 should be connected to goal 1
+        List<String> subarea2Goals = result.getRelationships().getSubareaToGoals().get("2");
+        assertEquals(1, subarea2Goals.size());
+        assertTrue(subarea2Goals.contains("1"));
+    }
+
+    @Test
+    void getDashboardWithRelationships_WithExceptionInGoalIndicators_ShouldContinueProcessing() {
+        // Given
+        List<Area> areas = Arrays.asList(testArea);
+        List<SubareaResponse> subareas = Arrays.asList(testSubareaResponse);
+        List<GoalResponse> goals = Arrays.asList(testGoalResponse);
+        List<GoalGroupResponse> goalGroups = Arrays.asList(testGoalGroupResponse);
+
+        when(areaRepository.findAll()).thenReturn(areas);
+        when(subareaService.findAll()).thenReturn(subareas);
+        when(goalService.findAll()).thenReturn(goals);
+        when(goalGroupService.findAll()).thenReturn(goalGroups);
+        when(goalIndicatorService.findIndicatorsByGoal(1L)).thenThrow(new RuntimeException("Test exception"));
+
+        // When
+        DashboardWithRelationshipsResponse result = dashboardDataService.getDashboardWithRelationships();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getAreas().size());
+        assertEquals(1, result.getSubareas().size());
+        assertEquals(1, result.getGoals().size());
+        assertEquals(1, result.getGoalGroups().size());
+        assertNotNull(result.getRelationships());
+        assertEquals(1, result.getRelationships().getGoalToSubareas().size());
+        assertEquals(0, result.getRelationships().getSubareaToGoals().size());
+    }
+
+    @Test
+    void getDashboardWithRelationships_WithEmptyData_ShouldReturnEmptyResponse() {
+        // Given
+        when(areaRepository.findAll()).thenReturn(Arrays.asList());
+        when(subareaService.findAll()).thenReturn(Arrays.asList());
+        when(goalService.findAll()).thenReturn(Arrays.asList());
+        when(goalGroupService.findAll()).thenReturn(Arrays.asList());
+
+        // When
+        DashboardWithRelationshipsResponse result = dashboardDataService.getDashboardWithRelationships();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(0, result.getAreas().size());
+        assertEquals(0, result.getSubareas().size());
+        assertEquals(0, result.getGoals().size());
+        assertEquals(0, result.getGoalGroups().size());
+        assertNotNull(result.getRelationships());
+        assertEquals(0, result.getRelationships().getGoalToSubareas().size());
+        assertEquals(0, result.getRelationships().getSubareaToGoals().size());
     }
 } 

@@ -74,6 +74,7 @@ export interface CircularLayoutProps {
   highlightedSubareas: string[];
   onSubareaClick: (subareaId: string) => void;
   onSubareaHover: (subareaId: string) => void;
+  onSubareaLeave: () => void;
 }
 
 export interface GoalsSidebarProps {
@@ -81,4 +82,5 @@ export interface GoalsSidebarProps {
   goalGroups: GoalGroup[];
   highlightedGoals: string[];
   onGoalHover: (goalIds: string[]) => void;
+  onGoalLeave: () => void;
 } 

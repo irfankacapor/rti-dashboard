@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Container, 
@@ -9,21 +9,14 @@ import {
   IconButton,
   Toolbar,
   AppBar,
-  List,
-  ListItem,
-  ListItemText,
-  Chip,
   CircularProgress,
   Alert
 } from '@mui/material';
 import { 
-  Edit as EditIcon,
-  Close as CloseIcon,
-  Flag as FlagIcon
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { CircularLayout, GoalsSidebar } from '@/components/dashboard';
-import { useDashboardData, useGoalsData } from '@/hooks';
-import { DashboardGoal } from '@/types/dashboard';
+import { useDashboardWithRelationships } from '@/hooks';
 import { useRouter } from 'next/navigation';
 
 const DRAWER_WIDTH = 320;
@@ -34,21 +27,16 @@ export default function DashboardPage() {
   const [highlightedGoals, setHighlightedGoals] = useState<string[]>([]);
   const [highlightedSubareas, setHighlightedSubareas] = useState<string[]>([]);
 
-  // Fetch dashboard data
+  // Fetch dashboard data with relationships
   const { 
     areas, 
     subareas, 
-    isLoading: isLoadingDashboard, 
-    error: dashboardError 
-  } = useDashboardData();
-
-  // Fetch goals data
-  const { 
     goals, 
     goalGroups, 
-    isLoading: isLoadingGoals, 
-    error: goalsError 
-  } = useGoalsData();
+    relationships,
+    isLoading: isLoadingDashboard, 
+    error: dashboardError 
+  } = useDashboardWithRelationships();
 
   const handleSubareaClick = (subareaId: string) => {
     router.push(`/en/dashboard/subarea/${subareaId}`);
@@ -56,27 +44,35 @@ export default function DashboardPage() {
 
   const handleGoalHover = (goalIds: string[]) => {
     setHighlightedGoals(goalIds);
-    // Find subareas linked to these goals
-    const linkedSubareaIds = goals
-      ?.filter((goal: DashboardGoal) => goalIds.includes(goal.id))
-      ?.flatMap((goal: DashboardGoal) => goal.linkedSubareaIds || []) || [];
+    // Find subareas linked to these goals using relationship mappings
+    const linkedSubareaIds = goalIds.flatMap(goalId => 
+      relationships.goalToSubareas[goalId] || []
+    );
     setHighlightedSubareas(linkedSubareaIds);
+  };
+
+  const handleGoalLeave = () => {
+    setHighlightedGoals([]);
+    setHighlightedSubareas([]);
   };
 
   const handleSubareaHover = (subareaId: string) => {
     setHighlightedSubareas([subareaId]);
-    // Find goals linked to this subarea
-    const linkedGoalIds = goals
-      ?.filter((goal: DashboardGoal) => goal.linkedSubareaIds?.includes(subareaId))
-      ?.map((goal: DashboardGoal) => goal.id) || [];
+    // Find goals linked to this subarea using relationship mappings
+    const linkedGoalIds = relationships.subareaToGoals[subareaId] || [];
     setHighlightedGoals(linkedGoalIds);
+  };
+
+  const handleSubareaLeave = () => {
+    setHighlightedGoals([]);
+    setHighlightedSubareas([]);
   };
 
   const handleEditModeToggle = () => {
     setIsEditMode(!isEditMode);
   };
 
-  if (isLoadingDashboard || isLoadingGoals) {
+  if (isLoadingDashboard) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress size={60} />
@@ -84,11 +80,11 @@ export default function DashboardPage() {
     );
   }
 
-  if (dashboardError || goalsError) {
+  if (dashboardError) {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Alert severity="error">
-          {dashboardError || goalsError || 'Failed to load dashboard data'}
+          {dashboardError || 'Failed to load dashboard data'}
         </Alert>
       </Container>
     );
@@ -119,6 +115,7 @@ export default function DashboardPage() {
           goalGroups={goalGroups || []}
           highlightedGoals={highlightedGoals}
           onGoalHover={handleGoalHover}
+          onGoalLeave={handleGoalLeave}
         />
       </Drawer>
 
@@ -150,6 +147,7 @@ export default function DashboardPage() {
               highlightedSubareas={highlightedSubareas}
               onSubareaClick={handleSubareaClick}
               onSubareaHover={handleSubareaHover}
+              onSubareaLeave={handleSubareaLeave}
             />
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center' }}>

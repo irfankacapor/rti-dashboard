@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/dashboard-data")
@@ -277,6 +278,18 @@ public class DashboardDataController {
             return ResponseEntity.ok(List.of());
         } catch (Exception e) {
             log.error("Error retrieving all performance metrics: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/dashboard-with-relationships")
+    public ResponseEntity<DashboardWithRelationshipsResponse> getDashboardWithRelationships() {
+        log.info("Retrieving dashboard data with goal-subarea relationships");
+        try {
+            DashboardWithRelationshipsResponse response = dashboardDataService.getDashboardWithRelationships();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error retrieving dashboard with relationships: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

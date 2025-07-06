@@ -2,6 +2,7 @@ package io.dashboard.service;
 
 import io.dashboard.dto.*;
 import io.dashboard.model.*;
+import io.dashboard.model.SubareaIndicator;
 import io.dashboard.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,11 @@ public class DashboardDataService {
     private final SubareaRepository subareaRepository;
     private final AreaRepository areaRepository;
     private final FactIndicatorValueRepository factIndicatorValueRepository;
+    private final GoalService goalService;
+    private final GoalGroupService goalGroupService;
+    private final GoalIndicatorService goalIndicatorService;
+    private final SubareaService subareaService;
+    private final SubareaIndicatorRepository subareaIndicatorRepository;
 
     @Cacheable(value = "dashboardData", key = "#dashboardId")
     public DashboardDataResponse getDashboardData(Long dashboardId) {
@@ -412,5 +418,92 @@ public class DashboardDataService {
                 .mapToDouble(w -> Math.random() * 10 + 90) // Simulate 90-100% timeliness
                 .average()
                 .orElse(0.0);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardWithRelationshipsResponse getDashboardWithRelationships() {
+        log.debug("Fetching dashboard data with goal-subarea relationships");
+        
+        try {
+            // Fetch all required data
+            List<AreaResponse> areas = areaRepository.findAll().stream()
+                    .map(this::mapAreaToResponse)
+                    .collect(Collectors.toList());
+            
+            List<SubareaResponse> subareas = subareaService.findAll();
+            
+            List<GoalResponse> goals = goalService.findAll();
+            
+            List<GoalGroupResponse> goalGroups = goalGroupService.findAll();
+            
+            log.debug("Found {} areas, {} subareas, {} goals, {} goal groups", 
+                     areas.size(), subareas.size(), goals.size(), goalGroups.size());
+            
+            // Build relationship mappings
+            Map<String, List<String>> goalToSubareas = new HashMap<>();
+            Map<String, List<String>> subareaToGoals = new HashMap<>();
+            
+            // For each goal, find connected subareas through indicators
+            for (GoalResponse goal : goals) {
+                List<String> connectedSubareaIds = new ArrayList<>();
+                
+                try {
+                    // Get indicators for this goal
+                    List<GoalIndicatorResponse> goalIndicators = goalIndicatorService.findIndicatorsByGoal(goal.getId());
+                    log.debug("Goal {} has {} indicators", goal.getId(), goalIndicators.size());
+                    
+                    // For each indicator, find connected subareas
+                    for (GoalIndicatorResponse goalIndicator : goalIndicators) {
+                        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findByIndicatorId(goalIndicator.getIndicatorId());
+                        log.debug("Indicator {} has {} subarea relationships", goalIndicator.getIndicatorId(), subareaIndicators.size());
+                        
+                        for (SubareaIndicator subareaIndicator : subareaIndicators) {
+                            String subareaId = subareaIndicator.getSubarea().getId().toString();
+                            connectedSubareaIds.add(subareaId);
+                            
+                            // Build reverse mapping
+                            subareaToGoals.computeIfAbsent(subareaId, k -> new ArrayList<>()).add(goal.getId().toString());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to fetch relationships for goal {}: {}", goal.getId(), e.getMessage());
+                }
+                
+                goalToSubareas.put(goal.getId().toString(), connectedSubareaIds);
+                log.debug("Goal {} connected to {} subareas: {}", goal.getId(), connectedSubareaIds.size(), connectedSubareaIds);
+            }
+            
+            log.debug("Final mappings - goalToSubareas: {} entries, subareaToGoals: {} entries", 
+                     goalToSubareas.size(), subareaToGoals.size());
+            
+            // Create response
+            DashboardWithRelationshipsResponse response = new DashboardWithRelationshipsResponse();
+            response.setAreas(areas);
+            response.setSubareas(subareas);
+            response.setGoals(goals);
+            response.setGoalGroups(goalGroups);
+            response.setLastUpdated(LocalDateTime.now());
+            
+            DashboardWithRelationshipsResponse.RelationshipMappings relationships = new DashboardWithRelationshipsResponse.RelationshipMappings();
+            relationships.setGoalToSubareas(goalToSubareas);
+            relationships.setSubareaToGoals(subareaToGoals);
+            response.setRelationships(relationships);
+            
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Error fetching dashboard with relationships: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch dashboard data with relationships", e);
+        }
+    }
+    
+    private AreaResponse mapAreaToResponse(Area area) {
+        AreaResponse response = new AreaResponse();
+        response.setId(area.getId());
+        response.setName(area.getName());
+        response.setDescription(area.getDescription());
+        response.setCode(area.getCode());
+        response.setCreatedAt(area.getCreatedAt());
+        return response;
     }
 } 

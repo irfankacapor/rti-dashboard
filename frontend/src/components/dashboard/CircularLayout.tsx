@@ -35,7 +35,8 @@ export const CircularLayout: React.FC<CircularLayoutProps> = ({
   isEditMode,
   highlightedSubareas,
   onSubareaClick,
-  onSubareaHover
+  onSubareaHover,
+  onSubareaLeave
 }) => {
   // Edit mode: track selected subarea for swapping
   const [swapSelection, setSwapSelection] = useState<string | null>(null);
@@ -173,17 +174,24 @@ export const CircularLayout: React.FC<CircularLayoutProps> = ({
               style={{ cursor: isEditMode ? 'pointer' : 'default' }}
               onClick={() => isEditMode ? handleSubareaEditClick(sub.id, sub.areaId) : onSubareaClick(sub.id)}
               onMouseEnter={() => onSubareaHover(sub.id)}
-              onMouseLeave={() => onSubareaHover('')}
+              onMouseLeave={onSubareaLeave}
             >
               <circle
                 cx={sub.x}
                 cy={sub.y}
                 r={SUBAREA_RADIUS}
                 fill={SUBAREA_FILL}
-                stroke={borderColor}
-                strokeWidth={SUBAREA_STROKE_WIDTH}
+                stroke={isHighlighted ? '#1976d2' : borderColor}
+                strokeWidth={isHighlighted ? SUBAREA_STROKE_WIDTH + 4 : SUBAREA_STROKE_WIDTH}
                 opacity={1}
-                style={{ filter: isSelected ? 'drop-shadow(0 0 8px #1976d2)' : undefined }}
+                style={{ 
+                  filter: isSelected 
+                    ? 'drop-shadow(0 0 8px #1976d2)' 
+                    : isHighlighted 
+                      ? 'drop-shadow(0 0 12px rgba(25, 118, 210, 0.6))' 
+                      : undefined,
+                  transition: 'all 0.2s ease'
+                }}
               />
               <text
                 x={sub.x}
@@ -192,7 +200,11 @@ export const CircularLayout: React.FC<CircularLayoutProps> = ({
                 dy="0.35em"
                 fontSize="22px"
                 fontWeight="bold"
-                fill="#222"
+                fill={isHighlighted ? "#1976d2" : "#222"}
+                style={{ 
+                  filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(25, 118, 210, 0.4))' : undefined,
+                  transition: 'all 0.2s ease'
+                }}
               >
                 {sub.name}
               </text>

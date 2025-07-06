@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,4 +37,7 @@ public class GoalCreateRequest {
     private String description;
     
     private JsonNode attributes;
+    
+    // List of indicator IDs to link to this goal
+    private List<Long> indicators;
 } 

@@ -7,8 +7,12 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalGroup;
+import io.dashboard.model.GoalIndicator;
+import io.dashboard.model.ImpactDirection;
 import io.dashboard.repository.GoalGroupRepository;
+import io.dashboard.repository.GoalIndicatorRepository;
 import io.dashboard.repository.GoalRepository;
+import io.dashboard.repository.IndicatorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +40,12 @@ class GoalServiceTest {
 
     @Mock
     private GoalGroupRepository goalGroupRepository;
+
+    @Mock
+    private GoalIndicatorRepository goalIndicatorRepository;
+
+    @Mock
+    private IndicatorRepository indicatorRepository;
 
     @InjectMocks
     private GoalService goalService;
@@ -307,5 +317,240 @@ class GoalServiceTest {
         // When & Then
         assertThrows(ResourceNotFoundException.class, () -> goalService.findGoalsWithTargets(1L));
         verify(goalRepository).findByIdWithTargets(1L);
+    }
+
+    @Test
+    void createGoal_WithIndicators_ShouldCreateGoalAndRelationships() {
+        // Given
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+        when(indicatorRepository.existsById(1L)).thenReturn(true);
+        when(indicatorRepository.existsById(2L)).thenReturn(true);
+        when(goalIndicatorRepository.existsByGoalIdAndIndicatorId(1L, 1L)).thenReturn(false);
+        when(goalIndicatorRepository.existsByGoalIdAndIndicatorId(1L, 2L)).thenReturn(false);
+
+        // When
+        GoalResponse result = goalService.create(GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
+                .name("Test Goal")
+                .description("Test Goal Description")
+                .url("http://test.com")
+                .year(2024)
+                .indicators(Arrays.asList(1L, 2L))
+                .build());
+
+        // Then
+        assertNotNull(result);
+        assertEquals("Goal 1", result.getName());
+        verify(goalRepository).save(any(Goal.class));
+        verify(goalIndicatorRepository, times(2)).save(any(GoalIndicator.class));
+    }
+
+    @Test
+    void createGoal_WithNonExistentIndicators_ShouldSkipInvalidIndicators() {
+        // Given
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+        when(indicatorRepository.existsById(1L)).thenReturn(false); // Non-existent indicator
+        when(indicatorRepository.existsById(2L)).thenReturn(true);  // Valid indicator
+
+        // When
+        GoalResponse result = goalService.create(GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
+                .name("Test Goal")
+                .description("Test Goal Description")
+                .url("http://test.com")
+                .year(2024)
+                .indicators(Arrays.asList(1L, 2L))
+                .build());
+
+        // Then
+        assertNotNull(result);
+        verify(goalIndicatorRepository, times(1)).save(any(GoalIndicator.class)); // Only valid indicator
+    }
+
+    @Test
+    void createGoal_WithExistingRelationships_ShouldSkipDuplicates() {
+        // Given
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+        when(indicatorRepository.existsById(1L)).thenReturn(true);
+        when(indicatorRepository.existsById(2L)).thenReturn(true);
+        when(goalIndicatorRepository.existsByGoalIdAndIndicatorId(1L, 1L)).thenReturn(true); // Already exists
+        when(goalIndicatorRepository.existsByGoalIdAndIndicatorId(1L, 2L)).thenReturn(false);
+
+        // When
+        GoalResponse result = goalService.create(GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
+                .name("Test Goal")
+                .description("Test Goal Description")
+                .url("http://test.com")
+                .year(2024)
+                .indicators(Arrays.asList(1L, 2L))
+                .build());
+
+        // Then
+        assertNotNull(result);
+        verify(goalIndicatorRepository, times(1)).save(any(GoalIndicator.class)); // Only new relationship
+    }
+
+    @Test
+    void createGoal_WithoutIndicators_ShouldCreateGoalOnly() {
+        // Given
+        GoalCreateRequest request = GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
+                .name("Test Goal")
+                .description("Test Goal Description")
+                .url("http://test.com")
+                .year(2024)
+                .build();
+
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+
+        // When
+        GoalResponse result = goalService.create(request);
+
+        // Then
+        assertNotNull(result);
+        verify(goalRepository).save(any(Goal.class));
+        verify(goalIndicatorRepository, never()).save(any(GoalIndicator.class));
+    }
+
+    @Test
+    void updateGoal_WithIndicators_ShouldUpdateGoalAndReplaceRelationships() {
+        // Given
+        when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+        when(indicatorRepository.existsById(3L)).thenReturn(true);
+        when(indicatorRepository.existsById(4L)).thenReturn(true);
+        when(goalIndicatorRepository.existsByGoalIdAndIndicatorId(1L, 3L)).thenReturn(false);
+        when(goalIndicatorRepository.existsByGoalIdAndIndicatorId(1L, 4L)).thenReturn(false);
+
+        // When
+        GoalResponse result = goalService.update(1L, GoalUpdateRequest.builder()
+                .type("quantitative")
+                .name("Updated Goal")
+                .description("Updated Goal Description")
+                .url("http://updatedtest.com")
+                .year(2025)
+                .indicators(Arrays.asList(3L, 4L))
+                .build());
+
+        // Then
+        assertNotNull(result);
+        verify(goalRepository).save(any(Goal.class));
+        verify(goalIndicatorRepository).deleteByGoalId(1L);
+        verify(goalIndicatorRepository, times(2)).save(any(GoalIndicator.class));
+    }
+
+    @Test
+    void updateGoal_WithEmptyIndicators_ShouldRemoveAllRelationships() {
+        // Given
+        GoalUpdateRequest request = GoalUpdateRequest.builder()
+                .type("quantitative")
+                .name("Updated Goal")
+                .description("Updated Goal Description")
+                .url("http://updatedtest.com")
+                .year(2025)
+                .indicators(Arrays.asList())
+                .build();
+
+        when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+
+        // When
+        GoalResponse result = goalService.update(1L, request);
+
+        // Then
+        assertNotNull(result);
+        verify(goalRepository).save(any(Goal.class));
+        verify(goalIndicatorRepository).deleteByGoalId(1L);
+        verify(goalIndicatorRepository, never()).save(any(GoalIndicator.class));
+    }
+
+    @Test
+    void updateGoal_WithoutIndicators_ShouldNotModifyRelationships() {
+        // Given
+        GoalUpdateRequest request = GoalUpdateRequest.builder()
+                .type("quantitative")
+                .name("Updated Goal")
+                .description("Updated Goal Description")
+                .url("http://updatedtest.com")
+                .year(2025)
+                .indicators(null)
+                .build();
+
+        when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
+        when(goalRepository.save(any(Goal.class))).thenReturn(testGoal);
+
+        // When
+        GoalResponse result = goalService.update(1L, request);
+
+        // Then
+        assertNotNull(result);
+        verify(goalRepository).save(any(Goal.class));
+        verify(goalIndicatorRepository, never()).deleteByGoalId(any());
+        verify(goalIndicatorRepository, never()).save(any(GoalIndicator.class));
+    }
+
+    @Test
+    void createGoal_WithInvalidGoalGroup_ShouldThrowException() {
+        // Given
+        when(goalGroupRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class, () -> goalService.create(GoalCreateRequest.builder()
+                .goalGroupId(1L)
+                .type("quantitative")
+                .name("Test Goal")
+                .description("Test Goal Description")
+                .url("http://test.com")
+                .year(2024)
+                .indicators(Arrays.asList(1L, 2L))
+                .build()));
+        verify(goalRepository, never()).save(any(Goal.class));
+    }
+
+    @Test
+    void updateGoal_WithInvalidGoal_ShouldThrowException() {
+        // Given
+        when(goalRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class, () -> goalService.update(1L, GoalUpdateRequest.builder()
+                .type("quantitative")
+                .name("Updated Goal")
+                .description("Updated Goal Description")
+                .url("http://updatedtest.com")
+                .year(2025)
+                .indicators(Arrays.asList(3L, 4L))
+                .build()));
+        verify(goalRepository, never()).save(any(Goal.class));
+    }
+
+    @Test
+    void updateGoal_WithInvalidGoalGroup_ShouldThrowException() {
+        // Given
+        GoalUpdateRequest request = GoalUpdateRequest.builder()
+                .goalGroupId(999L)
+                .type("quantitative")
+                .name("Updated Goal")
+                .description("Updated Goal Description")
+                .url("http://updatedtest.com")
+                .year(2025)
+                .indicators(Arrays.asList(3L, 4L))
+                .build();
+
+        when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
+        when(goalGroupRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class, () -> goalService.update(1L, request));
+        verify(goalRepository, never()).save(any(Goal.class));
     }
 } 

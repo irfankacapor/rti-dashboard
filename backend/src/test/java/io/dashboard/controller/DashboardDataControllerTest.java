@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.hasSize;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardDataControllerTest {
@@ -592,5 +593,91 @@ class DashboardDataControllerTest {
         mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastUpdated").exists());
+    }
+
+    @Test
+    void getDashboardWithRelationships_shouldReturnDashboardData() throws Exception {
+        // Given
+        DashboardWithRelationshipsResponse mockResponse = new DashboardWithRelationshipsResponse();
+        mockResponse.setLastUpdated(LocalDateTime.now());
+        mockResponse.setAreas(new ArrayList<>());
+        mockResponse.setSubareas(new ArrayList<>());
+        mockResponse.setGoals(new ArrayList<>());
+        mockResponse.setGoalGroups(new ArrayList<>());
+        
+        DashboardWithRelationshipsResponse.RelationshipMappings relationships = new DashboardWithRelationshipsResponse.RelationshipMappings();
+        relationships.setGoalToSubareas(new HashMap<>());
+        relationships.setSubareaToGoals(new HashMap<>());
+        mockResponse.setRelationships(relationships);
+        
+        when(dashboardDataService.getDashboardWithRelationships()).thenReturn(mockResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/dashboard-data/dashboard-with-relationships"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lastUpdated").exists())
+                .andExpect(jsonPath("$.areas").isArray())
+                .andExpect(jsonPath("$.subareas").isArray())
+                .andExpect(jsonPath("$.goals").isArray())
+                .andExpect(jsonPath("$.goalGroups").isArray())
+                .andExpect(jsonPath("$.relationships").exists());
+    }
+
+    @Test
+    void getDashboardWithRelationships_shouldHandleServiceException() throws Exception {
+        // Given
+        when(dashboardDataService.getDashboardWithRelationships()).thenThrow(new RuntimeException("Service error"));
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/dashboard-data/dashboard-with-relationships"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void getDashboardWithRelationships_shouldReturnRelationshipsData() throws Exception {
+        // Given
+        DashboardWithRelationshipsResponse mockResponse = new DashboardWithRelationshipsResponse();
+        mockResponse.setLastUpdated(LocalDateTime.now());
+        
+        // Add some test data
+        List<AreaResponse> areas = Arrays.asList(new AreaResponse());
+        List<SubareaResponse> subareas = Arrays.asList(new SubareaResponse());
+        List<GoalResponse> goals = Arrays.asList(new GoalResponse());
+        List<GoalGroupResponse> goalGroups = Arrays.asList(new GoalGroupResponse());
+        
+        mockResponse.setAreas(areas);
+        mockResponse.setSubareas(subareas);
+        mockResponse.setGoals(goals);
+        mockResponse.setGoalGroups(goalGroups);
+        
+        // Add relationship mappings
+        DashboardWithRelationshipsResponse.RelationshipMappings relationships = new DashboardWithRelationshipsResponse.RelationshipMappings();
+        Map<String, List<String>> goalToSubareas = new HashMap<>();
+        goalToSubareas.put("1", Arrays.asList("1", "2"));
+        goalToSubareas.put("2", Arrays.asList("1"));
+        
+        Map<String, List<String>> subareaToGoals = new HashMap<>();
+        subareaToGoals.put("1", Arrays.asList("1", "2"));
+        subareaToGoals.put("2", Arrays.asList("1"));
+        
+        relationships.setGoalToSubareas(goalToSubareas);
+        relationships.setSubareaToGoals(subareaToGoals);
+        mockResponse.setRelationships(relationships);
+        
+        when(dashboardDataService.getDashboardWithRelationships()).thenReturn(mockResponse);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/dashboard-data/dashboard-with-relationships"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relationships.goalToSubareas").exists())
+                .andExpect(jsonPath("$.relationships.subareaToGoals").exists())
+                .andExpect(jsonPath("$.relationships.goalToSubareas.1").isArray())
+                .andExpect(jsonPath("$.relationships.goalToSubareas.1").value(hasSize(2)))
+                .andExpect(jsonPath("$.relationships.goalToSubareas.2").isArray())
+                .andExpect(jsonPath("$.relationships.goalToSubareas.2").value(hasSize(1)))
+                .andExpect(jsonPath("$.relationships.subareaToGoals.1").isArray())
+                .andExpect(jsonPath("$.relationships.subareaToGoals.1").value(hasSize(2)))
+                .andExpect(jsonPath("$.relationships.subareaToGoals.2").isArray())
+                .andExpect(jsonPath("$.relationships.subareaToGoals.2").value(hasSize(1)));
     }
 } 

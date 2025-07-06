@@ -69,6 +69,5 @@ public class Goal {
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<GoalIndicator> goalIndicators = new ArrayList<>();
     
-    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<GoalSubarea> goalSubareas = new ArrayList<>();
+
 } 

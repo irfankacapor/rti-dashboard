@@ -44,21 +44,8 @@ export const useGoalsData = () => {
         setGoals(transformedGoals);
         setGoalGroups(transformedGoalGroups);
 
-        // Fetch goal-subarea relationships for each goal
-        for (const goal of transformedGoals) {
-          try {
-            const relationshipsData = await apiClient.get(`/goals/${goal.id}/subareas`);
-            const linkedSubareaIds = relationshipsData.map((rel: any) => rel.subareaId.toString());
-            
-            setGoals(prev => prev.map(g => 
-              g.id === goal.id 
-                ? { ...g, linkedSubareaIds }
-                : g
-            ));
-          } catch (err) {
-            console.warn(`Failed to fetch relationships for goal ${goal.id}:`, err);
-          }
-        }
+        // Note: Goal-subarea relationships are now handled by the useDashboardWithRelationships hook
+        // This hook is kept for backward compatibility but doesn't fetch relationships anymore
 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch goals data');

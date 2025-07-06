@@ -19,14 +19,11 @@ export const GoalsSidebar: React.FC<GoalsSidebarProps> = ({
   goals,
   goalGroups,
   highlightedGoals,
-  onGoalHover
+  onGoalHover,
+  onGoalLeave
 }) => {
   const handleGoalHover = (goalId: string) => {
     onGoalHover([goalId]);
-  };
-
-  const handleGoalLeave = () => {
-    onGoalHover([]);
   };
 
   const calculateProgress = (goal: DashboardGoal) => {
@@ -79,13 +76,17 @@ export const GoalsSidebar: React.FC<GoalsSidebarProps> = ({
                     key={goal.id}
                     disablePadding
                     sx={{
-                      backgroundColor: isHighlighted ? 'action.hover' : 'transparent',
-                      transition: 'background-color 0.2s ease'
+                      backgroundColor: isHighlighted ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
+                      border: isHighlighted ? '2px solid rgba(25, 118, 210, 0.4)' : '2px solid transparent',
+                      borderRadius: 1,
+                      transition: 'all 0.2s ease',
+                      boxShadow: isHighlighted ? '0 2px 8px rgba(25, 118, 210, 0.15)' : 'none',
+                      transform: isHighlighted ? 'scale(1.02)' : 'scale(1)'
                     }}
                   >
                     <ListItemButton
                       onMouseEnter={() => handleGoalHover(goal.id)}
-                      onMouseLeave={handleGoalLeave}
+                      onMouseLeave={onGoalLeave}
                       sx={{ flexDirection: 'column', alignItems: 'stretch', p: 2 }}
                     >
                       <Box sx={{ width: '100%', mb: 1 }}>
