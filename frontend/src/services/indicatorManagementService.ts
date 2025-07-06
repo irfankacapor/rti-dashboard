@@ -1,7 +1,6 @@
 import { 
   ManagedIndicator, 
   IndicatorFormData, 
-  IndicatorUpdateRequest, 
   BulkIndicatorUpdate,
   IndicatorValidationResult 
 } from '@/types/indicators';
@@ -49,10 +48,22 @@ export const indicatorManagementService = {
 
   // Create new indicator
   createIndicator: async (indicator: IndicatorFormData): Promise<ManagedIndicator> => {
+    // Generate a code from the name
+    const code = indicator.name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 50);
+    
+    const backendRequest = {
+      code: code,
+      name: indicator.name,
+      description: indicator.description,
+      isComposite: false,
+      unitId: null, // Would need to be mapped from unit string to ID
+      dataTypeId: null, // Would need to be mapped from dataType string to ID
+    };
+
     const response = await fetch(`${API_BASE}/indicators`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(indicator)
+      body: JSON.stringify(backendRequest)
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
@@ -61,18 +72,98 @@ export const indicatorManagementService = {
     return response.json();
   },
 
-  // Update indicator
+  // Update indicator - only updates basic indicator fields
   updateIndicator: async (id: string, updates: Partial<ManagedIndicator>): Promise<ManagedIndicator> => {
+    // Extract only the fields that the backend IndicatorUpdateRequest supports
+    const backendUpdate = {
+      name: updates.name,
+      description: updates.description,
+      isComposite: false, // Default value since frontend doesn't manage this
+      unitId: null, // Would need to be mapped from unit string to ID
+      dataTypeId: null, // Would need to be mapped from dataType string to ID
+    };
+
     const response = await fetch(`${API_BASE}/indicators/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
+      body: JSON.stringify(backendUpdate)
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
       throw new Error(`Failed to update indicator: ${errorData.message}`);
     }
     return response.json();
+  },
+
+  // Assign indicator to subarea
+  assignIndicatorToSubarea: async (indicatorId: string, subareaId: string, direction: string, aggregationWeight: number = 1.0): Promise<void> => {
+    // Convert string IDs to numbers for the backend
+    const numericIndicatorId = parseInt(indicatorId, 10);
+    const numericSubareaId = parseInt(subareaId, 10);
+    
+    if (isNaN(numericIndicatorId) || isNaN(numericSubareaId)) {
+      throw new Error('Invalid indicator or subarea ID');
+    }
+    
+    const response = await fetch(`${API_BASE}/indicators/${numericIndicatorId}/subareas/${numericSubareaId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        direction: direction.toUpperCase(),
+        aggregationWeight: aggregationWeight
+      })
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(`Failed to assign indicator to subarea: ${errorData.message}`);
+    }
+  },
+
+  // Remove indicator from subarea
+  removeIndicatorFromSubarea: async (indicatorId: string, subareaId: string): Promise<void> => {
+    // Convert string IDs to numbers for the backend
+    const numericIndicatorId = parseInt(indicatorId, 10);
+    const numericSubareaId = parseInt(subareaId, 10);
+    
+    if (isNaN(numericIndicatorId) || isNaN(numericSubareaId)) {
+      throw new Error('Invalid indicator or subarea ID');
+    }
+    
+    const response = await fetch(`${API_BASE}/indicators/${numericIndicatorId}/subareas/${numericSubareaId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to remove indicator from subarea: ${response.statusText}`);
+    }
+  },
+
+  // Update indicator with subarea relationship handling
+  updateIndicatorWithRelationships: async (id: string, updates: Partial<ManagedIndicator>): Promise<ManagedIndicator> => {
+    // First update the basic indicator fields
+    await indicatorManagementService.updateIndicator(id, updates);
+    
+    // Then handle subarea relationship if it changed
+    if (updates.subareaId !== undefined) {
+      const currentIndicator = await indicatorManagementService.getIndicator(id);
+      
+      // If there was a previous subarea assignment, remove it
+      if (currentIndicator.subareaId && currentIndicator.subareaId !== updates.subareaId) {
+        await indicatorManagementService.removeIndicatorFromSubarea(id, currentIndicator.subareaId);
+      }
+      
+      // If there's a new subarea assignment, create it
+      if (updates.subareaId) {
+        await indicatorManagementService.assignIndicatorToSubarea(
+          id, 
+          updates.subareaId, 
+          updates.direction || 'input',
+          updates.aggregationWeight || 1.0
+        );
+      }
+    }
+    
+    // Return the updated indicator
+    return indicatorManagementService.getIndicator(id);
   },
 
   // Delete indicator

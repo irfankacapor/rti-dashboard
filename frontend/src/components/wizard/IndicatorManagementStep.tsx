@@ -73,38 +73,46 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
 
   const handleIndicatorUpdate = (id: string, updates: Partial<ManagedIndicator>) => {
     try {
+      // Only update local state - backend saving happens when clicking Next
       updateManagedIndicator(id, updates);
       setSnackbar('Indicator updated successfully');
     } catch (error) {
+      console.error('Failed to update indicator:', error);
       setError('Failed to update indicator');
     }
   };
 
   const handleIndicatorDelete = (id: string) => {
     try {
+      // Only update local state - backend saving happens when clicking Next
       deleteManagedIndicator(id);
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       setSnackbar('Indicator deleted successfully');
     } catch (error) {
+      console.error('Failed to delete indicator:', error);
       setError('Failed to delete indicator');
     }
   };
 
   const handleBulkUpdate = (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => {
     try {
+      // Only update local state - backend saving happens when clicking Next
       bulkUpdateIndicators(updates);
       setSnackbar(`${updates.length} indicators updated successfully`);
     } catch (error) {
+      console.error('Failed to update indicators:', error);
       setError('Failed to update indicators');
     }
   };
 
   const handleBulkDelete = (ids: string[]) => {
     try {
+      // Only update local state - backend saving happens when clicking Next
       bulkDeleteIndicators(ids);
       setSelectedIds([]);
       setSnackbar(`${ids.length} indicators deleted successfully`);
     } catch (error) {
+      console.error('Failed to delete indicators:', error);
       setError('Failed to delete indicators');
     }
   };
@@ -116,10 +124,12 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
 
   const handleManualAdd = (indicatorData: any) => {
     try {
+      // Only add to local state - backend saving happens when clicking Next
       addManualIndicator(indicatorData);
       setShowAddForm(false);
       setSnackbar('Indicator added successfully');
     } catch (error) {
+      console.error('Failed to add indicator:', error);
       setError('Failed to add indicator');
     }
   };

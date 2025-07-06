@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Subarea, SubareaFormData } from '@/types/subareas';
 import { 
   ManagedIndicator, 
-  IndicatorFormData, 
   ManualIndicatorData,
   convertProcessedToManaged 
 } from '@/types/indicators';
@@ -371,6 +370,8 @@ export const useWizardStore = create<WizardState>()(
           await get().saveAreas();
         } else if (stepId === 2) {
           await get().saveSubareas();
+        } else if (stepId === 4) {
+          await get().saveIndicators();
         }
       },
 
@@ -565,9 +566,9 @@ export const useWizardStore = create<WizardState>()(
             await indicatorManagementService.deleteIndicator(indicator.id);
           }
 
-          // Process updates
+          // Process updates using the new method that handles relationships
           for (const indicator of updatedIndicators) {
-            await indicatorManagementService.updateIndicator(indicator.id, {
+            await indicatorManagementService.updateIndicatorWithRelationships(indicator.id, {
               name: indicator.name,
               description: indicator.description,
               unit: indicator.unit,
@@ -581,16 +582,24 @@ export const useWizardStore = create<WizardState>()(
 
           // Process creations
           for (const indicator of newIndicators) {
-            await indicatorManagementService.createIndicator({
+            const createdIndicator = await indicatorManagementService.createIndicator({
               name: indicator.name,
               description: indicator.description,
               unit: indicator.unit,
               source: indicator.source,
-              subareaId: indicator.subareaId,
-              direction: indicator.direction,
               dataType: indicator.dataType,
               aggregationWeight: indicator.aggregationWeight
             });
+            
+            // Handle subarea relationship if present
+            if (indicator.subareaId) {
+              await indicatorManagementService.assignIndicatorToSubarea(
+                createdIndicator.id,
+                indicator.subareaId,
+                indicator.direction || 'input',
+                indicator.aggregationWeight || 1.0
+              );
+            }
           }
 
           // Refresh from backend
