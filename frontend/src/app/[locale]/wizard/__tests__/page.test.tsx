@@ -1,7 +1,51 @@
+jest.mock('@/lib/store/useWizardStore', () => ({
+  useWizardStore: (selector: any) => {
+    const state = {
+      setStepValid: jest.fn(),
+      setStepCompleted: jest.fn(),
+      currentStep: 1,
+      steps: [
+        { id: 1, name: 'areas', label: 'Areas Management', isCompleted: false, isValid: true },
+        { id: 2, name: 'subareas', label: 'Subareas Management', isCompleted: false, isValid: false },
+        { id: 3, name: 'upload', label: 'Data Upload', isCompleted: false, isValid: false },
+        { id: 4, name: 'indicators', label: 'Indicator Review & Management', isCompleted: false, isValid: false },
+        { id: 5, name: 'goals', label: 'Goal Management', isCompleted: false, isValid: false },
+      ],
+      nextStep: jest.fn(),
+      setCurrentStep: jest.fn(),
+      canProceedToStep: jest.fn(() => true),
+    };
+    return selector ? selector(state) : state;
+  },
+}));
+
 import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import WizardPage from '../page';
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+}));
+
+jest.mock('@/store/wizardStore', () => ({
+  useWizardStore: () => ({
+    dirtyAreas: [],
+    dirtySubareas: [],
+    saveStep: jest.fn(),
+    hasUnsavedChanges: () => false,
+    isSaving: false,
+    fetchAreas: jest.fn(),
+    setStepValid: jest.fn(),
+  }),
+}));
 
 describe('WizardPage', () => {
   it('renders the wizard page with dynamic step title', () => {

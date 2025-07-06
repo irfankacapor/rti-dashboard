@@ -8,10 +8,10 @@ import {
   CircularProgress,
   Snackbar,
   Paper,
-  Grid,
   Chip,
   IconButton,
   Tooltip,
+  Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -141,7 +141,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
   if (isLoadingIndicators) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
+        <CircularProgress data-testid="circular-progress" />
       </Box>
     );
   }
@@ -173,7 +173,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
         </Box>
 
         <Grid container spacing={2}>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box textAlign="center">
               <Typography variant="h4" color="primary">
                 {stats.total}
@@ -183,7 +183,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
               </Typography>
             </Box>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box textAlign="center">
               <Typography variant="h4" color="success.main">
                 {stats.fromCsv}
@@ -193,7 +193,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
               </Typography>
             </Box>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box textAlign="center">
               <Typography variant="h4" color="info.main">
                 {stats.input}
@@ -203,7 +203,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
               </Typography>
             </Box>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box textAlign="center">
               <Typography variant="h4" color="warning.main">
                 {stats.output}

@@ -18,10 +18,15 @@ const mockSubareas = [
 const getMockState = (overrides = {}) => ({
   areas: mockAreas,
   subareas: mockSubareas,
+  dirtyAreas: mockAreas,
+  dirtySubareas: mockSubareas,
   addSubarea: jest.fn(),
   updateSubarea: jest.fn(),
   deleteSubarea: jest.fn(),
   getDefaultAreaId: () => '1',
+  fetchSubareas: jest.fn(),
+  isLoadingSubareas: false,
+  hasUnsavedChanges: () => false,
   ...overrides,
 });
 
@@ -38,20 +43,32 @@ describe('SubareasStep', () => {
   });
 
   it('hides area column when only default area exists', () => {
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ areas: [mockAreas[0]] })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      areas: [mockAreas[0]], 
+      dirtyAreas: [mockAreas[0]] 
+    })));
     render(<SubareasStep />);
     expect(screen.queryByText('Area')).not.toBeInTheDocument();
   });
 
   it('shows validation warning if no subareas', () => {
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ subareas: [] })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      subareas: [], 
+      dirtySubareas: [] 
+    })));
     render(<SubareasStep />);
     expect(screen.getByText(/must add at least one subarea/i)).toBeInTheDocument();
   });
 
   it('shows no area picker when only default area exists, and assigns subareas to default area', () => {
     const addSubarea = jest.fn();
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ areas: [mockAreas[0]], subareas: [], addSubarea })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      areas: [mockAreas[0]], 
+      dirtyAreas: [mockAreas[0]], 
+      subareas: [], 
+      dirtySubareas: [], 
+      addSubarea 
+    })));
     const { container } = render(<SubareasStep />);
     fireEvent.click(screen.getByText(/add subarea/i));
     expect(container.querySelector('[data-testid="add-area-select"]')).toBeNull();
@@ -62,7 +79,11 @@ describe('SubareasStep', () => {
 
   it('shows area picker when there are manual areas and allows picking', () => {
     const addSubarea = jest.fn();
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ addSubarea, subareas: [] })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      addSubarea, 
+      subareas: [], 
+      dirtySubareas: [] 
+    })));
     const { container } = render(<SubareasStep />);
     fireEvent.click(screen.getByText(/add subarea/i));
     const areaSelect = container.querySelector('[data-testid="add-area-select"]');
@@ -74,7 +95,10 @@ describe('SubareasStep', () => {
   });
 
   it('shows "Unassigned" chip if subarea areaId does not match any area', () => {
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ subareas: [{ ...mockSubareas[0], areaId: 'nonexistent' }] })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      subareas: [{ ...mockSubareas[0], areaId: 'nonexistent' }], 
+      dirtySubareas: [{ ...mockSubareas[0], areaId: 'nonexistent' }] 
+    })));
     render(<SubareasStep />);
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
   });
@@ -103,12 +127,24 @@ describe('SubareasStep', () => {
     // Start with only default area and a subarea assigned to it
     let areas = [mockAreas[0]];
     let subareas = [{ ...mockSubareas[0], areaId: '1' }];
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ areas, subareas, updateSubarea })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      areas, 
+      dirtyAreas: areas,
+      subareas, 
+      dirtySubareas: subareas,
+      updateSubarea 
+    })));
     // Render with only default area
     const { rerender } = render(<SubareasStep />);
     // Add a manual area
     areas = [mockAreas[0], mockAreas[1]];
-    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ areas, subareas, updateSubarea })));
+    ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ 
+      areas, 
+      dirtyAreas: areas,
+      subareas, 
+      dirtySubareas: subareas,
+      updateSubarea 
+    })));
     rerender(<SubareasStep />);
     // Should call updateSubarea to reassign to first manual area
     expect(updateSubarea).toHaveBeenCalledWith(subareas[0].id, { areaId: mockAreas[1].id });
