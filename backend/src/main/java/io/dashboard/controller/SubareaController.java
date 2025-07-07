@@ -141,4 +141,20 @@ public class SubareaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/subareas/{id}/aggregated-by-{dimension}")
+    public ResponseEntity<Map<String, Object>> getAggregatedByDimension(@PathVariable Long id, @PathVariable String dimension) {
+        try {
+            Map<String, Double> data = subareaService.getAggregatedByDimension(id, dimension);
+            Map<String, Object> response = Map.of(
+                "subareaId", id,
+                "dimension", dimension,
+                "data", data
+            );
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error calculating aggregated by {} for subarea: {}", dimension, id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 } 

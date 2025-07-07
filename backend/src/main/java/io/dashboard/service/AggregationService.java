@@ -166,4 +166,40 @@ public class AggregationService {
         
         return result;
     }
+    
+    public Map<String, Double> getSubareaAggregatedByDimension(Long subareaId, String dimension) {
+        List<FactIndicatorValue> values = factIndicatorValueRepository.findBySubareaIdWithEagerLoadingGenerics(subareaId);
+
+        if (values.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Map<String, List<FactIndicatorValue>> grouped;
+        switch (dimension.toLowerCase()) {
+            case "time":
+                return getSubareaAggregatedByTime(subareaId);
+            case "location":
+                return getSubareaAggregatedByLocation(subareaId);
+            default:
+                // For custom dimensions, group by the value of the DimGeneric whose dimensionName matches the requested dimension
+                grouped = values.stream()
+                    .flatMap(v -> v.getGenerics().stream()
+                        .filter(g -> g.getDimensionName() != null && g.getDimensionName().equalsIgnoreCase(dimension))
+                        .map(g -> new AbstractMap.SimpleEntry<>(g.getValue(), v)))
+                    .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+                break;
+        }
+
+        Map<String, Double> result = new HashMap<>();
+        for (Map.Entry<String, List<FactIndicatorValue>> entry : grouped.entrySet()) {
+            List<FactIndicatorValue> groupValues = entry.getValue();
+            // Average the values for this group
+            double aggregated = groupValues.stream()
+                .mapToDouble(v -> v.getValue().doubleValue())
+                .average()
+                .orElse(0.0);
+            result.put(entry.getKey(), aggregated);
+        }
+        return result;
+    }
 } 

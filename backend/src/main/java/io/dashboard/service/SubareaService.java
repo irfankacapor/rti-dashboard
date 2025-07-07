@@ -46,7 +46,7 @@ public class SubareaService {
     }
 
     public SubareaResponse findById(Long id) {
-        Subarea subarea = subareaRepository.findById(id)
+        Subarea subarea = subareaRepository.findByIdWithArea(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", id));
         return toResponse(subarea);
     }
@@ -179,6 +179,22 @@ public class SubareaService {
         } catch (Exception e) {
             log.error("Error getting aggregated data by location for subarea ID {}: {}", subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to get aggregated data by location for subarea: " + e.getMessage(), e);
+        }
+    }
+
+    public Map<String, Double> getAggregatedByDimension(Long subareaId, String dimension) {
+        try {
+            log.debug("Getting aggregated data by {} for subarea ID: {}", dimension, subareaId);
+
+            if (!subareaRepository.existsById(subareaId)) {
+                log.warn("Subarea with ID {} not found", subareaId);
+                throw new ResourceNotFoundException("Subarea", "id", subareaId);
+            }
+
+            return aggregationService.getSubareaAggregatedByDimension(subareaId, dimension);
+        } catch (Exception e) {
+            log.error("Error getting aggregated data by {} for subarea ID {}: {}", dimension, subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get aggregated data by " + dimension + " for subarea: " + e.getMessage(), e);
         }
     }
 } 

@@ -1,33 +1,24 @@
-import React, { useState } from 'react';
-import { Box, Typography, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
+import React from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface SubareaAggregatedChartProps {
-  timeData: any;
-  locationData: any;
+  data: any;
   loading: boolean;
   error: string | null;
+  dimensionLabel: string;
 }
 
-export default function SubareaAggregatedChart({ timeData, locationData, loading, error }: SubareaAggregatedChartProps) {
-  const [dimension, setDimension] = useState<'time' | 'location'>('time');
-
-  const handleDimensionChange = (event: React.MouseEvent<HTMLElement>, newDimension: 'time' | 'location') => {
-    if (newDimension !== null) {
-      setDimension(newDimension);
-    }
-  };
-
+export default function SubareaAggregatedChart({ data, loading, error, dimensionLabel }: SubareaAggregatedChartProps) {
   const formatData = (data: any) => {
     if (!data || !data.data) return [];
-    
     return Object.entries(data.data).map(([key, value]) => ({
       name: key,
       value: Number(value)
     }));
   };
 
-  const chartData = dimension === 'time' ? formatData(timeData) : formatData(locationData);
+  const chartData = formatData(data);
 
   if (loading) {
     return (
@@ -56,18 +47,8 @@ export default function SubareaAggregatedChart({ timeData, locationData, loading
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">Aggregated Performance</Typography>
-        <ToggleButtonGroup
-          value={dimension}
-          exclusive
-          onChange={handleDimensionChange}
-          size="small"
-        >
-          <ToggleButton value="time">Time</ToggleButton>
-          <ToggleButton value="location">Location</ToggleButton>
-        </ToggleButtonGroup>
+        <Typography variant="h6">Aggregated Performance by {dimensionLabel}</Typography>
       </Box>
-      
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />

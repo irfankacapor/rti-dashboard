@@ -187,4 +187,31 @@ export function useSubareaAggregatedByLocation(subareaId: string) {
   }, [subareaId]);
 
   return { data, loading, error };
+}
+
+export function useSubareaAggregatedByDimension(subareaId: string, dimension: string) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!subareaId || !dimension) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${API_BASE}/subareas/${subareaId}/aggregated-by-${dimension}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => {
+        console.error(`Error fetching subarea aggregated by ${dimension}:`, err);
+        setError(`Failed to fetch ${dimension} data`);
+      })
+      .finally(() => setLoading(false));
+  }, [subareaId, dimension]);
+
+  return { data, loading, error };
 } 

@@ -128,4 +128,15 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "LEFT JOIN FETCH f.generics " +
            "WHERE f.indicator.id = :indicatorId")
     List<FactIndicatorValue> findByIndicatorIdWithGenerics(@Param("indicatorId") Long indicatorId);
+    
+    // Find by subarea ID with eager loading of all required relationships and generics
+    @Query("SELECT f FROM FactIndicatorValue f " +
+           "JOIN FETCH f.indicator i " +
+           "LEFT JOIN FETCH f.time " +
+           "LEFT JOIN FETCH f.location " +
+           "LEFT JOIN FETCH f.unit " +
+           "LEFT JOIN FETCH f.generics " +
+           "JOIN i.subareaIndicators si " +
+           "WHERE si.subarea.id = :subareaId")
+    List<FactIndicatorValue> findBySubareaIdWithEagerLoadingGenerics(@Param("subareaId") Long subareaId);
 } 
