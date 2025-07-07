@@ -61,5 +61,16 @@ export async function updateSubarea(id: string, updates: Partial<SubareaFormData
 
 export async function deleteSubarea(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete subarea');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(errorData.message || `Failed to delete subarea: ${res.statusText}`);
+  }
+}
+
+export async function deleteSubareaWithData(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/${id}/with-data`, { method: 'DELETE' });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(errorData.message || `Failed to delete subarea with data: ${res.statusText}`);
+  }
 } 

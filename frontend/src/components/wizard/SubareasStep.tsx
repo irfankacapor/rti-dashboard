@@ -11,8 +11,11 @@ export const SubareasStep: React.FC = () => {
   const addSubarea = useWizardStore((state) => state.addSubarea);
   const updateSubarea = useWizardStore((state) => state.updateSubarea);
   const deleteSubarea = useWizardStore((state) => state.deleteSubarea);
+  const deleteSubareaWithData = useWizardStore((state) => state.deleteSubareaWithData);
+  const managedIndicators = useWizardStore((state) => state.managedIndicators);
   const getDefaultAreaId = useWizardStore((state) => state.getDefaultAreaId);
   const fetchSubareas = useWizardStore((state) => state.fetchSubareas);
+  const fetchManagedIndicators = useWizardStore((state) => state.fetchManagedIndicators);
   const isLoadingSubareas = useWizardStore((state) => state.isLoadingSubareas);
   const hasUnsavedChanges = useWizardStore((state) => state.hasUnsavedChanges);
 
@@ -56,9 +59,10 @@ export const SubareasStep: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manualAreas.length]);
 
-  // Fetch subareas on mount only once
+  // Fetch subareas and indicators on mount only once
   useEffect(() => {
     fetchSubareas();
+    fetchManagedIndicators();
   }, []); // Remove fetchSubareas from dependencies to prevent infinite loop
 
   // Handler for adding subarea
@@ -96,13 +100,30 @@ export const SubareasStep: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      deleteSubarea(id);
+      await deleteSubarea(id);
       setSnackbar('Subarea deleted');
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteWithData = async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await deleteSubareaWithData(id);
+      setSnackbar('Subarea deleted with data');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getRelatedIndicators = (subareaId: string) => {
+    return managedIndicators.filter(indicator => indicator.subareaId === subareaId);
   };
 
   return (
@@ -134,6 +155,8 @@ export const SubareasStep: React.FC = () => {
         onAdd={handleAdd}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
+        onDeleteWithData={handleDeleteWithData}
+        getRelatedIndicators={getRelatedIndicators}
         showAreaColumn={showAreaColumn}
         isWizardMode={true}
         allowEdit={true}

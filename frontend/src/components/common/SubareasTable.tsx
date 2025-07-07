@@ -10,6 +10,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { Subarea, SubareaFormData } from '@/types/subareas';
 import { Area } from '@/types/areas';
+import { ManagedIndicator } from '@/types/indicators';
+import SubareaDeleteWarningModal from '../SubareaDeleteWarningModal';
 
 interface SubareasTableProps {
   subareas: Subarea[];
@@ -18,6 +20,8 @@ interface SubareasTableProps {
   onAdd: (subarea: SubareaFormData) => void;
   onUpdate: (id: string, updates: Partial<Subarea>) => void;
   onDelete: (id: string) => void;
+  onDeleteWithData?: (id: string) => void;
+  getRelatedIndicators?: (subareaId: string) => ManagedIndicator[];
   showAreaColumn?: boolean;
   isWizardMode?: boolean;
   allowEdit?: boolean;
@@ -30,6 +34,8 @@ export const SubareasTable: React.FC<SubareasTableProps> = ({
   onAdd,
   onUpdate,
   onDelete,
+  onDeleteWithData,
+  getRelatedIndicators,
   showAreaColumn = false,
   isWizardMode = false,
   allowEdit = true,
@@ -40,6 +46,8 @@ export const SubareasTable: React.FC<SubareasTableProps> = ({
   const [addForm, setAddForm] = useState<SubareaFormData>({ name: '', description: '', areaId: '' });
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [subareaToDelete, setSubareaToDelete] = useState<Subarea | null>(null);
 
   const handleEdit = (subarea: Subarea) => {
     setEditingId(subarea.id);
@@ -90,10 +98,41 @@ export const SubareasTable: React.FC<SubareasTableProps> = ({
     setAddForm({ name: '', description: '', areaId: '' });
     setError(null);
   };
-  const handleDelete = (id: string) => setDeleteId(id);
-  const confirmDelete = () => {
-    if (deleteId) onDelete(deleteId);
-    setDeleteId(null);
+  const handleDelete = (id: string) => {
+    const subarea = subareas.find(s => s.id === id);
+    if (subarea) {
+      setSubareaToDelete(subarea);
+      setShowWarningModal(true);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (subareaToDelete) {
+      try {
+        await onDelete(subareaToDelete.id);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to delete subarea');
+      }
+    }
+    setShowWarningModal(false);
+    setSubareaToDelete(null);
+  };
+
+  const handleDeleteWithData = async () => {
+    if (subareaToDelete && onDeleteWithData) {
+      try {
+        await onDeleteWithData(subareaToDelete.id);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to delete subarea with data');
+      }
+    }
+    setShowWarningModal(false);
+    setSubareaToDelete(null);
+  };
+
+  const handleWarningModalClose = () => {
+    setShowWarningModal(false);
+    setSubareaToDelete(null);
   };
   // Ensure subareas is always an array
   const safeSubareas = Array.isArray(subareas) ? subareas : [];
@@ -236,15 +275,15 @@ export const SubareasTable: React.FC<SubareasTableProps> = ({
           Add Subarea
         </Button>
       )}
-      {/* Delete confirmation dialog */}
-      <Dialog open={!!deleteId} onClose={() => setDeleteId(null)}>
-        <DialogTitle>Delete Subarea</DialogTitle>
-        <DialogContent>Are you sure you want to delete this subarea?</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteId(null)}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">Delete</Button>
-        </DialogActions>
-      </Dialog>
+      {/* Warning modal for subarea deletion */}
+      <SubareaDeleteWarningModal
+        open={showWarningModal}
+        onClose={handleWarningModalClose}
+        subarea={subareaToDelete}
+        relatedIndicators={getRelatedIndicators ? getRelatedIndicators(subareaToDelete?.id || '') : []}
+        onDelete={handleDeleteConfirm}
+        onDeleteWithData={handleDeleteWithData}
+      />
     </>
   );
 }; 

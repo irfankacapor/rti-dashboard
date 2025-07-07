@@ -49,7 +49,8 @@ interface WizardState {
   fetchSubareas: () => Promise<void>;
   addSubarea: (subarea: SubareaFormData) => void; // Now local only
   updateSubarea: (id: string, updates: Partial<SubareaFormData>) => void; // Now local only
-  deleteSubarea: (id: string) => void; // Now local only
+  deleteSubarea: (id: string) => Promise<void>;
+  deleteSubareaWithData: (id: string) => Promise<void>;
   getSubareasByAreaId: (areaId: string) => Subarea[];
   getDefaultAreaId: () => string | null;
   saveSubareas: () => Promise<void>; // New: save to backend
@@ -273,10 +274,66 @@ export const useWizardStore = create<WizardState>()(
         }));
       },
 
-      deleteSubarea: (id) => {
-        set((state) => ({
-          dirtySubareas: state.dirtySubareas.filter((s) => s.id !== id),
-        }));
+      deleteSubarea: async (id) => {
+        const state = get();
+        const subarea = state.dirtySubareas.find(s => s.id === id);
+        
+        if (!subarea) {
+          throw new Error('Subarea not found');
+        }
+        
+        // Check if this subarea exists in the backend (subareas)
+        const existsInBackend = state.subareas.some(s => s.id === id);
+        
+        if (existsInBackend) {
+          // If it exists in backend, delete immediately
+          try {
+            await subareaService.deleteSubarea(id);
+            // Remove from both subareas and dirtySubareas
+            set((state) => ({
+              subareas: state.subareas.filter((s) => s.id !== id),
+              dirtySubareas: state.dirtySubareas.filter((s) => s.id !== id),
+            }));
+          } catch (error) {
+            throw new Error(`Failed to delete subarea "${subarea.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        } else {
+          // If it's only local, just remove from dirty subareas
+          set((state) => ({
+            dirtySubareas: state.dirtySubareas.filter((s) => s.id !== id),
+          }));
+        }
+      },
+
+      deleteSubareaWithData: async (id) => {
+        const state = get();
+        const subarea = state.dirtySubareas.find(s => s.id === id);
+        
+        if (!subarea) {
+          throw new Error('Subarea not found');
+        }
+        
+        // Check if this subarea exists in the backend (subareas)
+        const existsInBackend = state.subareas.some(s => s.id === id);
+        
+        if (existsInBackend) {
+          // If it exists in backend, delete with data immediately
+          try {
+            await subareaService.deleteSubareaWithData(id);
+            // Remove from both subareas and dirtySubareas
+            set((state) => ({
+              subareas: state.subareas.filter((s) => s.id !== id),
+              dirtySubareas: state.dirtySubareas.filter((s) => s.id !== id),
+            }));
+          } catch (error) {
+            throw new Error(`Failed to delete subarea "${subarea.name}" with data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        } else {
+          // If it's only local, just remove from dirty subareas
+          set((state) => ({
+            dirtySubareas: state.dirtySubareas.filter((s) => s.id !== id),
+          }));
+        }
       },
 
       saveSubareas: async () => {
@@ -311,15 +368,8 @@ export const useWizardStore = create<WizardState>()(
             )
           );
           
-          // Find deleted subareas
-          const deletedSubareas = subareas.filter(backendSubarea => 
-            !dirtySubareas.some(dirtySubarea => dirtySubarea.id === backendSubarea.id)
-          );
-
-          // Process deletions first
-          for (const subarea of deletedSubareas) {
-            await subareaService.deleteSubarea(subarea.id);
-          }
+          // Note: Deletions are now handled immediately in deleteSubarea method
+          // No need to process deletions here
 
           // Process updates
           for (const subarea of updatedSubareas) {

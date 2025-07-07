@@ -53,6 +53,12 @@ public class SubareaController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/subareas/{id}/with-data")
+    public ResponseEntity<Void> deleteSubareaWithData(@PathVariable Long id) {
+        subareaService.deleteWithData(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/subareas/{id}/aggregated-value")
     public ResponseEntity<Map<String, Object>> getAggregatedValue(@PathVariable Long id) {
         try {

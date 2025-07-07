@@ -94,6 +94,30 @@ public class SubareaService {
         subareaRepository.delete(subarea);
     }
 
+    @Transactional
+    public void deleteWithData(Long id) {
+        Subarea subarea = subareaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", id));
+        
+        // Get all indicators associated with this subarea
+        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findBySubareaId(id);
+        
+        // For each indicator, delete its associated fact values
+        for (SubareaIndicator subareaIndicator : subareaIndicators) {
+            Long indicatorId = subareaIndicator.getId().getIndicatorId();
+            List<FactIndicatorValue> factValues = factIndicatorValueRepository.findByIndicatorId(indicatorId);
+            factIndicatorValueRepository.deleteAll(factValues);
+        }
+        
+        // Remove all SubareaIndicator relationships
+        subareaIndicatorRepository.deleteAll(subareaIndicators);
+        
+        // Finally delete the subarea
+        subareaRepository.delete(subarea);
+        
+        log.info("Deleted subarea {} with {} associated indicators and their data", id, subareaIndicators.size());
+    }
+
     private SubareaResponse toResponse(Subarea subarea) {
         SubareaResponse resp = new SubareaResponse();
         resp.setId(subarea.getId());
