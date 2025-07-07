@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -26,6 +26,7 @@ import {
 import { ManualIndicatorData } from '@/types/indicators';
 import { Subarea } from '@/types/subareas';
 import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon } from '@mui/icons-material';
+import { indicatorManagementService } from '@/services/indicatorManagementService';
 
 interface AddIndicatorFormProps {
   subareas: Subarea[];
@@ -49,13 +50,6 @@ const DIMENSION_TYPES = [
     { value: 'district', label: 'District' },
   ] },
   { value: 'additional_dimension', label: 'Custom Dimension', subTypes: [] },
-];
-
-const INDICATOR_TYPES = [
-  { value: 'input', label: 'Input' },
-  { value: 'output', label: 'Output' },
-  { value: 'calculated', label: 'Calculated' },
-  { value: 'reference', label: 'Reference' },
 ];
 
 export const AddIndicatorForm: React.FC<AddIndicatorFormProps> = ({
@@ -93,6 +87,19 @@ export const AddIndicatorForm: React.FC<AddIndicatorFormProps> = ({
 
   // Validation
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Indicator types state
+  const [indicatorTypes, setIndicatorTypes] = useState<string[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [typesError, setTypesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoadingTypes(true);
+    indicatorManagementService.getIndicatorTypes()
+      .then(setIndicatorTypes)
+      .catch(() => setTypesError('Failed to load indicator types'))
+      .finally(() => setLoadingTypes(false));
+  }, []);
 
   // --- Step 1: Indicator Details ---
   const handleAddDimension = () => {
@@ -278,9 +285,13 @@ export const AddIndicatorForm: React.FC<AddIndicatorFormProps> = ({
                   label="Type"
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
+                  disabled={loadingTypes || !!typesError}
                 >
-                  {INDICATOR_TYPES.map(type => (
-                    <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                  <MenuItem value="" disabled>
+                    {loadingTypes ? 'Loading types...' : typesError ? 'Error loading types' : 'Select type'}
+                  </MenuItem>
+                  {indicatorTypes.map(type => (
+                    <MenuItem key={type.toLowerCase()} value={type.toLowerCase()}>{type.charAt(0) + type.slice(1).toLowerCase()}</MenuItem>
                   ))}
                 </Select>
               </FormControl>

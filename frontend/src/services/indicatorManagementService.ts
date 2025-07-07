@@ -258,7 +258,16 @@ export const indicatorManagementService = {
       throw new Error(`Failed to export indicators: ${response.statusText}`);
     }
     return response.blob();
-  }
+  },
+
+  // Fetch allowed indicator types from backend
+  getIndicatorTypes: async (): Promise<string[]> => {
+    const response = await fetch(`${API_BASE}/indicator-types`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch indicator types: ${response.statusText}`);
+    }
+    return response.json();
+  },
 };
 
 export default indicatorManagementService; 

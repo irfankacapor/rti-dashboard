@@ -87,4 +87,12 @@ public class IndicatorController {
         indicatorService.updateIndicatorValues(id, updates);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/indicator-types")
+    public ResponseEntity<List<String>> getIndicatorTypes() {
+        List<String> types = java.util.Arrays.stream(io.dashboard.model.Direction.values())
+                .map(Enum::name)
+                .toList();
+        return ResponseEntity.ok(types);
+    }
 } 

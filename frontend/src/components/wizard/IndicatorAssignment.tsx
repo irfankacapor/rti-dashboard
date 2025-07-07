@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Paper,
@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import { ProcessedIndicator } from '@/types/csvProcessing';
 import { Subarea } from '@/types/subareas';
+import { indicatorManagementService } from '@/services/indicatorManagementService';
 
 interface IndicatorAssignmentProps {
   indicators: ProcessedIndicator[];
@@ -42,6 +43,18 @@ export const IndicatorAssignment: React.FC<IndicatorAssignmentProps> = ({
   onSubmit,
   isLoading = false
 }) => {
+  const [indicatorTypes, setIndicatorTypes] = useState<string[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [typesError, setTypesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoadingTypes(true);
+    indicatorManagementService.getIndicatorTypes()
+      .then(setIndicatorTypes)
+      .catch(() => setTypesError('Failed to load indicator types'))
+      .finally(() => setLoadingTypes(false));
+  }, []);
+
   const getAssignmentStatus = (indicator: ProcessedIndicator) => {
     if (indicator.subareaId && indicator.direction) {
       return { status: 'complete', icon: <CheckIcon color="success" />, text: 'Complete' };
@@ -207,36 +220,26 @@ export const IndicatorAssignment: React.FC<IndicatorAssignmentProps> = ({
                               value={indicator.direction || ''}
                               onChange={(e) => onAssign(indicator.id, 'direction', e.target.value)}
                               displayEmpty
+                              disabled={loadingTypes || !!typesError}
                             >
                               <MenuItem value="" disabled>
-                                Select type
+                                {loadingTypes ? 'Loading types...' : typesError ? 'Error loading types' : 'Select type'}
                               </MenuItem>
-                              <MenuItem value="input">
-                                <Box display="flex" alignItems="center" gap={1}>
-                                  <Box
-                                    sx={{
-                                      width: 12,
-                                      height: 12,
-                                      borderRadius: '50%',
-                                      backgroundColor: '#4caf50'
-                                    }}
-                                  />
-                                  Input
-                                </Box>
-                              </MenuItem>
-                              <MenuItem value="output">
-                                <Box display="flex" alignItems="center" gap={1}>
-                                  <Box
-                                    sx={{
-                                      width: 12,
-                                      height: 12,
-                                      borderRadius: '50%',
-                                      backgroundColor: '#2196f3'
-                                    }}
-                                  />
-                                  Output
-                                </Box>
-                              </MenuItem>
+                              {indicatorTypes.map((type) => (
+                                <MenuItem key={type.toLowerCase()} value={type.toLowerCase()}>
+                                  <Box display="flex" alignItems="center" gap={1}>
+                                    <Box
+                                      sx={{
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: '50%',
+                                        backgroundColor: type.toLowerCase() === 'input' ? '#4caf50' : '#2196f3'
+                                      }}
+                                    />
+                                    {type.charAt(0) + type.slice(1).toLowerCase()}
+                                  </Box>
+                                </MenuItem>
+                              ))}
                             </Select>
                           </FormControl>
                         </TableCell>
