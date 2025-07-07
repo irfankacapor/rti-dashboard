@@ -126,6 +126,25 @@ public class IndicatorService {
     }
 
     @Transactional
+    public void deleteWithData(Long id) {
+        Indicator indicator = indicatorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", id));
+        
+        // Remove all FactIndicatorValue data first
+        List<FactIndicatorValue> factValues = factIndicatorValueRepository.findByIndicatorId(id);
+        factIndicatorValueRepository.deleteAll(factValues);
+        
+        // Remove all SubareaIndicator relationships
+        List<SubareaIndicator> relationships = subareaIndicatorRepository.findByIndicatorId(id);
+        subareaIndicatorRepository.deleteAll(relationships);
+        
+        // Finally delete the indicator
+        indicatorRepository.delete(indicator);
+        
+        log.info("Deleted indicator {} with {} associated data values", id, factValues.size());
+    }
+
+    @Transactional
     public void assignToSubarea(Long indicatorId, Long subareaId, SubareaIndicatorRequest request) {
         Indicator indicator = indicatorRepository.findById(indicatorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", indicatorId));

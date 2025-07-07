@@ -38,6 +38,7 @@ interface IndicatorTableProps {
   onSelectionChange: (selectedIds: string[]) => void;
   onIndicatorUpdate: (id: string, updates: Partial<ManagedIndicator>) => void;
   onIndicatorDelete: (id: string) => void;
+  onIndicatorDeleteWithData?: (id: string) => void;
   onBulkUpdate: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
   isSaving: boolean;
 }
@@ -49,6 +50,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
   onSelectionChange,
   onIndicatorUpdate,
   onIndicatorDelete,
+  onIndicatorDeleteWithData,
   onBulkUpdate,
   isSaving,
 }) => {
@@ -85,6 +87,12 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
 
   const handleDelete = (id: string) => {
     onIndicatorDelete(id);
+  };
+
+  const handleDeleteWithData = (id: string) => {
+    if (onIndicatorDeleteWithData) {
+      onIndicatorDeleteWithData(id);
+    }
   };
 
   const isAllSelected = indicators.length > 0 && selectedIds.length === indicators.length;
@@ -128,6 +136,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
               onCancel={handleCancel}
               onSelect={(selected) => handleSelect(indicator.id, selected)}
               onDelete={() => handleDelete(indicator.id)}
+              onDeleteWithData={() => handleDeleteWithData(indicator.id)}
               isSaving={isSaving}
             />
           ))}

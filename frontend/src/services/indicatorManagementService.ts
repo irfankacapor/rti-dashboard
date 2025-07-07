@@ -172,7 +172,19 @@ export const indicatorManagementService = {
       method: 'DELETE' 
     });
     if (!response.ok) {
-      throw new Error(`Failed to delete indicator: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(errorData.message || `Failed to delete indicator: ${response.statusText}`);
+    }
+  },
+
+  // Delete indicator with all associated data
+  deleteIndicatorWithData: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/indicators/${id}/with-data`, { 
+      method: 'DELETE' 
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(errorData.message || `Failed to delete indicator with data: ${response.statusText}`);
     }
   },
 
@@ -198,7 +210,8 @@ export const indicatorManagementService = {
       body: JSON.stringify({ ids })
     });
     if (!response.ok) {
-      throw new Error(`Failed to bulk delete indicators: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(errorData.message || `Failed to bulk delete indicators: ${response.statusText}`);
     }
   },
 

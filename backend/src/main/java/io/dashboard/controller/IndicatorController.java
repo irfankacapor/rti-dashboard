@@ -51,6 +51,12 @@ public class IndicatorController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/indicators/{id}/with-data")
+    public ResponseEntity<Void> deleteIndicatorWithData(@PathVariable Long id) {
+        indicatorService.deleteWithData(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/indicators/{indicatorId}/subareas/{subareaId}")
     public ResponseEntity<Void> assignIndicatorToSubarea(
             @PathVariable Long indicatorId,

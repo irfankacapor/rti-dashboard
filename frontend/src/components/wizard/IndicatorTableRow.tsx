@@ -15,6 +15,12 @@ import {
   TextField,
   ToggleButtonGroup,
   ToggleButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Button,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -36,6 +42,7 @@ interface IndicatorTableRowProps {
   onCancel: () => void;
   onSelect: (selected: boolean) => void;
   onDelete: () => void;
+  onDeleteWithData?: () => void;
   isSaving: boolean;
 }
 
@@ -49,8 +56,10 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
   onCancel,
   onSelect,
   onDelete,
+  onDeleteWithData,
   isSaving,
 }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState<IndicatorFormData>({
     name: indicator.name,
     description: indicator.description || '',
@@ -85,6 +94,18 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
     onCancel();
   };
 
+  const handleDeleteConfirm = () => {
+    onDelete();
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeleteWithDataConfirm = () => {
+    if (onDeleteWithData) {
+      onDeleteWithData();
+    }
+    setShowDeleteConfirm(false);
+  };
+
   const getSubareaName = (subareaId: string) => {
     const subarea = subareas.find(s => s.id === subareaId);
     return subarea?.name || 'Unknown';
@@ -104,139 +125,137 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
     }
   };
 
-  if (isEditing) {
-    return (
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            checked={isSelected}
-            onChange={(e) => onSelect(e.target.checked)}
-            disabled={isSaving}
-          />
-        </TableCell>
-        <TableCell>
-          <TextField
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            size="small"
-            fullWidth
-            required
-          />
-        </TableCell>
-        <TableCell>
-          <TextField
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            size="small"
-            fullWidth
-            multiline
-            rows={2}
-          />
-        </TableCell>
-        <TableCell>
-          <TextField
-            value={formData.unit}
-            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-            size="small"
-            fullWidth
-          />
-        </TableCell>
-        <TableCell>
-          <TextField
-            value={formData.source}
-            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-            size="small"
-            fullWidth
-          />
-        </TableCell>
-        <TableCell>
-          <FormControl size="small" fullWidth>
-            <Select
-              value={formData.dataType}
-              onChange={(e) => setFormData({ ...formData, dataType: e.target.value })}
-            >
-              <MenuItem value="integer">Integer</MenuItem>
-              <MenuItem value="decimal">Decimal</MenuItem>
-              <MenuItem value="percentage">Percentage</MenuItem>
-              <MenuItem value="index">Index</MenuItem>
-            </Select>
-          </FormControl>
-        </TableCell>
-        <TableCell>
-          <FormControl size="small" fullWidth>
-            <Select
-              value={formData.subareaId}
-              onChange={(e) => setFormData({ ...formData, subareaId: e.target.value })}
-            >
-              <MenuItem value="">No Subarea</MenuItem>
-              {subareas.map(subarea => (
-                <MenuItem key={subarea.id} value={subarea.id}>
-                  {subarea.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </TableCell>
-        <TableCell>
-          <ToggleButtonGroup
-            value={formData.direction}
-            exclusive
-            size="small"
-            onChange={(e, value) => value && setFormData({ ...formData, direction: value })}
+  const editingRow = (
+    <TableRow>
+      <TableCell padding="checkbox">
+        <Checkbox
+          checked={isSelected}
+          onChange={(e) => onSelect(e.target.checked)}
+          disabled={isSaving}
+        />
+      </TableCell>
+      <TableCell>
+        <TextField
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          size="small"
+          fullWidth
+          required
+        />
+      </TableCell>
+      <TableCell>
+        <TextField
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          size="small"
+          fullWidth
+          multiline
+          rows={2}
+        />
+      </TableCell>
+      <TableCell>
+        <TextField
+          value={formData.unit}
+          onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+          size="small"
+          fullWidth
+        />
+      </TableCell>
+      <TableCell>
+        <TextField
+          value={formData.source}
+          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+          size="small"
+          fullWidth
+        />
+      </TableCell>
+      <TableCell>
+        <FormControl size="small" fullWidth>
+          <Select
+            value={formData.dataType}
+            onChange={(e) => setFormData({ ...formData, dataType: e.target.value })}
           >
-            <ToggleButton value="input">Input</ToggleButton>
-            <ToggleButton value="output">Output</ToggleButton>
-          </ToggleButtonGroup>
-        </TableCell>
-        <TableCell>
-          <Typography variant="body2" color="text.secondary">
-            {indicator.valueCount}
-          </Typography>
-        </TableCell>
-        <TableCell>
-          <Box display="flex" gap={0.5} flexWrap="wrap">
-            {indicator.dimensions?.map((dimension, index) => (
-              <Chip
-                key={index}
-                label={dimension}
-                size="small"
-                variant="outlined"
-              />
-            )) || (
-              <Typography variant="body2" color="text.secondary">
-                No dimensions
-              </Typography>
-            )}
-          </Box>
-        </TableCell>
-        <TableCell>
-          <Box display="flex" gap={0.5}>
-            <Tooltip title="Save">
-              <IconButton
-                size="small"
-                onClick={handleSave}
-                disabled={isSaving}
-                color="primary"
-              >
-                <SaveIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Cancel">
-              <IconButton
-                size="small"
-                onClick={handleCancel}
-                disabled={isSaving}
-              >
-                <CancelIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </TableCell>
-      </TableRow>
-    );
-  }
+            <MenuItem value="integer">Integer</MenuItem>
+            <MenuItem value="decimal">Decimal</MenuItem>
+            <MenuItem value="percentage">Percentage</MenuItem>
+            <MenuItem value="index">Index</MenuItem>
+          </Select>
+        </FormControl>
+      </TableCell>
+      <TableCell>
+        <FormControl size="small" fullWidth>
+          <Select
+            value={formData.subareaId}
+            onChange={(e) => setFormData({ ...formData, subareaId: e.target.value })}
+          >
+            <MenuItem value="">No Subarea</MenuItem>
+            {subareas.map(subarea => (
+              <MenuItem key={subarea.id} value={subarea.id}>
+                {subarea.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </TableCell>
+      <TableCell>
+        <ToggleButtonGroup
+          value={formData.direction}
+          exclusive
+          size="small"
+          onChange={(e, value) => value && setFormData({ ...formData, direction: value })}
+        >
+          <ToggleButton value="input">Input</ToggleButton>
+          <ToggleButton value="output">Output</ToggleButton>
+        </ToggleButtonGroup>
+      </TableCell>
+      <TableCell>
+        <Typography variant="body2" color="text.secondary">
+          {indicator.valueCount}
+        </Typography>
+      </TableCell>
+      <TableCell>
+        <Box display="flex" gap={0.5} flexWrap="wrap">
+          {indicator.dimensions?.map((dimension, index) => (
+            <Chip
+              key={index}
+              label={dimension}
+              size="small"
+              variant="outlined"
+            />
+          )) || (
+            <Typography variant="body2" color="text.secondary">
+              No dimensions
+            </Typography>
+          )}
+        </Box>
+      </TableCell>
+      <TableCell>
+        <Box display="flex" gap={0.5}>
+          <Tooltip title="Save">
+            <IconButton
+              size="small"
+              onClick={handleSave}
+              disabled={isSaving}
+              color="primary"
+            >
+              <SaveIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Cancel">
+            <IconButton
+              size="small"
+              onClick={handleCancel}
+              disabled={isSaving}
+            >
+              <CancelIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </TableCell>
+    </TableRow>
+  );
 
-  return (
+  const displayRow = (
     <TableRow>
       <TableCell padding="checkbox">
         <Checkbox
@@ -333,7 +352,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           <Tooltip title="Delete">
             <IconButton
               size="small"
-              onClick={onDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isSaving}
               color="error"
             >
@@ -343,5 +362,42 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         </Box>
       </TableCell>
     </TableRow>
+  );
+
+  return (
+    <>
+      {isEditing ? editingRow : displayRow}
+      
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action cannot be undone.
+          </Alert>
+          <Typography>
+            Are you sure you want to delete the indicator "{indicator.name}"?
+          </Typography>
+          {onDeleteWithData && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                If this indicator has associated data values, you may need to use the "Delete with Data" option.
+              </Typography>
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="outlined">
+            Delete
+          </Button>
+          {onDeleteWithData && (
+            <Button onClick={handleDeleteWithDataConfirm} color="error" variant="contained">
+              Delete with Data
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }; 

@@ -60,9 +60,10 @@ interface WizardState {
   fetchManagedIndicators: () => Promise<void>;
   updateManagedIndicator: (id: string, updates: Partial<ManagedIndicator>) => void;
   addManualIndicator: (indicator: ManualIndicatorData) => void;
-  deleteManagedIndicator: (id: string) => void;
+  deleteManagedIndicator: (id: string) => Promise<void>;
+  deleteManagedIndicatorWithData: (id: string) => Promise<void>;
   bulkUpdateIndicators: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
-  bulkDeleteIndicators: (ids: string[]) => void;
+  bulkDeleteIndicators: (ids: string[]) => Promise<void>;
   markIndicatorsAsModified: () => void;
   validateIndicatorData: () => { isValid: boolean; errors: string[] };
   mergeNewCsvIndicators: (newIndicators: ProcessedIndicator[]) => void;
@@ -413,28 +414,23 @@ export const useWizardStore = create<WizardState>()(
         );
 
         // Check if indicators have changed
-        if (managedIndicators.length !== dirtyIndicators.length) return true;
-        const indicatorsChanged = managedIndicators.some(indicator => 
-          !dirtyIndicators.some(dirtyIndicator => 
-            dirtyIndicator.id === indicator.id && 
-            dirtyIndicator.name === indicator.name && 
-            dirtyIndicator.description === indicator.description &&
-            dirtyIndicator.unit === indicator.unit &&
-            dirtyIndicator.source === indicator.source &&
-            dirtyIndicator.subareaId === indicator.subareaId &&
-            dirtyIndicator.direction === indicator.direction
-          )
-        ) || dirtyIndicators.some(dirtyIndicator => 
-          !managedIndicators.some(indicator => 
-            indicator.id === dirtyIndicator.id && 
-            indicator.name === dirtyIndicator.name && 
-            indicator.description === dirtyIndicator.description &&
-            indicator.unit === dirtyIndicator.unit &&
-            indicator.source === dirtyIndicator.source &&
-            indicator.subareaId === dirtyIndicator.subareaId &&
-            indicator.direction === dirtyIndicator.direction
-          )
-        );
+        // Note: Since deletions are now handled immediately, we only need to check for updates and additions
+        const indicatorsChanged = dirtyIndicators.some(dirtyIndicator => {
+          const managedIndicator = managedIndicators.find(indicator => indicator.id === dirtyIndicator.id);
+          if (!managedIndicator) {
+            // This is a new indicator (addition)
+            return true;
+          }
+          // Check if any field has changed (update)
+          return (
+            managedIndicator.name !== dirtyIndicator.name || 
+            managedIndicator.description !== dirtyIndicator.description ||
+            managedIndicator.unit !== dirtyIndicator.unit ||
+            managedIndicator.source !== dirtyIndicator.source ||
+            managedIndicator.subareaId !== dirtyIndicator.subareaId ||
+            managedIndicator.direction !== dirtyIndicator.direction
+          );
+        });
         
         return areasChanged || subareasChanged || indicatorsChanged;
       },
@@ -485,10 +481,66 @@ export const useWizardStore = create<WizardState>()(
         }));
       },
 
-      deleteManagedIndicator: (id) => {
-        set((state) => ({
-          dirtyIndicators: state.dirtyIndicators.filter((i) => i.id !== id),
-        }));
+      deleteManagedIndicator: async (id) => {
+        const state = get();
+        const indicator = state.dirtyIndicators.find(i => i.id === id);
+        
+        if (!indicator) {
+          throw new Error('Indicator not found');
+        }
+        
+        // Check if this indicator exists in the backend (managedIndicators)
+        const existsInBackend = state.managedIndicators.some(mi => mi.id === id);
+        
+        if (existsInBackend) {
+          // If it exists in backend, delete immediately
+          try {
+            await indicatorManagementService.deleteIndicator(id);
+            // Remove from both managed and dirty indicators
+            set((state) => ({
+              managedIndicators: state.managedIndicators.filter((i) => i.id !== id),
+              dirtyIndicators: state.dirtyIndicators.filter((i) => i.id !== id),
+            }));
+          } catch (error) {
+            throw new Error(`Failed to delete indicator "${indicator.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        } else {
+          // If it's only local, just remove from dirty indicators
+          set((state) => ({
+            dirtyIndicators: state.dirtyIndicators.filter((i) => i.id !== id),
+          }));
+        }
+      },
+
+      deleteManagedIndicatorWithData: async (id: string) => {
+        const state = get();
+        const indicator = state.dirtyIndicators.find(i => i.id === id);
+        
+        if (!indicator) {
+          throw new Error('Indicator not found');
+        }
+        
+        // Check if this indicator exists in the backend (managedIndicators)
+        const existsInBackend = state.managedIndicators.some(mi => mi.id === id);
+        
+        if (existsInBackend) {
+          // If it exists in backend, delete with data immediately
+          try {
+            await indicatorManagementService.deleteIndicatorWithData(id);
+            // Remove from both managed and dirty indicators
+            set((state) => ({
+              managedIndicators: state.managedIndicators.filter((i) => i.id !== id),
+              dirtyIndicators: state.dirtyIndicators.filter((i) => i.id !== id),
+            }));
+          } catch (error) {
+            throw new Error(`Failed to delete indicator "${indicator.name}" with data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        } else {
+          // If it's only local, just remove from dirty indicators
+          set((state) => ({
+            dirtyIndicators: state.dirtyIndicators.filter((i) => i.id !== id),
+          }));
+        }
       },
 
       bulkUpdateIndicators: (updates) => {
@@ -500,8 +552,30 @@ export const useWizardStore = create<WizardState>()(
         }));
       },
 
-      bulkDeleteIndicators: (ids) => {
+      bulkDeleteIndicators: async (ids) => {
+        const state = get();
+        const indicatorsToDelete = state.dirtyIndicators.filter(i => ids.includes(i.id));
+        
+        // Separate indicators that exist in backend vs local only
+        const backendIndicators = indicatorsToDelete.filter(indicator => 
+          state.managedIndicators.some(mi => mi.id === indicator.id)
+        );
+        const localIndicators = indicatorsToDelete.filter(indicator => 
+          !state.managedIndicators.some(mi => mi.id === indicator.id)
+        );
+        
+        // Delete backend indicators immediately
+        for (const indicator of backendIndicators) {
+          try {
+            await indicatorManagementService.deleteIndicator(indicator.id);
+          } catch (error) {
+            throw new Error(`Failed to delete indicator "${indicator.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+        
+        // Remove all indicators from state
         set((state) => ({
+          managedIndicators: state.managedIndicators.filter((i) => !ids.includes(i.id)),
           dirtyIndicators: state.dirtyIndicators.filter((i) => !ids.includes(i.id)),
         }));
       },
@@ -556,15 +630,8 @@ export const useWizardStore = create<WizardState>()(
             )
           );
           
-          // Find deleted indicators
-          const deletedIndicators = managedIndicators.filter(managedIndicator => 
-            !dirtyIndicators.some(dirtyIndicator => dirtyIndicator.id === managedIndicator.id)
-          );
-
-          // Process deletions first
-          for (const indicator of deletedIndicators) {
-            await indicatorManagementService.deleteIndicator(indicator.id);
-          }
+          // Note: Deletions are now handled immediately, so we don't need to process them here
+          // The managedIndicators and dirtyIndicators are kept in sync for deletions
 
           // Process updates using the new method that handles relationships
           for (const indicator of updatedIndicators) {

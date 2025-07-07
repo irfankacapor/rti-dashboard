@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.exception.JDBCConnectionException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +67,27 @@ public class GlobalExceptionHandler {
             HttpStatus.INTERNAL_SERVER_ERROR.value()
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        logger.error("Data integrity violation", ex);
+        
+                String message = "Cannot delete this item because it is still referenced by other data.";
+        if (ex.getMessage() != null && ex.getMessage().contains("fact_indicator_values")) {
+          message = "Cannot delete this indicator because it has associated data values. You can either:\n" +
+                   "1. Remove the associated data values first, or\n" +
+                   "2. Use the 'Delete with Data' option to remove both the indicator and its data.";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("foreign key constraint")) {
+          message = "Cannot delete this item because it is referenced by other data. Please remove all related items first.";
+        }
+        
+        ErrorResponse errorResponse = new ErrorResponse(
+            message,
+            "Data Integrity Violation",
+            HttpStatus.CONFLICT.value()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
     
     @ExceptionHandler(MethodArgumentNotValidException.class)

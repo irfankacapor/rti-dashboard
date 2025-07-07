@@ -40,6 +40,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     updateManagedIndicator,
     addManualIndicator,
     deleteManagedIndicator,
+    deleteManagedIndicatorWithData,
     bulkUpdateIndicators,
     bulkDeleteIndicators,
     validateIndicatorData,
@@ -82,15 +83,33 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     }
   };
 
-  const handleIndicatorDelete = (id: string) => {
+  const handleIndicatorDelete = async (id: string) => {
     try {
-      // Only update local state - backend saving happens when clicking Next
-      deleteManagedIndicator(id);
+      await deleteManagedIndicator(id);
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       setSnackbar('Indicator deleted successfully');
     } catch (error) {
       console.error('Failed to delete indicator:', error);
-      setError('Failed to delete indicator');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete indicator';
+      
+      // Check if this is a constraint violation error
+      if (errorMessage.includes('associated data values')) {
+        // Show a more specific error with options
+        setError(errorMessage + '\n\nYou can use the "Delete with Data" option to remove both the indicator and its associated data.');
+      } else {
+        setError(errorMessage);
+      }
+    }
+  };
+
+  const handleIndicatorDeleteWithData = async (id: string) => {
+    try {
+      await deleteManagedIndicatorWithData(id);
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+      setSnackbar('Indicator and associated data deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete indicator with data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete indicator with data');
     }
   };
 
@@ -105,15 +124,14 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     }
   };
 
-  const handleBulkDelete = (ids: string[]) => {
+  const handleBulkDelete = async (ids: string[]) => {
     try {
-      // Only update local state - backend saving happens when clicking Next
-      bulkDeleteIndicators(ids);
+      await bulkDeleteIndicators(ids);
       setSelectedIds([]);
       setSnackbar(`${ids.length} indicators deleted successfully`);
     } catch (error) {
       console.error('Failed to delete indicators:', error);
-      setError('Failed to delete indicators');
+      setError(error instanceof Error ? error.message : 'Failed to delete indicators');
     }
   };
 
@@ -265,6 +283,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           onSelectionChange={setSelectedIds}
           onIndicatorUpdate={handleIndicatorUpdate}
           onIndicatorDelete={handleIndicatorDelete}
+          onIndicatorDeleteWithData={handleIndicatorDeleteWithData}
           onBulkUpdate={handleBulkUpdate}
           isSaving={isSaving}
         />
