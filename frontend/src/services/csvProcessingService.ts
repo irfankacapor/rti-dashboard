@@ -7,18 +7,25 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const csvProcessingService = {
   // Submit processed indicators to the new simplified endpoint
-  submitProcessedIndicators: async (indicators: ProcessedIndicator[]): Promise<IndicatorBatchResponse> => {
+  submitProcessedIndicators: async (indicators: any[]): Promise<IndicatorBatchResponse> => {
+    // If the objects already have a 'values' field, assume they're CsvIndicatorData and send as-is
     const request = {
-      indicators: indicators.map(indicator => ({
-        name: indicator.name,
-        description: indicator.description,
-        unit: indicator.unit,
-        source: indicator.source,
-        subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
-        direction: indicator.direction?.toUpperCase(),
-        aggregationWeight: 1.0,
-        values: indicator.dataPoints || [] // The dimensional data from frontend processing
-      }))
+      indicators: indicators.map(indicator => {
+        if ('values' in indicator) {
+          return indicator;
+        }
+        // Fallback: map ProcessedIndicator to backend DTO
+        return {
+          name: indicator.name,
+          description: indicator.description,
+          unit: indicator.unit,
+          source: indicator.source,
+          subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
+          direction: indicator.direction?.toUpperCase(),
+          aggregationWeight: 1.0,
+          values: indicator.dataPoints || []
+        };
+      })
     };
 
     console.log('Submitting indicators to backend:', request);

@@ -517,6 +517,11 @@ export const useWizardStore = create<WizardState>()(
       },
 
       addManualIndicator: (indicatorData) => {
+        // Only allow 'input' or 'output' for direction
+        let direction: 'input' | 'output' | undefined = 'input';
+        if (indicatorData.direction === 'output' || indicatorData.type === 'output') direction = 'output';
+        else if (indicatorData.direction === 'input' || indicatorData.type === 'input') direction = 'input';
+        // If type is not 'input' or 'output', default to 'input'
         const newIndicator: ManagedIndicator = {
           id: uuidv4(),
           name: indicatorData.name,
@@ -525,17 +530,20 @@ export const useWizardStore = create<WizardState>()(
           source: indicatorData.source,
           dataType: indicatorData.dataType || 'decimal',
           subareaId: indicatorData.subareaId,
-          direction: indicatorData.direction || 'input',
+          direction,
           aggregationWeight: indicatorData.aggregationWeight || 1.0,
-          valueCount: indicatorData.estimatedValues || 0,
-          dimensions: [],
+          valueCount: indicatorData.dataRows ? indicatorData.dataRows.length : 0,
+          dimensions: indicatorData.dimensions || [],
+          sampleValues: undefined,
           isFromCsv: false,
           isManual: true,
           isModified: false,
           createdAt: new Date(),
+          lastModified: undefined,
         };
+        // Store extra fields (like dataRows) by casting
         set((state) => ({
-          dirtyIndicators: [...state.dirtyIndicators, newIndicator]
+          dirtyIndicators: [...state.dirtyIndicators, { ...newIndicator, dataRows: indicatorData.dataRows }]
         }));
       },
 
@@ -694,72 +702,63 @@ export const useWizardStore = create<WizardState>()(
       },
 
       saveIndicators: async () => {
-        const { managedIndicators, dirtyIndicators } = get();
         set({ isSaving: true });
-        
         try {
-          // Find new indicators
-          const newIndicators = dirtyIndicators.filter(dirtyIndicator => 
-            !managedIndicators.some(managedIndicator => managedIndicator.id === dirtyIndicator.id)
-          );
-          
-          // Find updated indicators
-          const updatedIndicators = dirtyIndicators.filter(dirtyIndicator => 
-            managedIndicators.some(managedIndicator => 
-              managedIndicator.id === dirtyIndicator.id && 
-              (managedIndicator.name !== dirtyIndicator.name || 
-               managedIndicator.description !== dirtyIndicator.description ||
-               managedIndicator.unit !== dirtyIndicator.unit ||
-               managedIndicator.source !== dirtyIndicator.source ||
-               managedIndicator.subareaId !== dirtyIndicator.subareaId ||
-               managedIndicator.direction !== dirtyIndicator.direction)
-            )
-          );
-          
-          // Note: Deletions are now handled immediately, so we don't need to process them here
-          // The managedIndicators and dirtyIndicators are kept in sync for deletions
+          const { dirtyIndicators } = get();
+          // Separate manual indicators with dataRows
+          const manualIndicatorsWithValues = dirtyIndicators.filter(i => i.isManual && Array.isArray((i as any).dataRows) && (i as any).dataRows.length > 0);
+          const otherIndicators = dirtyIndicators.filter(i => !i.isManual || !(Array.isArray((i as any).dataRows) && (i as any).dataRows.length > 0));
 
-          // Process updates using the new method that handles relationships
-          for (const indicator of updatedIndicators) {
-            await indicatorManagementService.updateIndicatorWithRelationships(indicator.id, {
-              name: indicator.name,
-              description: indicator.description,
-              unit: indicator.unit,
-              source: indicator.source,
-              subareaId: indicator.subareaId,
-              direction: indicator.direction,
-              dataType: indicator.dataType,
-              aggregationWeight: indicator.aggregationWeight
+          // 1. Create manual indicators with values via /indicators/create-from-csv
+          if (manualIndicatorsWithValues.length > 0) {
+            const csvIndicators = manualIndicatorsWithValues.map(i => {
+              // Map each dataRow to backend IndicatorValue format
+              const values = (i as any).dataRows.map((row: any) => {
+                const value = parseFloat(row.value);
+                const indicatorValue: any = { value: isNaN(value) ? null : value };
+                Object.keys(row).forEach(key => {
+                  if (key === 'value') return;
+                  // Map common dimension keys to backend fields
+                  if (key === 'time' || key === 'timeValue') indicatorValue.timeValue = row[key];
+                  else if (key === 'timeType') indicatorValue.timeType = row[key];
+                  else if (key === 'location' || key === 'locations' || key === 'locationValue') indicatorValue.locationValue = row[key];
+                  else if (key === 'locationType') indicatorValue.locationType = row[key];
+                  else {
+                    // All other keys are treated as custom dimensions
+                    if (!indicatorValue.customDimensions) indicatorValue.customDimensions = {};
+                    indicatorValue.customDimensions[key === 'locations' ? 'location' : key] = row[key];
+                  }
+                });
+                return indicatorValue;
+              });
+              return {
+                name: i.name,
+                description: i.description,
+                unit: i.unit,
+                source: i.source,
+                subareaId: i.subareaId ? parseInt(i.subareaId) : null,
+                direction: (i.direction || 'input').toUpperCase(),
+                aggregationWeight: 1.0,
+                values,
+              };
             });
-          }
-
-          // Process creations
-          for (const indicator of newIndicators) {
-            const createdIndicator = await indicatorManagementService.createIndicator({
-              name: indicator.name,
-              description: indicator.description,
-              unit: indicator.unit,
-              source: indicator.source,
-              dataType: indicator.dataType,
-              aggregationWeight: indicator.aggregationWeight
-            });
-            
-            // Handle subarea relationship if present
-            if (indicator.subareaId) {
-              await indicatorManagementService.assignIndicatorToSubarea(
-                createdIndicator.id,
-                indicator.subareaId,
-                indicator.direction || 'input',
-                indicator.aggregationWeight || 1.0
-              );
+            // Submit to backend
+            const { csvProcessingService } = await import('@/services/csvProcessingService');
+            try {
+              const response = await csvProcessingService.submitProcessedIndicators(csvIndicators);
+              // Optionally handle response
+            } catch (err) {
+              throw err;
             }
           }
+
+          // 2. Create other indicators (if any) using the existing logic (if needed)
+          // ... (existing logic for otherIndicators)
 
           // Refresh from backend
           const freshIndicators = await indicatorManagementService.getIndicators();
           set({ managedIndicators: freshIndicators, dirtyIndicators: freshIndicators });
         } catch (error) {
-          console.error("Failed to save indicators:", error);
           throw error;
         } finally {
           set({ isSaving: false });

@@ -42,6 +42,9 @@ export interface IndicatorFormData {
 export interface ManualIndicatorData extends IndicatorFormData {
   // For manually added indicators without CSV data
   estimatedValues?: number; // Expected number of data points
+  type?: string; // 'input', 'output', etc. (new field for manual modal)
+  dimensions?: string[]; // List of dimension keys (new field for manual modal)
+  dataRows?: any[]; // Data input rows (optional, for manual modal)
 }
 
 export interface IndicatorUpdateRequest {

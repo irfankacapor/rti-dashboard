@@ -76,7 +76,6 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
 
   return (
     <Box>
-      <Divider sx={{ my: 3 }} />
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Box>
           {showPrev && !isFirstStep && (

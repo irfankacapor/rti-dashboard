@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Box, Paper, Typography, Fade } from '@mui/material';
+import { Box, Paper, Typography, Fade, Divider } from '@mui/material';
 import { WizardStepper } from './WizardStepper';
 import { WizardNavigation } from './WizardNavigation';
 import { useWizardStore } from '@/lib/store/useWizardStore';
@@ -17,6 +17,7 @@ interface WizardContainerProps {
   skipButton?: boolean;
   skipDisabled?: boolean;
   onSkip?: () => void;
+  renderExtraButtons?: () => React.ReactNode;
 }
 
 export const WizardContainer: React.FC<WizardContainerProps> = ({
@@ -31,6 +32,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   skipButton = false,
   skipDisabled = false,
   onSkip,
+  renderExtraButtons,
 }) => {
   const { currentStep, steps, isLoading } = useWizardStore();
   const currentStepData = steps.find(s => s.id === currentStep);
@@ -56,17 +58,26 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
             {children}
           </Box>
         </Fade>
-
+        
         {showNavigation && (
-          <WizardNavigation
-            onNext={onNext}
-            onPrev={onPrev}
-            nextDisabled={nextDisabled}
-            nextLabel={nextLabel}
-            skipButton={skipButton}
-            skipDisabled={skipDisabled}
-            onSkip={onSkip}
-          />
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">     
+            
+              <Box flexGrow={1}>
+                <WizardNavigation
+                  onNext={onNext}
+                  onPrev={onPrev}
+                  nextDisabled={nextDisabled}
+                  nextLabel={nextLabel}
+                  skipButton={skipButton}
+                  skipDisabled={skipDisabled}
+                  onSkip={onSkip}
+                />
+              </Box>
+              <Box marginLeft="1rem">{renderExtraButtons && renderExtraButtons()}</Box>
+            </Box>
+          </>
         )}
       </Paper>
     </Box>
