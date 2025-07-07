@@ -185,19 +185,42 @@ export const validateDimensionMappings = (
   const dimensionTypes = mappings
     .filter(m => m.dimensionType !== 'indicator_values')
     .map(m => m.dimensionType);
-  const duplicates = dimensionTypes.filter((type, index) => 
-    dimensionTypes.indexOf(type) !== index
+  
+  // For additional_dimension, check for duplicate customDimensionName instead of dimensionType
+  const additionalDimensions = mappings.filter(m => m.dimensionType === 'additional_dimension');
+  const otherDimensions = mappings.filter(m => 
+    m.dimensionType !== 'indicator_values' && m.dimensionType !== 'additional_dimension'
   );
+  
+  // Check for duplicate dimension types in non-additional dimensions
+  const otherDimensionTypes = otherDimensions.map(m => m.dimensionType);
+  const duplicates = otherDimensionTypes.filter((type, index) => 
+    otherDimensionTypes.indexOf(type) !== index
+  );
+  
+  // Check for duplicate customDimensionName in additional dimensions
+  const additionalDimensionNames = additionalDimensions
+    .map(m => m.customDimensionName)
+    .filter(name => name && name.trim() !== '');
+  const duplicateAdditionalNames = additionalDimensionNames.filter((name, index) => 
+    additionalDimensionNames.indexOf(name) !== index
+  );
+  
   if (duplicates.length > 0) {
     errors.push(`Duplicate dimension types found: ${duplicates.join(', ')}`);
   }
+  
+  if (duplicateAdditionalNames.length > 0) {
+    errors.push(`Duplicate additional dimension names found: ${duplicateAdditionalNames.join(', ')}`);
+  }
+  
   // Check for additional_dimension without custom name
-  const additionalDimensions = mappings.filter(m => m.dimensionType === 'additional_dimension');
   additionalDimensions.forEach(mapping => {
     if (!mapping.customDimensionName || mapping.customDimensionName.trim() === '') {
       errors.push('Additional dimensions must have a custom name');
     }
   });
+  
   return {
     isValid: errors.length === 0,
     errors

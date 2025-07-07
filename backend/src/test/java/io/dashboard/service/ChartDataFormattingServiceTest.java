@@ -48,14 +48,14 @@ class ChartDataFormattingServiceTest {
         fact.setIndicator(indicator);
         fact.setTime(time);
         fact.setLocation(location);
-        fact.setGeneric(generic);
+        fact.setGenerics(java.util.Collections.singletonList(generic));
         fact.setValue(BigDecimal.valueOf(100.0));
         fact2 = new FactIndicatorValue();
         fact2.setId(2L);
         fact2.setIndicator(indicator);
         fact2.setTime(time);
         fact2.setLocation(location);
-        fact2.setGeneric(generic);
+        fact2.setGenerics(java.util.Collections.singletonList(generic));
         fact2.setValue(BigDecimal.valueOf(200.0));
     }
 

@@ -278,4 +278,48 @@ class IndicatorServiceTest {
         assertThatThrownBy(() -> indicatorService.removeFromSubarea(1L, 10L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    void getIndicatorValues_fetchesAllDimensionsIncludingGenerics() {
+        // Arrange
+        Indicator indicator = new Indicator();
+        indicator.setId(1L);
+        indicator.setName("Test Indicator");
+        DataType dataType = new DataType();
+        dataType.setId(1L);
+        dataType.setName("number");
+        indicator.setDataType(dataType);
+        when(indicatorRepository.findById(1L)).thenReturn(Optional.of(indicator));
+
+        // FactIndicatorValue with time, location, and generics
+        var time = new io.dashboard.model.DimTime();
+        time.setId(1L);
+        time.setValue("2020");
+        var location = new io.dashboard.model.DimLocation();
+        location.setId(1L);
+        location.setName("Berlin");
+        var generic = new io.dashboard.model.DimGeneric();
+        generic.setId(1L);
+        generic.setDimensionName("customDim");
+        generic.setValue("customValue");
+        var fact = new io.dashboard.model.FactIndicatorValue();
+        fact.setId(100L);
+        fact.setTime(time);
+        fact.setLocation(location);
+        fact.setGenerics(List.of(generic));
+        fact.setValue(java.math.BigDecimal.valueOf(42.0));
+        when(factIndicatorValueRepository.findByIndicatorIdWithGenerics(1L)).thenReturn(List.of(fact));
+
+        // Act
+        var response = indicatorService.getIndicatorValues(1L);
+
+        // Assert
+        assertThat(response.getRows()).hasSize(1);
+        assertThat(response.getRows().get(0).getDimensions().get("time")).isEqualTo("2020");
+        assertThat(response.getRows().get(0).getDimensions().get("location")).isEqualTo("Berlin");
+        assertThat(response.getRows().get(0).getDimensions().get("customDim")).isEqualTo("customValue");
+        assertThat(response.getDimensionColumns()).containsExactlyInAnyOrder("time", "location", "customDim");
+        assertThat(response.getIndicatorName()).isEqualTo("Test Indicator");
+        assertThat(response.getDataType()).isEqualTo("number");
+    }
 } 

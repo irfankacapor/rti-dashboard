@@ -26,9 +26,16 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import io.dashboard.dto.IndicatorValuesResponse;
+import io.dashboard.dto.IndicatorValueUpdate;
+import io.dashboard.model.DimTime;
+import io.dashboard.model.DimLocation;
+import io.dashboard.model.DimGeneric;
+import io.dashboard.dto.IndicatorValueRow;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -284,5 +291,60 @@ public class IndicatorService {
         resp.setAggregationWeight(subareaIndicator.getAggregationWeight());
         resp.setCreatedAt(subareaIndicator.getCreatedAt());
         return resp;
+    }
+
+    public IndicatorValuesResponse getIndicatorValues(Long indicatorId) {
+        Indicator indicator = indicatorRepository.findById(indicatorId)
+            .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", indicatorId));
+        List<FactIndicatorValue> facts = factIndicatorValueRepository.findByIndicatorIdWithGenerics(indicatorId);
+        List<String> dimensionColumns = new java.util.ArrayList<>();
+        // Always include time and location if present
+        if (facts.stream().anyMatch(f -> f.getTime() != null)) dimensionColumns.add("time");
+        if (facts.stream().anyMatch(f -> f.getLocation() != null)) dimensionColumns.add("location");
+        // Collect all custom dimension names
+        java.util.Set<String> customDims = new java.util.HashSet<>();
+        for (FactIndicatorValue fact : facts) {
+            if (fact.getGenerics() != null) {
+                for (DimGeneric g : fact.getGenerics()) {
+                    if (g.getDimensionName() != null) customDims.add(g.getDimensionName());
+                }
+            }
+        }
+        dimensionColumns.addAll(customDims);
+        List<IndicatorValueRow> rows = facts.stream().map(fact -> {
+            HashMap<String, String> dims = new HashMap<>();
+            if (fact.getTime() != null) dims.put("time", fact.getTime().getValue());
+            if (fact.getLocation() != null) dims.put("location", fact.getLocation().getName());
+            if (fact.getGenerics() != null) {
+                for (DimGeneric g : fact.getGenerics()) {
+                    if (g.getDimensionName() != null) dims.put(g.getDimensionName(), g.getValue());
+                }
+            }
+            return IndicatorValueRow.builder()
+                .factId(fact.getId())
+                .dimensions(dims)
+                .value(fact.getValue())
+                .isEmpty(fact.getValue() == null)
+                .build();
+        }).collect(Collectors.toList());
+        return IndicatorValuesResponse.builder()
+            .rows(rows)
+            .dimensionColumns(dimensionColumns)
+            .indicatorName(indicator.getName())
+            .dataType(indicator.getDataType() != null ? indicator.getDataType().getName() : null)
+            .build();
+    }
+
+    public void updateIndicatorValues(Long indicatorId, List<IndicatorValueUpdate> updates) {
+        for (IndicatorValueUpdate update : updates) {
+            FactIndicatorValue fact = factIndicatorValueRepository.findById(update.getFactId())
+                .orElseThrow(() -> new ResourceNotFoundException("FactIndicatorValue", "id", update.getFactId()));
+            // Optionally: validate indicatorId matches
+            if (!fact.getIndicator().getId().equals(indicatorId)) {
+                throw new BadRequestException("Fact value does not belong to the specified indicator");
+            }
+            fact.setValue(update.getNewValue());
+            factIndicatorValueRepository.save(fact);
+        }
     }
 } 

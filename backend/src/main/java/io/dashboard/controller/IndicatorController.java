@@ -4,6 +4,8 @@ import io.dashboard.dto.IndicatorCreateRequest;
 import io.dashboard.dto.IndicatorResponse;
 import io.dashboard.dto.IndicatorUpdateRequest;
 import io.dashboard.dto.SubareaIndicatorRequest;
+import io.dashboard.dto.IndicatorValuesResponse;
+import io.dashboard.dto.IndicatorValueUpdate;
 import io.dashboard.service.IndicatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +73,18 @@ public class IndicatorController {
             @PathVariable Long indicatorId,
             @PathVariable Long subareaId) {
         indicatorService.removeFromSubarea(indicatorId, subareaId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/indicators/{id}/values")
+    public ResponseEntity<IndicatorValuesResponse> getIndicatorValues(@PathVariable Long id) {
+        IndicatorValuesResponse response = indicatorService.getIndicatorValues(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/indicators/{id}/values")
+    public ResponseEntity<Void> updateIndicatorValues(@PathVariable Long id, @RequestBody List<IndicatorValueUpdate> updates) {
+        indicatorService.updateIndicatorValues(id, updates);
         return ResponseEntity.noContent().build();
     }
 } 

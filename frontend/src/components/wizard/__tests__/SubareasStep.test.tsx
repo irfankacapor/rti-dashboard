@@ -20,11 +20,13 @@ const getMockState = (overrides = {}) => ({
   subareas: mockSubareas,
   dirtyAreas: mockAreas,
   dirtySubareas: mockSubareas,
+  managedIndicators: [],
   addSubarea: jest.fn(),
   updateSubarea: jest.fn(),
   deleteSubarea: jest.fn(),
   getDefaultAreaId: () => '1',
   fetchSubareas: jest.fn(),
+  fetchManagedIndicators: jest.fn(),
   isLoadingSubareas: false,
   hasUnsavedChanges: () => false,
   ...overrides,
@@ -118,7 +120,7 @@ describe('SubareasStep', () => {
     ((useWizardStore as unknown) as jest.Mock).mockImplementation((selector) => selector(getMockState({ deleteSubarea })));
     render(<SubareasStep />);
     fireEvent.click(await screen.findByTestId('delete-subarea'));
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getByText('Delete Subarea'));
     expect(deleteSubarea).toHaveBeenCalled();
   });
 

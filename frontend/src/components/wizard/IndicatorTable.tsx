@@ -41,6 +41,7 @@ interface IndicatorTableProps {
   onIndicatorDeleteWithData?: (id: string) => void;
   onBulkUpdate: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
   isSaving: boolean;
+  onEditValues?: (indicatorId: string) => void;
 }
 
 export const IndicatorTable: React.FC<IndicatorTableProps> = ({
@@ -53,6 +54,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
   onIndicatorDeleteWithData,
   onBulkUpdate,
   isSaving,
+  onEditValues,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -138,6 +140,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
               onDelete={() => handleDelete(indicator.id)}
               onDeleteWithData={() => handleDeleteWithData(indicator.id)}
               isSaving={isSaving}
+              onEditValues={onEditValues}
             />
           ))}
         </TableBody>

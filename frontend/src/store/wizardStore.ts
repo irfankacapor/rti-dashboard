@@ -13,6 +13,7 @@ import { ProcessedIndicator } from '@/types/csvProcessing';
 import * as areaService from '@/services/areaService';
 import * as subareaService from '@/services/subareaService';
 import indicatorManagementService from '@/services/indicatorManagementService';
+import { IndicatorValueEdit } from '@/types/indicatorValues';
 
 interface WizardState {
   // Backend state (persisted)
@@ -75,6 +76,11 @@ interface WizardState {
   // Step management
   saveStep: (stepId: number) => Promise<void>; // New: save current step data
   hasUnsavedChanges: () => boolean; // New: check if there are unsaved changes
+
+  // Indicator value edits
+  indicatorValueEdits: Record<string, IndicatorValueEdit[]>; // indicatorId -> edits
+  setIndicatorValueEdits: (indicatorId: string, edits: IndicatorValueEdit[]) => void;
+  clearIndicatorValueEdits: (indicatorId: string) => void;
 }
 
 const MAX_AREAS = 5;
@@ -102,6 +108,7 @@ export const useWizardStore = create<WizardState>()(
       isLoadingSubareas: false,
       isLoadingIndicators: false,
       isSaving: false,
+      indicatorValueEdits: {},
 
       setAreas: (areas) => set({ areas, dirtyAreas: areas }),
 
@@ -763,6 +770,23 @@ export const useWizardStore = create<WizardState>()(
         const { managedIndicators } = get();
         set({ dirtyIndicators: managedIndicators });
       },
+
+      setIndicatorValueEdits: (indicatorId, edits) => {
+        set((state) => ({
+          indicatorValueEdits: {
+            ...state.indicatorValueEdits,
+            [indicatorId]: edits,
+          },
+        }));
+      },
+
+      clearIndicatorValueEdits: (indicatorId) => {
+        set((state) => {
+          const newEdits = { ...state.indicatorValueEdits };
+          delete newEdits[indicatorId];
+          return { indicatorValueEdits: newEdits };
+        });
+      },
     }),
     {
       name: 'wizard-storage',
@@ -773,6 +797,7 @@ export const useWizardStore = create<WizardState>()(
         dirtySubareas: state.dirtySubareas,
         managedIndicators: state.managedIndicators,
         dirtyIndicators: state.dirtyIndicators,
+        indicatorValueEdits: state.indicatorValueEdits,
       }),
     }
   )

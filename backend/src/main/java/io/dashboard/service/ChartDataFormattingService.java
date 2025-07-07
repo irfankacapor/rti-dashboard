@@ -109,8 +109,8 @@ public class ChartDataFormattingService {
 
         // Group by generic dimension
         Map<String, List<FactIndicatorValue>> groupedByDimension = data.stream()
-                .filter(fact -> fact.getGeneric() != null)
-                .collect(Collectors.groupingBy(fact -> fact.getGeneric().getValue()));
+                .filter(fact -> fact.getGenerics() != null && !fact.getGenerics().isEmpty())
+                .collect(Collectors.groupingBy(fact -> fact.getGenerics().get(0).getValue()));
 
         List<String> labels = new ArrayList<>(groupedByDimension.keySet());
         List<Double> values = labels.stream()

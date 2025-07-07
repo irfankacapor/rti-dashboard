@@ -26,6 +26,7 @@ import { IndicatorTable } from './IndicatorTable';
 import { AddIndicatorForm } from './AddIndicatorForm';
 import { BulkIndicatorActions } from './BulkIndicatorActions';
 import { AddMoreCsvSection } from './AddMoreCsvSection';
+import IndicatorValuesEditModal from './IndicatorValuesEditModal';
 
 interface IndicatorManagementStepProps {
   onNavigateToStep: (stepIndex: number) => void;
@@ -58,6 +59,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
+  const [editingValuesIndicatorId, setEditingValuesIndicatorId] = useState<string | null>(null);
 
   // Fetch indicators on component mount
   useEffect(() => {
@@ -187,6 +189,10 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       console.error('Failed to add indicator:', error);
       setError('Failed to add indicator');
     }
+  };
+
+  const handleEditValues = (indicatorId: string) => {
+    setEditingValuesIndicatorId(indicatorId);
   };
 
   const selectedIndicators = dirtyIndicators.filter(indicator => 
@@ -324,6 +330,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           onIndicatorDeleteWithData={handleIndicatorDeleteWithData}
           onBulkUpdate={handleBulkUpdate}
           isSaving={isSaving}
+          onEditValues={handleEditValues}
         />
       </Paper>
 
@@ -360,6 +367,13 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           {snackbar}
         </Alert>
       </Snackbar>
+
+      <IndicatorValuesEditModal
+        open={!!editingValuesIndicatorId}
+        onClose={() => setEditingValuesIndicatorId(null)}
+        indicatorId={editingValuesIndicatorId || ''}
+        indicatorName={dirtyIndicators.find(i => i.id === editingValuesIndicatorId)?.name || ''}
+      />
     </Box>
   );
 }; 

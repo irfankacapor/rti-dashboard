@@ -139,8 +139,12 @@ public class IndicatorBatchService {
                 DimLocation locationId = value.getLocationValue() != null ?
                     createOrFindLocationValue(value.getLocationValue(), value.getLocationType()) : null;
                 
-                DimGeneric genericId = value.getCustomDimensions() != null && !value.getCustomDimensions().isEmpty() ?
-                    createOrFindGenericDimension(value.getCustomDimensions()) : null;
+                List<DimGeneric> generics = new ArrayList<>();
+                if (value.getCustomDimensions() != null && !value.getCustomDimensions().isEmpty()) {
+                    for (Map.Entry<String, String> entry : value.getCustomDimensions().entrySet()) {
+                        generics.add(createOrFindGenericDimension(entry.getKey(), entry.getValue()));
+                    }
+                }
                 
                 // Create fact record
                 FactIndicatorValue fact = FactIndicatorValue.builder()
@@ -148,7 +152,7 @@ public class IndicatorBatchService {
                     .value(value.getValue())
                     .time(timeId)
                     .location(locationId)
-                    .generic(genericId)
+                    .generics(generics)
                     .sourceRowHash(generateHash(value))
                     .build();
                     
@@ -190,12 +194,7 @@ public class IndicatorBatchService {
             });
     }
     
-    private DimGeneric createOrFindGenericDimension(Map<String, String> customDimensions) {
-        // For simplicity, create one generic dimension per custom dimension
-        // In practice, you might want to handle this differently
-        String dimensionName = customDimensions.keySet().iterator().next();
-        String dimensionValue = customDimensions.values().iterator().next();
-        
+    private DimGeneric createOrFindGenericDimension(String dimensionName, String dimensionValue) {
         Optional<DimGeneric> existing = dimGenericRepository.findByDimensionNameAndValue(dimensionName, dimensionValue);
         if (existing.isPresent()) {
             return existing.get();

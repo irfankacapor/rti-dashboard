@@ -123,13 +123,30 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
       setError('Please enter a custom dimension name');
       return;
     }
+    if (dimensionType === 'additional_dimension' && customDimensionName.trim().toLowerCase() === 'generic') {
+      setError('"generic" is not allowed as a custom dimension name. Please use a descriptive name.');
+      return;
+    }
 
     // Check for duplicate dimension types (except indicator_values)
     if (dimensionType !== 'indicator_values') {
-      const existingType = existingMappings.find(m => m.dimensionType === dimensionType);
-      if (existingType) {
-        setError(`A mapping for ${dimensionType} already exists`);
-        return;
+      if (dimensionType === 'additional_dimension') {
+        // For additional_dimension, check for duplicate customDimensionName
+        const existingAdditionalDimension = existingMappings.find(m => 
+          m.dimensionType === 'additional_dimension' && 
+          m.customDimensionName === customDimensionName.trim()
+        );
+        if (existingAdditionalDimension) {
+          setError(`A mapping for additional dimension "${customDimensionName.trim()}" already exists`);
+          return;
+        }
+      } else {
+        // For other dimension types, check for duplicate dimensionType
+        const existingType = existingMappings.find(m => m.dimensionType === dimensionType);
+        if (existingType) {
+          setError(`A mapping for ${dimensionType} already exists`);
+          return;
+        }
       }
     }
 

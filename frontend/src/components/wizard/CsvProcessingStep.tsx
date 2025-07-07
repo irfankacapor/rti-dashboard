@@ -172,7 +172,9 @@ export const CsvProcessingStep: React.FC = () => {
           indicatorMap.set(indicatorName, {
             id: uuidv4(),
             name: indicatorName,
-            dimensions: Object.keys(tuple.coordinates).filter(key => key !== 'indicator_names'),
+            dimensions: Object.keys(tuple.coordinates).filter(key =>
+              !['indicator_names', 'time', 'locations', 'unit', 'source'].includes(key)
+            ),
             valueCount: 0,
             unit: tuple.coordinates.unit,
             source: tuple.coordinates.source,

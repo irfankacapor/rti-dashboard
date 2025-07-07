@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "fact_indicator_values", indexes = {
@@ -40,9 +42,13 @@ public class FactIndicatorValue {
     @JoinColumn(name = "location_id")
     private DimLocation location;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "generic_id")
-    private DimGeneric generic;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "fact_indicator_value_generic",
+        joinColumns = @JoinColumn(name = "fact_indicator_value_id"),
+        inverseJoinColumns = @JoinColumn(name = "generic_id")
+    )
+    private List<DimGeneric> generics = new ArrayList<>();
     
     @Column(name = "numeric_value", nullable = false, precision = 19, scale = 6)
     private BigDecimal value;

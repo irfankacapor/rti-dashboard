@@ -44,6 +44,7 @@ interface IndicatorTableRowProps {
   onDelete: () => void;
   onDeleteWithData?: () => void;
   isSaving: boolean;
+  onEditValues?: (indicatorId: string) => void;
 }
 
 export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
@@ -58,6 +59,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
   onDelete,
   onDeleteWithData,
   isSaving,
+  onEditValues,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState<IndicatorFormData>({
@@ -332,9 +334,16 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         />
       </TableCell>
       <TableCell>
-        <Typography variant="body2" color="text.secondary">
-          {indicator.valueCount}
-        </Typography>
+        <Button 
+          variant="text" 
+          onClick={() => onEditValues?.(indicator.id)}
+          disabled={indicator.valueCount === 0}
+          sx={{ minWidth: 'auto', p: 0.5, '&:hover': { backgroundColor: 'action.hover' } }}
+        >
+          <Typography variant="body2" color="primary">
+            {indicator.valueCount}
+          </Typography>
+        </Button>
       </TableCell>
       <TableCell>
         <Box display="flex" gap={0.5} flexWrap="wrap">

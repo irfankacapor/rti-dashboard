@@ -71,12 +71,10 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "(:indicatorId IS NULL OR f.indicator.id = :indicatorId) AND " +
            "(:timeId IS NULL OR f.time.id = :timeId) AND " +
            "(:locationId IS NULL OR f.location.id = :locationId) AND " +
-           "(:genericId IS NULL OR f.generic.id = :genericId) AND " +
            "(:unitId IS NULL OR f.unit.id = :unitId)")
     List<FactIndicatorValue> findByDimensions(@Param("indicatorId") Long indicatorId,
                                              @Param("timeId") Long timeId,
                                              @Param("locationId") Long locationId,
-                                             @Param("genericId") Long genericId,
                                              @Param("unitId") Long unitId);
     
     // Get distinct indicators
@@ -95,8 +93,12 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
         "SELECT 'location' AS dimension " +
         "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND location_id IS NOT NULL) " +
         "UNION ALL " +
-        "SELECT 'generic' AS dimension " +
-        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND generic_id IS NOT NULL)",
+        "SELECT g.dimension_name AS dimension " +
+        "FROM fact_indicator_value_generic j " +
+        "JOIN fact_indicator_values f ON j.fact_indicator_value_id = f.id " +
+        "JOIN dim_generic g ON j.generic_id = g.id " +
+        "WHERE f.indicator_id = :indicatorId " +
+        "GROUP BY g.dimension_name",
         nativeQuery = true)
     List<String> findDimensionsByIndicatorId(@Param("indicatorId") Long indicatorId);
     
@@ -117,4 +119,13 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "LEFT JOIN FETCH f.unit " +
            "WHERE f.indicator.id = :indicatorId")
     List<FactIndicatorValue> findByIndicatorIdWithEagerLoading(@Param("indicatorId") Long indicatorId);
+    
+    // Find by indicator with eager loading of generics
+    @Query("SELECT f FROM FactIndicatorValue f " +
+           "LEFT JOIN FETCH f.time " +
+           "LEFT JOIN FETCH f.location " +
+           "LEFT JOIN FETCH f.unit " +
+           "LEFT JOIN FETCH f.generics " +
+           "WHERE f.indicator.id = :indicatorId")
+    List<FactIndicatorValue> findByIndicatorIdWithGenerics(@Param("indicatorId") Long indicatorId);
 } 
