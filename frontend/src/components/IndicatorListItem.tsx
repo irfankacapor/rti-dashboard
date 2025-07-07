@@ -3,19 +3,34 @@ import { Box, Typography, IconButton, Tooltip } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import IndividualIndicatorModal from './IndividualIndicatorModal';
+import StarIcon from '@mui/icons-material/Star';
 
 interface IndicatorListItemProps {
   indicator: any;
+  isAggregated?: boolean;
 }
 
-const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator }) => {
+const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggregated = false }) => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
   return (
     <>
-      <Box display="flex" alignItems="center" sx={{ cursor: 'pointer', py: 1 }} onClick={handleOpen}>
+      <Box
+        display="flex"
+        alignItems="center"
+        sx={{
+          cursor: 'pointer',
+          py: 1,
+          px: '0.5rem',
+          bgcolor: isAggregated ? '#e3f2fd' : 'inherit',
+          border: isAggregated ? '1px solid #90caf9' : '1px solid transparent',
+          borderRadius: 1,
+          mb: 1
+        }}
+        onClick={handleOpen}
+      >
         <Tooltip title={indicator.direction === 'input' ? 'Input' : 'Output'}>
           {indicator.direction === 'input' ? (
             <RadioButtonUncheckedIcon fontSize="small" sx={{ mr: 1 }} />

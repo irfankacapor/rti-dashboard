@@ -146,7 +146,11 @@ export default function SubareaDetailPage() {
                   <Typography>No indicators found for this subarea.</Typography>
                 ) : (
                   indicators.map((indicator: any) => (
-                    <IndicatorListItem key={indicator.id} indicator={indicator} />
+                    <IndicatorListItem
+                      key={indicator.id}
+                      indicator={indicator}
+                      isAggregated={(indicator.dimensions || []).includes(selectedDimension)}
+                    />
                   ))
                 )}
               </Box>
