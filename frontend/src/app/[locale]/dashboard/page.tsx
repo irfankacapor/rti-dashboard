@@ -93,31 +93,33 @@ export default function DashboardPage() {
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
       {/* Goals Sidebar */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
+      {goals && goals.length > 0 && (
+        <Drawer
+          variant="permanent"
+          sx={{
             width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-            borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-          },
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Goals
-          </Typography>
-        </Toolbar>
-        <GoalsSidebar
-          goals={goals || []}
-          goalGroups={goalGroups || []}
-          highlightedGoals={highlightedGoals}
-          onGoalHover={handleGoalHover}
-          onGoalLeave={handleGoalLeave}
-        />
-      </Drawer>
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: DRAWER_WIDTH,
+              boxSizing: 'border-box',
+              borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+            },
+          }}
+        >
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Goals
+            </Typography>
+          </Toolbar>
+          <GoalsSidebar
+            goals={goals || []}
+            goalGroups={goalGroups || []}
+            highlightedGoals={highlightedGoals}
+            onGoalHover={handleGoalHover}
+            onGoalLeave={handleGoalLeave}
+          />
+        </Drawer>
+      )}
 
       {/* Main Dashboard Content */}
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
