@@ -25,7 +25,7 @@ export const indicatorManagementService = {
       dataType: item.dataType?.code || 'decimal',
       subareaId: item.subareaId?.toString() || '',
       subareaName: item.subareaName || '',
-      direction: item.direction || 'input',
+      direction: (item.direction || 'input').toLowerCase(),
       aggregationWeight: item.aggregationWeight || 1.0,
       valueCount: item.valueCount || 0,
       dimensions: item.dimensions || [],

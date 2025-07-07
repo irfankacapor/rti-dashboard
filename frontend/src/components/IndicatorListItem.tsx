@@ -15,6 +15,14 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggr
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
+  // Debug: log indicator and its direction
+  React.useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('Indicator in IndicatorListItem:', indicator, 'direction:', indicator.direction);
+  }, [indicator]);
+
+  const normalizedDirection = (indicator.direction || '').toLowerCase();
+
   return (
     <>
       <Box
@@ -31,8 +39,8 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggr
         }}
         onClick={handleOpen}
       >
-        <Tooltip title={indicator.direction === 'input' ? 'Input' : 'Output'}>
-          {indicator.direction === 'input' ? (
+        <Tooltip title={normalizedDirection === 'input' ? 'Input' : 'Output'}>
+          {normalizedDirection === 'input' ? (
             <RadioButtonUncheckedIcon fontSize="small" sx={{ mr: 1 }} />
           ) : (
             <FiberManualRecordIcon fontSize="small" sx={{ mr: 1 }} />
