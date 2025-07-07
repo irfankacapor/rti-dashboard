@@ -62,6 +62,44 @@ export interface IndicatorValidationResult {
   warnings: string[];
 }
 
+export interface IndicatorDataPoint {
+  timestamp: string;
+  value: number;
+  dimensions?: Record<string, string>;
+}
+
+export interface IndicatorChartData {
+  label: string;
+  value: number;
+  name?: string;
+}
+
+export interface IndicatorDataResponse {
+  timeSeries?: IndicatorChartData[];
+  originalDataPoints?: IndicatorDataPoint[];
+  chartData?: IndicatorChartData[];
+  dimensions?: string[];
+  startDate?: string;
+  endDate?: string;
+  [key: string]: any; // For backward compatibility
+}
+
+export interface IndicatorDimensionValuesResponse {
+  dimensionColumns: string[];
+  rows?: Array<{
+    dimensions: Record<string, string>;
+    value?: number;
+    isEmpty: boolean;
+  }>;
+}
+
+export interface IndicatorAggregatedData {
+  data: Record<string, number>;
+  aggregatedValue?: number;
+  dimension?: string;
+  availableDimensions?: string[];
+}
+
 // Conversion utilities
 export const convertProcessedToManaged = (processed: ProcessedIndicator): ManagedIndicator => ({
   id: processed.id,

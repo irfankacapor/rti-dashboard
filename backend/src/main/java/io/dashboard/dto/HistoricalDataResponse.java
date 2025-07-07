@@ -8,6 +8,7 @@ public class HistoricalDataResponse {
     private List<HistoricalDataPoint> dataPoints;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private List<String> dimensions;
 
     public HistoricalDataResponse() {}
 
@@ -16,6 +17,14 @@ public class HistoricalDataResponse {
         this.dataPoints = dataPoints;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    public HistoricalDataResponse(Long indicatorId, List<HistoricalDataPoint> dataPoints, LocalDateTime startDate, LocalDateTime endDate, List<String> dimensions) {
+        this.indicatorId = indicatorId;
+        this.dataPoints = dataPoints;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.dimensions = dimensions;
     }
 
     // Getters and setters
@@ -30,4 +39,7 @@ public class HistoricalDataResponse {
     
     public LocalDateTime getEndDate() { return endDate; }
     public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+    
+    public List<String> getDimensions() { return dimensions; }
+    public void setDimensions(List<String> dimensions) { this.dimensions = dimensions; }
 } 

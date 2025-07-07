@@ -4,6 +4,7 @@ import { ResponsiveContainer, BarChart, LineChart, Bar, Line, XAxis, YAxis, Tool
 interface TimeSeriesChartProps {
   data: any[];
   chartType?: 'bar' | 'line';
+  xAxisFormatter?: (label: string) => string;
 }
 
 const getColor = (value: number) => {
@@ -12,25 +13,25 @@ const getColor = (value: number) => {
   return '#ff9800'; // orange
 };
 
-const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ data, chartType = 'bar' }) => {
+const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ data, chartType = 'bar', xAxisFormatter }) => {
   if (!data || data.length === 0) return null;
   return (
     <ResponsiveContainer width="100%" height={250}>
       {chartType === 'bar' ? (
         <BarChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 16 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" />
+          <XAxis dataKey="label" tickFormatter={xAxisFormatter} />
           <YAxis />
-          <Tooltip />
+          <Tooltip labelFormatter={xAxisFormatter} />
           <Legend />
           <Bar dataKey="value" fill="#1976d2" isAnimationActive={false} />
         </BarChart>
       ) : (
         <LineChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 16 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" />
+          <XAxis dataKey="label" tickFormatter={xAxisFormatter} />
           <YAxis />
-          <Tooltip />
+          <Tooltip labelFormatter={xAxisFormatter} />
           <Legend />
           <Line type="monotone" dataKey="value" stroke="#1976d2" dot={false} />
         </LineChart>

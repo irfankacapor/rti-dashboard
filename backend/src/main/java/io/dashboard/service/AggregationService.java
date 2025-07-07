@@ -202,4 +202,43 @@ public class AggregationService {
         }
         return result;
     }
+
+    public Map<String, Double> getIndicatorAggregatedByDimension(Long indicatorId, String dimension) {
+        List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdWithGenerics(indicatorId);
+
+        if (values.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Map<String, List<FactIndicatorValue>> grouped;
+        switch (dimension.toLowerCase()) {
+            case "time":
+                grouped = values.stream()
+                    .filter(v -> v.getTime() != null)
+                    .collect(Collectors.groupingBy(v -> v.getTime().getValue()));
+                break;
+            case "location":
+                grouped = values.stream()
+                    .filter(v -> v.getLocation() != null)
+                    .collect(Collectors.groupingBy(v -> v.getLocation().getName()));
+                break;
+            default:
+                grouped = values.stream()
+                    .flatMap(v -> v.getGenerics().stream()
+                        .filter(g -> g.getDimensionName() != null && g.getDimensionName().equalsIgnoreCase(dimension))
+                        .map(g -> new AbstractMap.SimpleEntry<>(g.getValue(), v)))
+                    .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+                break;
+        }
+
+        Map<String, Double> result = new HashMap<>();
+        for (Map.Entry<String, List<FactIndicatorValue>> entry : grouped.entrySet()) {
+            double avg = entry.getValue().stream()
+                .mapToDouble(v -> v.getValue().doubleValue())
+                .average()
+                .orElse(0.0);
+            result.put(entry.getKey(), avg);
+        }
+        return result;
+    }
 } 

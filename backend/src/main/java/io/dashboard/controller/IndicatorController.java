@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -94,5 +95,13 @@ public class IndicatorController {
                 .map(Enum::name)
                 .toList();
         return ResponseEntity.ok(types);
+    }
+
+    @GetMapping("/indicators/{id}/aggregate")
+    public ResponseEntity<Map<String, Double>> getIndicatorAggregatedByDimension(
+            @PathVariable Long id,
+            @RequestParam String dimension) {
+        Map<String, Double> result = indicatorService.getAggregatedByDimension(id, dimension);
+        return ResponseEntity.ok(result);
     }
 } 

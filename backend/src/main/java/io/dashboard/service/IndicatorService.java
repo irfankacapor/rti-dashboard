@@ -36,6 +36,7 @@ import io.dashboard.dto.IndicatorValueRow;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -346,5 +347,9 @@ public class IndicatorService {
             fact.setValue(update.getNewValue());
             factIndicatorValueRepository.save(fact);
         }
+    }
+
+    public Map<String, Double> getAggregatedByDimension(Long indicatorId, String dimension) {
+        return aggregationService.getIndicatorAggregatedByDimension(indicatorId, dimension);
     }
 } 

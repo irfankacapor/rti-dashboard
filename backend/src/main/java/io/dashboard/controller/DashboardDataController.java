@@ -164,7 +164,7 @@ public class DashboardDataController {
         }
         
         try {
-            HistoricalDataResponse response = dashboardDataService.getHistoricalData(indicatorId, monthsToFetch);
+            HistoricalDataResponse response = dashboardDataService.getHistoricalData(indicatorId, monthsToFetch, dimension);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error retrieving historical data: {}", e.getMessage());

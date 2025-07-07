@@ -44,7 +44,13 @@ export function useSubareaData(subareaId: string) {
   return { indicators, subarea, loading, error };
 }
 
-export function useIndicatorData(indicatorId: string, timeRange: string, dimension?: string) {
+export function useIndicatorData(
+  indicatorId: string,
+  timeRange: string,
+  dimension?: string,
+  defaultDimension: string = 'time',
+  availableDimensions?: string[]
+) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,38 +59,64 @@ export function useIndicatorData(indicatorId: string, timeRange: string, dimensi
     if (!indicatorId) return;
     setLoading(true);
     setError(null);
-    let url = `${API_BASE}/dashboard-data/historical/${indicatorId}?range=${timeRange}`;
-    if (dimension) url += `&dimension=${dimension}`;
-    fetch(url)
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then(responseData => {
-        // Transform the historical data response to match frontend expectations
-        if (responseData.dataPoints && Array.isArray(responseData.dataPoints)) {
-          const transformedData = {
-            timeSeries: responseData.dataPoints.map((point: any) => ({
-              label: point.timestamp,
-              value: point.value
-            })),
-            dimensions: ['time'],
-            startDate: responseData.startDate,
-            endDate: responseData.endDate
-          };
-          setData(transformedData);
-        } else {
-          setData(responseData);
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching indicator data:', err);
-        setError('Failed to fetch indicator data');
-      })
-      .finally(() => setLoading(false));
-  }, [indicatorId, timeRange, dimension]);
+
+    // Determine which dimension to use as default
+    let effectiveDefault = defaultDimension;
+    if (availableDimensions && availableDimensions.length > 0 && !availableDimensions.includes(defaultDimension)) {
+      effectiveDefault = availableDimensions[0];
+    }
+
+    // If the selected dimension is the default (or not set), fetch raw data
+    if (!dimension || dimension === effectiveDefault) {
+      let url = `${API_BASE}/dashboard-data/historical/${indicatorId}?range=${timeRange}`;
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          return res.json();
+        })
+        .then(responseData => {
+          if (responseData.dataPoints && Array.isArray(responseData.dataPoints)) {
+            setData({
+              timeSeries: responseData.dataPoints.map((point: any) => ({
+                label: point.timestamp,
+                value: point.value
+              })),
+              dimensions: responseData.dimensions || [effectiveDefault],
+              startDate: responseData.startDate,
+              endDate: responseData.endDate,
+              originalDataPoints: responseData.dataPoints
+            });
+          } else {
+            setData(responseData);
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching indicator data:', err);
+          setError('Failed to fetch indicator data');
+        })
+        .finally(() => setLoading(false));
+    } else {
+      // Otherwise, fetch aggregated data
+      fetch(`${API_BASE}/indicators/${indicatorId}/aggregate?dimension=${dimension}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          return res.json();
+        })
+        .then((result) => {
+          const chartData = Object.entries(result).map(([label, value]) => ({ label, value }));
+          setData({
+            chartData,
+            dimension,
+            availableDimensions: [dimension],
+          });
+        })
+        .catch((err) => {
+          console.error('Error fetching indicator aggregated data:', err);
+          setError('Failed to fetch indicator aggregated data');
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [indicatorId, timeRange, dimension, defaultDimension, availableDimensions && availableDimensions.join(',')]);
 
   return { data, loading, error };
 }

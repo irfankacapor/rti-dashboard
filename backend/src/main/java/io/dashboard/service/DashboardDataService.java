@@ -4,6 +4,8 @@ import io.dashboard.dto.*;
 import io.dashboard.model.*;
 import io.dashboard.model.SubareaIndicator;
 import io.dashboard.repository.*;
+import io.dashboard.exception.BadRequestException;
+import io.dashboard.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -180,7 +182,11 @@ public class DashboardDataService {
     }
 
     public HistoricalDataResponse getHistoricalData(Long indicatorId, int months) {
-        log.debug("Fetching historical data for indicator ID: {} for {} months", indicatorId, months);
+        return getHistoricalData(indicatorId, months, null);
+    }
+
+    public HistoricalDataResponse getHistoricalData(Long indicatorId, int months, String dimension) {
+        log.debug("Fetching historical data for indicator ID: {} for {} months, dimension: {}", indicatorId, months, dimension);
         
         LocalDateTime endDate = LocalDateTime.now();
         LocalDateTime startDate = endDate.minusMonths(months);
@@ -196,13 +202,95 @@ public class DashboardDataService {
             return response;
         }
         
-        List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdWithTime(indicatorId);
+        List<FactIndicatorValue> values;
+        List<String> availableDimensions = new ArrayList<>();
+        
+        if (dimension != null && !dimension.isEmpty()) {
+            // Fetch data for specific dimension
+            switch (dimension.toLowerCase()) {
+                case "time":
+                    values = factIndicatorValueRepository.findByIndicatorIdWithTime(indicatorId);
+                    availableDimensions.add("time");
+                    break;
+                case "location":
+                    values = factIndicatorValueRepository.findByIndicatorIdWithEagerLoading(indicatorId);
+                    availableDimensions.add("location");
+                    break;
+                default:
+                    // For custom dimensions, fetch with generics
+                    values = factIndicatorValueRepository.findByIndicatorIdWithGenerics(indicatorId);
+                    availableDimensions.add(dimension);
+                    break;
+            }
+        } else {
+            // Fetch all available data to determine dimensions
+            values = factIndicatorValueRepository.findByIndicatorIdWithGenerics(indicatorId);
+            
+            // Determine available dimensions
+            if (values.stream().anyMatch(v -> v.getTime() != null)) {
+                availableDimensions.add("time");
+            }
+            if (values.stream().anyMatch(v -> v.getLocation() != null)) {
+                availableDimensions.add("location");
+            }
+            
+            // Add custom dimensions from generics
+            Set<String> customDims = values.stream()
+                .filter(v -> v.getGenerics() != null)
+                .flatMap(v -> v.getGenerics().stream())
+                .filter(g -> g.getDimensionName() != null)
+                .map(DimGeneric::getDimensionName)
+                .collect(Collectors.toSet());
+            availableDimensions.addAll(customDims);
+        }
         
         List<HistoricalDataPoint> dataPoints = values.stream()
                 .map(v -> {
                     HistoricalDataPoint point = new HistoricalDataPoint();
-                    point.setTimestamp(v.getTime() != null ? v.getTime().getValue() : "Unknown");
+                    
+                    // Build dimensional context map
+                    Map<String, String> dimensions = new HashMap<>();
+                    if (v.getTime() != null) {
+                        dimensions.put("time", v.getTime().getValue());
+                    }
+                    if (v.getLocation() != null) {
+                        dimensions.put("location", v.getLocation().getName());
+                    }
+                    if (v.getGenerics() != null) {
+                        for (DimGeneric generic : v.getGenerics()) {
+                            if (generic.getDimensionName() != null) {
+                                dimensions.put(generic.getDimensionName(), generic.getValue());
+                            }
+                        }
+                    }
+                    
+                    if (dimension != null && !dimension.isEmpty()) {
+                        // Map data based on requested dimension
+                        switch (dimension.toLowerCase()) {
+                            case "time":
+                                point.setTimestamp(v.getTime() != null ? v.getTime().getValue() : "Unknown");
+                                break;
+                            case "location":
+                                point.setTimestamp(v.getLocation() != null ? v.getLocation().getName() : "Unknown");
+                                break;
+                            default:
+                                // For custom dimensions, find the matching generic
+                                String dimensionValue = v.getGenerics() != null ? 
+                                    v.getGenerics().stream()
+                                        .filter(g -> dimension.equals(g.getDimensionName()))
+                                        .map(DimGeneric::getValue)
+                                        .findFirst()
+                                        .orElse("Unknown") : "Unknown";
+                                point.setTimestamp(dimensionValue);
+                                break;
+                        }
+                    } else {
+                        // Default to time if no dimension specified
+                        point.setTimestamp(v.getTime() != null ? v.getTime().getValue() : "Unknown");
+                    }
+                    
                     point.setValue(v.getValue().doubleValue());
+                    point.setDimensions(dimensions);
                     return point;
                 })
                 .collect(Collectors.toList());
@@ -212,6 +300,8 @@ public class DashboardDataService {
         response.setDataPoints(dataPoints);
         response.setStartDate(startDate);
         response.setEndDate(endDate);
+        response.setDimensions(availableDimensions);
+        
         return response;
     }
 
