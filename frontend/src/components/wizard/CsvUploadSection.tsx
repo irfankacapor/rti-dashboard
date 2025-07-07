@@ -8,7 +8,11 @@ import {
   LinearProgress,
   Alert,
   IconButton,
-  Chip
+  Chip,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
@@ -21,7 +25,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CsvFile } from '@/types/csvProcessing';
 
 interface CsvUploadSectionProps {
-  onFileUploaded: (csvFile: CsvFile) => void;
+  onFileUploaded: (csvFile: CsvFile, encoding: string, delimiter: string) => void;
   onFileRemoved: (fileId: string) => void;
   uploadedFile?: CsvFile;
   disabled?: boolean;
@@ -38,6 +42,8 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
 }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [encoding, setEncoding] = useState('utf-8');
+  const [delimiter, setDelimiter] = useState(',');
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     setError(null);
@@ -74,6 +80,8 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
       id: uuidv4(),
       file,
       name: file.name,
+      size: file.size,
+      uploadedAt: new Date(),
       uploadStatus: 'uploading'
     };
 
@@ -101,9 +109,9 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
         jobId: uuidv4() // Simulate job ID from backend
       };
       
-      onFileUploaded(completedFile);
+      onFileUploaded(completedFile, encoding, delimiter);
     }, 2000);
-  }, [onFileUploaded]);
+  }, [onFileUploaded, encoding, delimiter]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -132,6 +140,37 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Upload a CSV file containing your data. Maximum file size: 25MB
       </Typography>
+
+      <Box display="flex" gap={2} mb={2}>
+        <FormControl size="small">
+          <InputLabel id="encoding-label">Encoding</InputLabel>
+          <Select
+            labelId="encoding-label"
+            value={encoding}
+            label="Encoding"
+            onChange={e => setEncoding(e.target.value)}
+            sx={{ minWidth: 140 }}
+          >
+            <MenuItem value="utf-8">UTF-8</MenuItem>
+            <MenuItem value="utf-8-bom">UTF-8 with BOM</MenuItem>
+            <MenuItem value="iso-8859-1">ISO-8859-1</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <InputLabel id="delimiter-label">Delimiter</InputLabel>
+          <Select
+            labelId="delimiter-label"
+            value={delimiter}
+            label="Delimiter"
+            onChange={e => setDelimiter(e.target.value)}
+            sx={{ minWidth: 140 }}
+          >
+            <MenuItem value=",">Comma (,)</MenuItem>
+            <MenuItem value=";">Semicolon (;)</MenuItem>
+            <MenuItem value="\t">Tab</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

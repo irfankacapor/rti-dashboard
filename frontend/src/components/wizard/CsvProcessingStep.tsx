@@ -2,15 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   Button,
   Alert,
   CircularProgress,
-  Typography,
-  Paper
+  Typography
 } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
 import Papa from 'papaparse';
@@ -62,6 +57,9 @@ export const CsvProcessingStep: React.FC = () => {
   const tableRef = useRef<HTMLDivElement>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  const [encoding, setEncoding] = useState<string>('utf-8');
+  const [delimiter, setDelimiter] = useState<string>('comma');
+
   const { setCurrentStep } = useWizardStore();
 
   // Load subareas on component mount
@@ -77,18 +75,33 @@ export const CsvProcessingStep: React.FC = () => {
     loadSubareas();
   }, []);
 
-  const handleFileUploaded = async (csvFile: CsvFile) => {
+  const handleFileUploaded = async (csvFile: CsvFile, selectedEncoding: string, selectedDelimiter: string) => {
     setState(prev => ({ ...prev, csvFile, isLoading: true, error: undefined }));
+    setEncoding(selectedEncoding);
+    setDelimiter(selectedDelimiter);
 
     try {
       // Parse CSV data
-      const csvText = await csvFile.file.text();
-      const result = Papa.parse(csvText, { header: false });
-      
+      let csvText: string;
+      if (selectedEncoding === 'utf-8' || selectedEncoding === 'utf-8-bom') {
+        csvText = await csvFile.file.text();
+        if (selectedEncoding === 'utf-8-bom' && csvText.charCodeAt(0) === 0xFEFF) {
+          csvText = csvText.slice(1); // Remove BOM
+        }
+      } else {
+        // Use TextDecoder for other encodings
+        const arrayBuffer = await csvFile.file.arrayBuffer();
+        const decoder = new TextDecoder(selectedEncoding);
+        csvText = decoder.decode(arrayBuffer);
+      }
+      let delimiterChar = ',';
+      if (selectedDelimiter === ';') delimiterChar = ';';
+      else if (selectedDelimiter === '\t') delimiterChar = '\t';
+      // Use PapaParse with custom delimiter
+      const result = Papa.parse(csvText, { header: false, delimiter: delimiterChar });
       if (result.errors.length > 0) {
         throw new Error(`CSV parsing errors: ${result.errors.map(e => e.message).join(', ')}`);
       }
-
       const csvData = result.data as string[][];
       setState(prev => ({ 
         ...prev, 
@@ -383,30 +396,14 @@ export const CsvProcessingStep: React.FC = () => {
   };
 
   return (
-    <WizardContainer
-      title="CSV Data Processing"
-      subtitle="Upload and process CSV data to create indicators"
-      nextDisabled={state.isLoading}
-      showNavigation={false}
-    >
+    <>
       {state.error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {state.error}
         </Alert>
       )}
 
-      <Stepper activeStep={getCurrentStepIndex()} orientation="vertical" sx={{ mb: 3 }}>
-        {PHASES.map((phase, index) => (
-          <Step key={phase.id} completed={index < getCurrentStepIndex()}>
-            <StepLabel>{phase.label}</StepLabel>
-            <StepContent>
-              <Box sx={{ mb: 2 }}>
-                {index === getCurrentStepIndex() && renderPhaseContent()}
-              </Box>
-            </StepContent>
-          </Step>
-        ))}
-      </Stepper>
+      {renderPhaseContent()}
 
       <DimensionMappingPopup
         open={!!currentSelection && !!popupAnchor}
@@ -422,6 +419,6 @@ export const CsvProcessingStep: React.FC = () => {
           <CircularProgress />
         </Box>
       )}
-    </WizardContainer>
+    </>
   );
 }; 
