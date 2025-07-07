@@ -1,15 +1,18 @@
 import React from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface SubareaAggregatedChartProps {
   data: any;
   loading: boolean;
   error: string | null;
   dimensionLabel: string;
+  onBarHover?: (dimensionValue: string | null) => void;
+  highlightedBar?: string | null;
+  filteredDimensionValues?: string[] | null;
 }
 
-export default function SubareaAggregatedChart({ data, loading, error, dimensionLabel }: SubareaAggregatedChartProps) {
+export default function SubareaAggregatedChart({ data, loading, error, dimensionLabel, onBarHover, highlightedBar, filteredDimensionValues }: SubareaAggregatedChartProps) {
   const formatData = (data: any) => {
     if (!data || !data.data) return [];
     return Object.entries(data.data).map(([key, value]) => ({
@@ -18,7 +21,10 @@ export default function SubareaAggregatedChart({ data, loading, error, dimension
     }));
   };
 
-  const chartData = formatData(data);
+  let chartData = formatData(data);
+  if (filteredDimensionValues && filteredDimensionValues.length > 0) {
+    chartData = chartData.filter(d => filteredDimensionValues.includes(d.name));
+  }
 
   if (loading) {
     return (
@@ -55,7 +61,17 @@ export default function SubareaAggregatedChart({ data, loading, error, dimension
           <XAxis dataKey="name" />
           <YAxis />
           <Tooltip />
-          <Bar dataKey="value" fill="#8884d8" />
+          <Bar dataKey="value" fill="#8884d8">
+            {chartData.map((entry, idx) => (
+              <Cell
+                key={`cell-${entry.name}`}
+                fill={highlightedBar === entry.name ? 'rgba(90, 47, 194, 0.65)' : '#8884d8'}
+                onMouseEnter={() => onBarHover && onBarHover(entry.name)}
+                onMouseLeave={() => onBarHover && onBarHover(null)}
+                style={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </Box>

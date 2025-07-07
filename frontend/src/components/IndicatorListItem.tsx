@@ -8,9 +8,12 @@ import StarIcon from '@mui/icons-material/Star';
 interface IndicatorListItemProps {
   indicator: any;
   isAggregated?: boolean;
+  highlightedDimensionValue?: string | null;
+  selectedDimension?: string;
+  hasHighlightedDimensionValue?: boolean;
 }
 
-const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggregated = false }) => {
+const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggregated = false, highlightedDimensionValue, selectedDimension, hasHighlightedDimensionValue = false }) => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -32,10 +35,11 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggr
           cursor: 'pointer',
           py: 1,
           px: '0.5rem',
-          bgcolor: isAggregated ? '#e3f2fd' : 'inherit',
-          border: isAggregated ? '1px solid #90caf9' : '1px solid transparent',
+          bgcolor: hasHighlightedDimensionValue ? 'rgba(209, 196, 233, 0.45)' : isAggregated ? 'rgba(227, 242, 253, 0.45)' : 'inherit',
+          border: hasHighlightedDimensionValue ? '2px solid #5a2fc2' : isAggregated ? '1px solid #90caf9' : '1px solid transparent',
           borderRadius: 1,
-          mb: 1
+          mb: 1,
+          transition: 'background 0.2s, border 0.2s',
         }}
         onClick={handleOpen}
       >
@@ -49,6 +53,11 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggr
         <Typography variant="body1" sx={{ flex: 1 }}>{indicator.name}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>{indicator.unit}</Typography>
         <Typography variant="body2" color="primary">{indicator.latestValue ?? '--'}</Typography>
+        {hasHighlightedDimensionValue && highlightedDimensionValue && selectedDimension && (
+          <Typography variant="caption" color="secondary" sx={{ ml: 2 }}>
+            {selectedDimension}: {highlightedDimensionValue}
+          </Typography>
+        )}
       </Box>
       <IndividualIndicatorModal
         open={open}

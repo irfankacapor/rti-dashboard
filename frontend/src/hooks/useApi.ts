@@ -214,4 +214,74 @@ export function useSubareaAggregatedByDimension(subareaId: string, dimension: st
   }, [subareaId, dimension]);
 
   return { data, loading, error };
+}
+
+export function useIndicatorDimensionValues(indicatorId: string) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!indicatorId) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${API_BASE}/indicators/${indicatorId}/values`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => {
+        console.error('Error fetching indicator dimension values:', err);
+        setError('Failed to fetch indicator dimension values');
+      })
+      .finally(() => setLoading(false));
+  }, [indicatorId]);
+
+  return { data, loading, error };
+}
+
+export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!indicatorIds || indicatorIds.length === 0) {
+      setData([]);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    // Fetch dimension values for all indicators in parallel
+    Promise.all(
+      indicatorIds.map(id => 
+        fetch(`${API_BASE}/indicators/${id}/values`)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            return res.json();
+          })
+          .catch((err) => {
+            console.error(`Error fetching indicator ${id} dimension values:`, err);
+            return null; // Return null for failed requests
+          })
+      )
+    )
+      .then(results => {
+        setData(results.filter(result => result !== null));
+      })
+      .catch((err) => {
+        console.error('Error fetching multiple indicator dimension values:', err);
+        setError('Failed to fetch indicator dimension values');
+      })
+      .finally(() => setLoading(false));
+  }, [indicatorIds.join(',')]); // Use join to create a stable dependency
+
+  return { data, loading, error };
 } 
