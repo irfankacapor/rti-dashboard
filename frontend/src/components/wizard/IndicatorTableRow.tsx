@@ -95,13 +95,19 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
   };
 
   const handleDeleteConfirm = () => {
+    // If there's no related data, use regular delete
+    // If there is related data but no onDeleteWithData function, still use regular delete (will fail gracefully)
     onDelete();
     setShowDeleteConfirm(false);
   };
 
   const handleDeleteWithDataConfirm = () => {
+    // Always use delete with data when there's related data
     if (onDeleteWithData) {
       onDeleteWithData();
+    } else {
+      // Fallback to regular delete if onDeleteWithData is not available
+      onDelete();
     }
     setShowDeleteConfirm(false);
   };
@@ -378,22 +384,23 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           <Typography>
             Are you sure you want to delete the indicator "{indicator.name}"?
           </Typography>
-          {onDeleteWithData && (
+          {indicator.valueCount > 0 && (
             <Alert severity="info" sx={{ mt: 2 }}>
               <Typography variant="body2">
-                If this indicator has associated data values, you may need to use the "Delete with Data" option.
+                This indicator has {indicator.valueCount} associated data values that will also be deleted.
               </Typography>
             </Alert>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="outlined">
-            Delete
-          </Button>
-          {onDeleteWithData && (
+          {indicator.valueCount > 0 ? (
             <Button onClick={handleDeleteWithDataConfirm} color="error" variant="contained">
               Delete with Data
+            </Button>
+          ) : (
+            <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+              Delete
             </Button>
           )}
         </DialogActions>

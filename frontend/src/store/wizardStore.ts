@@ -65,6 +65,7 @@ interface WizardState {
   deleteManagedIndicatorWithData: (id: string) => Promise<void>;
   bulkUpdateIndicators: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
   bulkDeleteIndicators: (ids: string[]) => Promise<void>;
+  bulkDeleteIndicatorsWithData: (ids: string[]) => Promise<void>;
   markIndicatorsAsModified: () => void;
   validateIndicatorData: () => { isValid: boolean; errors: string[] };
   mergeNewCsvIndicators: (newIndicators: ProcessedIndicator[]) => void;
@@ -620,6 +621,34 @@ export const useWizardStore = create<WizardState>()(
             await indicatorManagementService.deleteIndicator(indicator.id);
           } catch (error) {
             throw new Error(`Failed to delete indicator "${indicator.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+        
+        // Remove all indicators from state
+        set((state) => ({
+          managedIndicators: state.managedIndicators.filter((i) => !ids.includes(i.id)),
+          dirtyIndicators: state.dirtyIndicators.filter((i) => !ids.includes(i.id)),
+        }));
+      },
+
+      bulkDeleteIndicatorsWithData: async (ids) => {
+        const state = get();
+        const indicatorsToDelete = state.dirtyIndicators.filter(i => ids.includes(i.id));
+        
+        // Separate indicators that exist in backend vs local only
+        const backendIndicators = indicatorsToDelete.filter(indicator => 
+          state.managedIndicators.some(mi => mi.id === indicator.id)
+        );
+        const localIndicators = indicatorsToDelete.filter(indicator => 
+          !state.managedIndicators.some(mi => mi.id === indicator.id)
+        );
+        
+        // Delete backend indicators with data immediately
+        for (const indicator of backendIndicators) {
+          try {
+            await indicatorManagementService.deleteIndicatorWithData(indicator.id);
+          } catch (error) {
+            throw new Error(`Failed to delete indicator "${indicator.name}" with data: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
         }
         

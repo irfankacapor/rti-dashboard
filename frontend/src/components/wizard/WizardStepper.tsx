@@ -30,8 +30,16 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ className }) => {
   const completedSteps = steps.filter(step => step.isCompleted).length;
   const progressPercentage = (completedSteps / steps.length) * 100;
 
+  // Memoize accessibility state to prevent excessive canProceedToStep calls
+  const stepAccessibility = React.useMemo(() => {
+    return steps.map((_, index) => {
+      const stepNumber = index + 1;
+      return canProceedToStep(stepNumber);
+    });
+  }, [steps, canProceedToStep]);
+
   const handleStepClick = (stepId: number) => {
-    if (canProceedToStep(stepId)) {
+    if (stepAccessibility[stepId - 1]) {
       setCurrentStep(stepId);
     }
   };
@@ -40,7 +48,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ className }) => {
     const stepNumber = index + 1;
     const isActive = currentStep === stepNumber;
     const isCompleted = step.isCompleted;
-    const canAccess = canProceedToStep(stepNumber);
+    const canAccess = stepAccessibility[index];
 
     if (isCompleted) {
       return (
@@ -118,7 +126,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ className }) => {
       >
         {steps.map((step, index) => {
           const stepNumber = index + 1;
-          const canAccess = canProceedToStep(stepNumber);
+          const canAccess = stepAccessibility[index];
           
           return (
             <Step key={step.id} completed={step.isCompleted}>

@@ -26,6 +26,7 @@ interface BulkIndicatorActionsProps {
   subareas: Subarea[];
   onBulkUpdate: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
   onBulkDelete: (ids: string[]) => void;
+  onBulkDeleteWithData?: (ids: string[]) => void;
 }
 
 export const BulkIndicatorActions: React.FC<BulkIndicatorActionsProps> = ({
@@ -33,6 +34,7 @@ export const BulkIndicatorActions: React.FC<BulkIndicatorActionsProps> = ({
   subareas,
   onBulkUpdate,
   onBulkDelete,
+  onBulkDeleteWithData,
 }) => {
   const [selectedSubarea, setSelectedSubarea] = useState<string>('');
   const [selectedDirection, setSelectedDirection] = useState<'input' | 'output' | ''>('');
@@ -64,6 +66,29 @@ export const BulkIndicatorActions: React.FC<BulkIndicatorActionsProps> = ({
     onBulkDelete(selectedIndicators.map(i => i.id));
     setShowDeleteConfirm(false);
   };
+
+  const handleDeleteWithDataConfirm = () => {
+    if (onBulkDeleteWithData) {
+      onBulkDeleteWithData(selectedIndicators.map(i => i.id));
+    } else {
+      onBulkDelete(selectedIndicators.map(i => i.id));
+    }
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeleteOnlyWithoutData = () => {
+    onBulkDelete(indicatorsWithoutData.map(i => i.id));
+    setShowDeleteConfirm(false);
+  };
+
+  // Check if any selected indicators have related data
+  const hasRelatedData = selectedIndicators.some(indicator => indicator.valueCount > 0);
+  const totalDataValues = selectedIndicators.reduce((sum, indicator) => sum + indicator.valueCount, 0);
+  
+  // Separate indicators with and without data
+  const indicatorsWithData = selectedIndicators.filter(indicator => indicator.valueCount > 0);
+  const indicatorsWithoutData = selectedIndicators.filter(indicator => indicator.valueCount === 0);
+  const hasMixedData = indicatorsWithData.length > 0 && indicatorsWithoutData.length > 0;
 
   return (
     <>
@@ -143,12 +168,58 @@ export const BulkIndicatorActions: React.FC<BulkIndicatorActionsProps> = ({
           <Typography>
             Are you sure you want to delete {selectedIndicators.length} indicator(s)?
           </Typography>
+          
+          {hasMixedData && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                You have selected indicators with mixed data:
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                • {indicatorsWithData.length} indicator(s) with {indicatorsWithData.reduce((sum, i) => sum + i.valueCount, 0)} data values
+              </Typography>
+              <Typography variant="body2">
+                • {indicatorsWithoutData.length} indicator(s) without data
+              </Typography>
+            </Alert>
+          )}
+          
+          {hasRelatedData && !hasMixedData && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                {totalDataValues} associated data values will also be deleted.
+              </Typography>
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
-          </Button>
+          
+          {hasMixedData ? (
+            <>
+              <Button 
+                onClick={handleDeleteOnlyWithoutData} 
+                color="error" 
+                variant="outlined"
+              >
+                Delete Only Without Data ({indicatorsWithoutData.length})
+              </Button>
+              <Button 
+                onClick={handleDeleteWithDataConfirm} 
+                color="error" 
+                variant="contained"
+              >
+                Delete All ({selectedIndicators.length})
+              </Button>
+            </>
+          ) : hasRelatedData ? (
+            <Button onClick={handleDeleteWithDataConfirm} color="error" variant="contained">
+              Delete with Data
+            </Button>
+          ) : (
+            <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+              Delete
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </>

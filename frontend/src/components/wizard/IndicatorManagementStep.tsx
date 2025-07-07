@@ -43,6 +43,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     deleteManagedIndicatorWithData,
     bulkUpdateIndicators,
     bulkDeleteIndicators,
+    bulkDeleteIndicatorsWithData,
     validateIndicatorData,
     isLoadingIndicators,
     isSaving,
@@ -67,16 +68,21 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
   const validation = validateIndicatorData();
   const isStepValid = dirtyIndicators.length > 0 && validation.isValid;
 
-  // Mark step as valid when validation passes
+  // Mark step as valid and completed when validation passes
   useEffect(() => {
     setStepValid(4, isStepValid);
-  }, [isStepValid, setStepValid]);
+    if (isStepValid) {
+      setStepCompleted(4, true);
+    }
+  }, [isStepValid, setStepValid, setStepCompleted]);
 
   const handleIndicatorUpdate = (id: string, updates: Partial<ManagedIndicator>) => {
     try {
       // Only update local state - backend saving happens when clicking Next
       updateManagedIndicator(id, updates);
       setSnackbar('Indicator updated successfully');
+      // Ensure step remains completed after successful update
+      setStepCompleted(4, true);
     } catch (error) {
       console.error('Failed to update indicator:', error);
       setError('Failed to update indicator');
@@ -88,6 +94,10 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       await deleteManagedIndicator(id);
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       setSnackbar('Indicator deleted successfully');
+      // Ensure step remains completed after successful deletion
+      if (dirtyIndicators.length > 1) { // If there are still indicators left
+        setStepCompleted(4, true);
+      }
     } catch (error) {
       console.error('Failed to delete indicator:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete indicator';
@@ -107,6 +117,10 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       await deleteManagedIndicatorWithData(id);
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       setSnackbar('Indicator and associated data deleted successfully');
+      // Ensure step remains completed after successful deletion
+      if (dirtyIndicators.length > 1) { // If there are still indicators left
+        setStepCompleted(4, true);
+      }
     } catch (error) {
       console.error('Failed to delete indicator with data:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete indicator with data');
@@ -118,6 +132,8 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       // Only update local state - backend saving happens when clicking Next
       bulkUpdateIndicators(updates);
       setSnackbar(`${updates.length} indicators updated successfully`);
+      // Ensure step remains completed after successful updates
+      setStepCompleted(4, true);
     } catch (error) {
       console.error('Failed to update indicators:', error);
       setError('Failed to update indicators');
@@ -129,9 +145,28 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       await bulkDeleteIndicators(ids);
       setSelectedIds([]);
       setSnackbar(`${ids.length} indicators deleted successfully`);
+      // Ensure step remains completed after successful deletion
+      if (dirtyIndicators.length > ids.length) { // If there are still indicators left
+        setStepCompleted(4, true);
+      }
     } catch (error) {
       console.error('Failed to delete indicators:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete indicators');
+    }
+  };
+
+  const handleBulkDeleteWithData = async (ids: string[]) => {
+    try {
+      await bulkDeleteIndicatorsWithData(ids);
+      setSelectedIds([]);
+      setSnackbar(`${ids.length} indicators and associated data deleted successfully`);
+      // Ensure step remains completed after successful deletion
+      if (dirtyIndicators.length > ids.length) { // If there are still indicators left
+        setStepCompleted(4, true);
+      }
+    } catch (error) {
+      console.error('Failed to delete indicators with data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete indicators with data');
     }
   };
 
@@ -146,6 +181,8 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       addManualIndicator(indicatorData);
       setShowAddForm(false);
       setSnackbar('Indicator added successfully');
+      // Ensure step is completed after adding an indicator
+      setStepCompleted(4, true);
     } catch (error) {
       console.error('Failed to add indicator:', error);
       setError('Failed to add indicator');
@@ -271,6 +308,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           subareas={dirtySubareas}
           onBulkUpdate={handleBulkUpdate}
           onBulkDelete={handleBulkDelete}
+          onBulkDeleteWithData={handleBulkDeleteWithData}
         />
       )}
 

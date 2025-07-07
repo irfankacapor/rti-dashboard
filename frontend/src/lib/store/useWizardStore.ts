@@ -50,8 +50,10 @@ export const useWizardStore = create<WizardState>()(
 
       nextStep: () => {
         const { currentStep, steps } = get();
+        
         if (currentStep < steps.length) {
           const nextStepId = currentStep + 1;
+          
           if (get().canProceedToStep(nextStepId)) {
             set({ currentStep: nextStepId });
           }
@@ -83,14 +85,24 @@ export const useWizardStore = create<WizardState>()(
 
       canProceedToStep: (stepId: number) => {
         const { steps, managedIndicators } = get();
-        if (stepId === 1) return true;
+        
+        if (stepId === 1) {
+          return true;
+        }
+        
         // Allow direct access to step 4 if indicators exist
-        if (stepId === 4 && managedIndicators && managedIndicators.length > 0) return true;
+        if (stepId === 4 && managedIndicators && managedIndicators.length > 0) {
+          return true;
+        }
+        
         // Can proceed if all previous steps are completed
         for (let i = 1; i < stepId; i++) {
           const step = steps.find(s => s.id === i);
-          if (!step?.isCompleted) return false;
+          if (!step?.isCompleted) {
+            return false;
+          }
         }
+        
         return true;
       },
 
