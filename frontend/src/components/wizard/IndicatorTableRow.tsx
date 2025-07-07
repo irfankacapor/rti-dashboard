@@ -147,6 +147,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           size="small"
           fullWidth
           required
+          sx={{ height: 40 }}
         />
       </TableCell>
       <TableCell>
@@ -156,7 +157,8 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           size="small"
           fullWidth
           multiline
-          rows={2}
+          rows={1}
+          sx={{ height: 40 }}
         />
       </TableCell>
       <TableCell>
@@ -165,6 +167,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
           size="small"
           fullWidth
+          sx={{ height: 40 }}
         />
       </TableCell>
       <TableCell>
@@ -173,13 +176,15 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           onChange={(e) => setFormData({ ...formData, source: e.target.value })}
           size="small"
           fullWidth
+          sx={{ height: 40 }}
         />
       </TableCell>
       <TableCell>
-        <FormControl size="small" fullWidth>
+        <FormControl size="small" fullWidth sx={{ height: 40 }}>
           <Select
             value={formData.dataType}
             onChange={(e) => setFormData({ ...formData, dataType: e.target.value })}
+            sx={{ height: 40 }}
           >
             <MenuItem value="integer">Integer</MenuItem>
             <MenuItem value="decimal">Decimal</MenuItem>
@@ -189,10 +194,11 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         </FormControl>
       </TableCell>
       <TableCell>
-        <FormControl size="small" fullWidth>
+        <FormControl size="small" fullWidth sx={{ height: 40 }}>
           <Select
             value={formData.subareaId}
             onChange={(e) => setFormData({ ...formData, subareaId: e.target.value })}
+            sx={{ height: 40 }}
           >
             <MenuItem value="">No Subarea</MenuItem>
             {subareas.map(subarea => (
@@ -204,15 +210,17 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         </FormControl>
       </TableCell>
       <TableCell>
-        <ToggleButtonGroup
-          value={formData.direction}
-          exclusive
-          size="small"
-          onChange={(e, value) => value && setFormData({ ...formData, direction: value })}
-        >
-          <ToggleButton value="input">Input</ToggleButton>
-          <ToggleButton value="output">Output</ToggleButton>
-        </ToggleButtonGroup>
+        <FormControl size="small" fullWidth sx={{ height: 40 }}>
+          <Select
+            value={formData.direction}
+            onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
+            sx={{ height: 40 }}
+          >
+            <MenuItem value="input">Input</MenuItem>
+            <MenuItem value="output">Output</MenuItem>
+            {/* Add more types here as needed */}
+          </Select>
+        </FormControl>
       </TableCell>
       <TableCell>
         <Typography variant="body2" color="text.secondary">
@@ -318,7 +326,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
       </TableCell>
       <TableCell>
         <Chip
-          label={indicator.direction || 'input'}
+          label={(indicator.direction || 'input').toUpperCase()}
           size="small"
           color={getDirectionColor(indicator.direction || 'input')}
         />

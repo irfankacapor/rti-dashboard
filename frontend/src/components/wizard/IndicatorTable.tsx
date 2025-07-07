@@ -117,7 +117,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
             <TableCell>Source</TableCell>
             <TableCell>Data Type</TableCell>
             <TableCell>Subarea</TableCell>
-            <TableCell>Direction</TableCell>
+            <TableCell>Type</TableCell>
             <TableCell>Values</TableCell>
             <TableCell>Dimensions</TableCell>
             <TableCell>Actions</TableCell>
