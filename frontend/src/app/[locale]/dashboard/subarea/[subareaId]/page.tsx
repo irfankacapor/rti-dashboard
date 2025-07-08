@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Box, Typography, CircularProgress, Divider, Container, Paper, ButtonGroup, Button, MenuItem, Select, FormControl, InputLabel, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, Typography, CircularProgress, Divider, Container, Paper, ButtonGroup, Button, MenuItem, Select, FormControl, InputLabel, Checkbox, FormControlLabel, IconButton } from '@mui/material';
 import TimeSeriesChart from '@/components/charts/TimeSeriesChart';
 import SubareaAggregatedChart from '@/components/charts/SubareaAggregatedChart';
 import IndicatorListItem from '@/components/IndicatorListItem';
@@ -9,6 +9,8 @@ import { useSubareaData, useSubareaAggregatedValue, useSubareaAggregatedByTime, 
 import { useDashboardWithRelationships } from '@/hooks/useDashboardWithRelationships';
 import { GoalsSidebar } from '@/components/dashboard';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Link from 'next/link';
 
 export default function SubareaDetailPage() {
@@ -112,13 +114,45 @@ export default function SubareaDetailPage() {
     console.log('Subarea object:', subarea);
   }, [subarea]);
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar with linked goals */}
-      {filteredGoals.length > 0 && (
-        <Box sx={{ width: 320, borderRight: '1px solid #eee', bgcolor: '#fafbfc', p: 2 }}>
+      {filteredGoals.length > 0 && sidebarOpen && (
+        <Box sx={{ width: 320, borderRight: '1px solid #eee', bgcolor: '#fafbfc', p: 2, position: 'relative', minHeight: '100vh' }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Goals</Typography>
           <GoalsSidebar goals={filteredGoals} goalGroups={filteredGoalGroups} highlightedGoals={[]} onGoalHover={() => {}} onGoalLeave={() => {}} />
+          {/* Close button, vertically centered on the outer right edge of the sidebar */}
+          <Box
+            sx={{
+              position: 'fixed',
+              top: '50%',
+              left: 320 - 24, // 24 = half the button size for overlap
+              transform: 'translateY(-50%)',
+              zIndex: 1300,
+            }}
+          >
+            <IconButton onClick={() => setSidebarOpen(false)} size="large" title="Close sidebar" sx={{ bgcolor: '#fff', border: '1px solid #eee', boxShadow: 2 }}>
+              <ChevronLeftIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+      {/* Sidebar open button (when closed) */}
+      {filteredGoals.length > 0 && !sidebarOpen && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: '50%',
+            left: 0,
+            transform: 'translateY(-50%)',
+            zIndex: 1300,
+          }}
+        >
+          <IconButton onClick={() => setSidebarOpen(true)} size="large" color="primary" title="Open sidebar" sx={{ bgcolor: '#fff', border: '1px solid #eee', boxShadow: 2 }}>
+            <ChevronRightIcon />
+          </IconButton>
         </Box>
       )}
       {/* Main content */}

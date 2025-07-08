@@ -13,7 +13,9 @@ import {
   Alert
 } from '@mui/material';
 import { 
-  Edit as EditIcon
+  Edit as EditIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
 import { CircularLayout, GoalsSidebar } from '@/components/dashboard';
 import { useDashboardWithRelationships } from '@/hooks';
@@ -26,6 +28,7 @@ export default function DashboardPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [highlightedGoals, setHighlightedGoals] = useState<string[]>([]);
   const [highlightedSubareas, setHighlightedSubareas] = useState<string[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Fetch dashboard data with relationships
   const { 
@@ -95,18 +98,21 @@ export default function DashboardPage() {
       {/* Goals Sidebar */}
       {goals && goals.length > 0 && (
         <Drawer
-          variant="permanent"
+          variant="persistent"
+          open={sidebarOpen}
           sx={{
-            width: DRAWER_WIDTH,
+            width: sidebarOpen ? DRAWER_WIDTH : 0,
             flexShrink: 0,
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,
               boxSizing: 'border-box',
               borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+              transition: 'width 0.2s',
+              overflow: 'visible',
             },
           }}
         >
-          <Toolbar>
+          <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Goals
             </Typography>
@@ -118,7 +124,39 @@ export default function DashboardPage() {
             onGoalHover={handleGoalHover}
             onGoalLeave={handleGoalLeave}
           />
+          {/* Close button, vertically centered on the outer right edge of the sidebar */}
+          {sidebarOpen && (
+            <Box
+              sx={{
+                position: 'fixed',
+                top: '50%',
+                left: DRAWER_WIDTH - 24, // 24 = half the button size for overlap
+                transform: 'translateY(-50%)',
+                zIndex: 1300,
+              }}
+            >
+              <IconButton onClick={() => setSidebarOpen(false)} size="large" title="Close sidebar" sx={{ bgcolor: '#fff', border: '1px solid #eee', boxShadow: 2 }}>
+                <ChevronLeftIcon />
+              </IconButton>
+            </Box>
+          )}
         </Drawer>
+      )}
+      {/* Sidebar open button (when closed) */}
+      {!sidebarOpen && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: '50%',
+            left: 0,
+            transform: 'translateY(-50%)',
+            zIndex: 1300,
+          }}
+        >
+          <IconButton onClick={() => setSidebarOpen(true)} size="large" color="primary" title="Open sidebar" sx={{ bgcolor: '#fff', border: '1px solid #eee', boxShadow: 2 }}>
+            <ChevronRightIcon />
+          </IconButton>
+        </Box>
       )}
 
       {/* Main Dashboard Content */}
