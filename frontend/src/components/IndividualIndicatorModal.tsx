@@ -10,7 +10,7 @@ import {
   generateDisplayLabel, 
   cleanTimeLabel 
 } from '../utils/chartDataProcessor';
-import { IndicatorDataResponse, IndicatorChartData } from '../types/indicators';
+import { IndicatorChartData } from '../types/indicators';
 
 interface IndividualIndicatorModalProps {
   open: boolean;

@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react';
 import { DashboardArea, DashboardSubarea } from '@/types/dashboard';
 import { apiClient } from '@/lib/api';
 
-interface DashboardDataResponse {
-  areas: DashboardArea[];
-  subareas: DashboardSubarea[];
-}
-
 export const useDashboardData = () => {
   const [areas, setAreas] = useState<DashboardArea[]>([]);
   const [subareas, setSubareas] = useState<DashboardSubarea[]>([]);

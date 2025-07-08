@@ -2,10 +2,9 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Box, Typography, CircularProgress, Divider, Container, Paper, ButtonGroup, Button, MenuItem, Select, FormControl, InputLabel, Checkbox, FormControlLabel, IconButton } from '@mui/material';
-import TimeSeriesChart from '@/components/charts/TimeSeriesChart';
 import SubareaAggregatedChart from '@/components/charts/SubareaAggregatedChart';
 import IndicatorListItem from '@/components/IndicatorListItem';
-import { useSubareaData, useSubareaAggregatedValue, useSubareaAggregatedByTime, useSubareaAggregatedByLocation, useSubareaAggregatedByDimension, useMultipleIndicatorDimensionValues } from '@/hooks/useApi';
+import { useSubareaData, useSubareaAggregatedValue, useSubareaAggregatedByDimension, useMultipleIndicatorDimensionValues } from '@/hooks/useApi';
 import { useDashboardWithRelationships } from '@/hooks/useDashboardWithRelationships';
 import { GoalsSidebar } from '@/components/dashboard';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

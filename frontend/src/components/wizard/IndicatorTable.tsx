@@ -8,25 +8,8 @@ import {
   TableHead,
   TableRow,
   Checkbox,
-  IconButton,
-  Chip,
-  Tooltip,
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  TextField,
-  Button,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  Visibility as ViewIcon,
-} from '@mui/icons-material';
+
 import { ManagedIndicator } from '@/types/indicators';
 import { Subarea } from '@/types/subareas';
 import { IndicatorTableRow } from './IndicatorTableRow';

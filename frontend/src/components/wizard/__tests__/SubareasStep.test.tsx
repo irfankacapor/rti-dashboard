@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SubareasStep } from '../SubareasStep';
 import { useWizardStore } from '@/store/wizardStore';
-import { act } from 'react-dom/test-utils';
 
 jest.mock('@/store/wizardStore');
 

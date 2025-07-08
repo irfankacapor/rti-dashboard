@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Typography, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Tooltip } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import IndividualIndicatorModal from './IndividualIndicatorModal';
-import StarIcon from '@mui/icons-material/Star';
 
 interface IndicatorListItemProps {
   indicator: any;

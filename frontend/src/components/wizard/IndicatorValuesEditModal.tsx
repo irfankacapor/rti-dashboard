@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Alert } from '@mui/material';
 import { indicatorValuesService } from '@/services/indicatorValuesService';
-import { IndicatorValuesResponse, IndicatorValueEdit, IndicatorValueRow } from '@/types/indicatorValues';
+import { IndicatorValuesResponse, IndicatorValueEdit } from '@/types/indicatorValues';
 import { useWizardStore } from '@/store/wizardStore';
 import EditableValuesTable from './EditableValuesTable';
 import { validateValueChange } from '@/utils/valueValidation';

@@ -3,7 +3,6 @@ import {
   Box,
   List,
   ListItem,
-  ListItemText,
   ListItemButton,
   Typography,
   Chip,
@@ -13,7 +12,7 @@ import {
   LinearProgress
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon, Flag as FlagIcon } from '@mui/icons-material';
-import { GoalsSidebarProps, DashboardGoal, GoalGroup } from '@/types/dashboard';
+import { GoalsSidebarProps, DashboardGoal } from '@/types/dashboard';
 import { goalService } from '@/services/goalService';
 import { useEffect, useState } from 'react';
 

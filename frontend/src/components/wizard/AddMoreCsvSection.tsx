@@ -4,7 +4,6 @@ import {
   Paper,
   Typography,
   Button,
-  Box,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 

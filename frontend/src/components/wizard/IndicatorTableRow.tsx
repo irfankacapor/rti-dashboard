@@ -13,8 +13,6 @@ import {
   MenuItem,
   FormControl,
   TextField,
-  ToggleButtonGroup,
-  ToggleButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -26,8 +24,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon,
-  Visibility as ViewIcon,
+  Cancel as CancelIcon
 } from '@mui/icons-material';
 import { ManagedIndicator, IndicatorFormData } from '@/types/indicators';
 import { Subarea } from '@/types/subareas';

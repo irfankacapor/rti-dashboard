@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
-import { WizardContainer } from './WizardContainer';
 import { CsvUploadSection } from './CsvUploadSection';
 import { CsvTable } from './CsvTable';
 import { DimensionMappingPopup } from './DimensionMappingPopup';
@@ -30,7 +29,6 @@ import { csvProcessingService } from '@/services/csvProcessingService';
 import { 
   generateDataTuples, 
   validateDimensionMappings,
-  generateTuplePreview 
 } from '@/utils/coordinateProcessor';
 import { getSubareas } from '@/services/subareaService';
 import { useWizardStore } from '@/lib/store/useWizardStore';

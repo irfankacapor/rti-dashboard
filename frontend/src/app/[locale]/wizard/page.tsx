@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { WizardContainer } from '@/components/wizard/WizardContainer';
-import { Typography, Box, Alert, Button } from '@mui/material';
+import { Alert, Button } from '@mui/material';
 import { useWizardStore as useStepperStore } from '@/lib/store/useWizardStore';
 import { useWizardStore as useAreaStore } from '@/store/wizardStore';
 import { AreasStep } from '@/components/wizard/AreasStep';

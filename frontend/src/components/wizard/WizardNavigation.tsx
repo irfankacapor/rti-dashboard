@@ -2,8 +2,7 @@
 import React from 'react';
 import {
   Box,
-  Button,
-  Divider,
+  Button
 } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
