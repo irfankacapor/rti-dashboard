@@ -14,6 +14,8 @@ import {
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon, Flag as FlagIcon } from '@mui/icons-material';
 import { GoalsSidebarProps, DashboardGoal, GoalGroup } from '@/types/dashboard';
+import { goalService } from '@/services/goalService';
+import { useEffect, useState } from 'react';
 
 export const GoalsSidebar: React.FC<GoalsSidebarProps> = ({
   goals,
@@ -22,6 +24,26 @@ export const GoalsSidebar: React.FC<GoalsSidebarProps> = ({
   onGoalHover,
   onGoalLeave
 }) => {
+  const [goalTargets, setGoalTargets] = useState<{ [goalId: string]: any[] }>({});
+
+  useEffect(() => {
+    const fetchTargets = async () => {
+      const targetsMap: { [goalId: string]: any[] } = {};
+      await Promise.all(
+        goals.map(async (goal) => {
+          try {
+            const targets = await goalService.getGoalTargets(Number(goal.id));
+            targetsMap[goal.id] = targets;
+          } catch {
+            targetsMap[goal.id] = [];
+          }
+        })
+      );
+      setGoalTargets(targetsMap);
+    };
+    fetchTargets();
+  }, [goals]);
+
   const handleGoalHover = (goalId: string) => {
     onGoalHover([goalId]);
   };
@@ -70,6 +92,7 @@ export const GoalsSidebar: React.FC<GoalsSidebarProps> = ({
               {group.goals.map((goal) => {
                 const progress = calculateProgress(goal);
                 const isHighlighted = highlightedGoals.includes(goal.id);
+                const hasTargets = (goalTargets[goal.id] && goalTargets[goal.id].length > 0);
                 
                 return (
                   <ListItem
@@ -97,31 +120,33 @@ export const GoalsSidebar: React.FC<GoalsSidebarProps> = ({
                           {goal.description}
                         </Typography>
                       </Box>
-                      
-                      <Box sx={{ width: '100%', mb: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Progress
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {progress.toFixed(1)}%
-                          </Typography>
+                      {hasTargets && (
+                        <Box sx={{ width: '100%', mb: 1 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Progress
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {progress.toFixed(1)}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={progress}
+                            color={getProgressColor(progress) as any}
+                            sx={{ height: 4, borderRadius: 2 }}
+                          />
                         </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={progress}
-                          color={getProgressColor(progress) as any}
-                          sx={{ height: 4, borderRadius: 2 }}
-                        />
-                      </Box>
-                      
+                      )}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Chip
-                            label={`${goal.currentValue}/${goal.targetValue}`}
-                            size="small"
-                            variant="outlined"
-                          />
+                          {hasTargets && (
+                            <Chip
+                              label={`${goal.currentValue}/${goal.targetValue}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
                           <Chip
                             label={goal.targetYear}
                             size="small"

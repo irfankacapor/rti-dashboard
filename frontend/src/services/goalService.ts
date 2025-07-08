@@ -79,4 +79,11 @@ export const goalService = {
     }
     return response.json();
   },
+  getGoalTargets: async (goalId: number): Promise<any[]> => {
+    const response = await fetch(`${API_BASE}/goals/${goalId}/targets`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch goal targets');
+    }
+    return response.json();
+  },
 }; 
