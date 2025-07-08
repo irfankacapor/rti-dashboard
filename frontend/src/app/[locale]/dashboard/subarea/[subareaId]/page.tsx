@@ -76,6 +76,7 @@ export default function SubareaDetailPage() {
   }, [availableDimensions, selectedDimension]);
 
   const { data: aggregatedData, loading: aggregatedLoading, error: aggregatedError } = useSubareaAggregatedByDimension(subareaId, selectedDimension);
+  const { data: totalAggregatedValue, loading: totalAggregatedLoading } = useSubareaAggregatedValue(subareaId);
 
   // Filtered dimension values for chart
   const filteredDimensionValues = useMemo(() => {
@@ -197,11 +198,11 @@ export default function SubareaDetailPage() {
 
           <Divider sx={{ my: 2 }} />
 
-          {aggregatedLoading ? (
+          {totalAggregatedLoading ? (
             <CircularProgress size={24} />
           ) : (
             <Typography variant="h5" color="primary" gutterBottom>
-              Total Aggregated Value: {aggregatedData?.aggregatedValue ? aggregatedData.aggregatedValue.toFixed(2) : '--'}
+              Total Aggregated Value: {totalAggregatedValue?.aggregatedValue ? totalAggregatedValue.aggregatedValue.toFixed(2) : '--'}
             </Typography>
           )}
           <Divider sx={{ my: 2 }} />
