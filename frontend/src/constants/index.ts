@@ -65,4 +65,18 @@ export const CHART_TYPES = [
 export const VIEW_MODES = {
   CHART: 'chart',
   TABLE: 'table',
-} as const; 
+} as const;
+
+// Pastel color palette for categorical subarea borders
+export const PASTEL_COLORS = [
+  '#A3C9E2', // pastel blue
+  '#F7B7A3', // pastel orange
+  '#B5EAD7', // pastel green
+  '#FFDAC1', // pastel peach
+  '#E2F0CB', // pastel lime
+  '#C7CEEA', // pastel purple
+  '#FFF1C1', // pastel yellow
+  '#FFB7B2', // pastel pink
+  '#D4A5A5', // pastel red
+  '#B5B9FF', // pastel indigo
+]; 

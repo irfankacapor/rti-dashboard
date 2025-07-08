@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { CircularLayoutProps } from '@/types/dashboard';
+import { PASTEL_COLORS } from '@/constants';
+import { DashboardGoal } from '@/types/dashboard';
 
 const AREA_RADIUS = 120;
 const SUBAREA_RADIUS = 80; // at least twice as big
@@ -29,14 +31,26 @@ function getProgressColor(progress: number) {
   return '#27ae60'; // green
 }
 
-export const CircularLayout: React.FC<CircularLayoutProps> = ({
+interface Relationships {
+  goalToSubareas: { [goalId: string]: string[] };
+  subareaToGoals: { [subareaId: string]: string[] };
+}
+
+interface CircularLayoutExtendedProps extends CircularLayoutProps {
+  goals: DashboardGoal[];
+  relationships: Relationships;
+}
+
+export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
   areas,
   subareas,
   isEditMode,
   highlightedSubareas,
   onSubareaClick,
   onSubareaHover,
-  onSubareaLeave
+  onSubareaLeave,
+  goals,
+  relationships
 }) => {
   // Edit mode: track selected subarea for swapping
   const [swapSelection, setSwapSelection] = useState<string | null>(null);
@@ -86,6 +100,12 @@ export const CircularLayout: React.FC<CircularLayoutProps> = ({
       };
     });
   });
+
+  // Helper: get all goals linked to a subarea
+  const getGoalsForSubarea = (subareaId: string) => {
+    const goalIds = relationships?.subareaToGoals?.[subareaId] || [];
+    return goals.filter(goal => goalIds.includes(goal.id));
+  };
 
   // Edit mode: handle subarea click for swapping
   const handleSubareaEditClick = (subId: string, areaId: string) => {
@@ -162,12 +182,19 @@ export const CircularLayout: React.FC<CircularLayoutProps> = ({
         })}
 
         {/* Draw subareas on circumference */}
-        {subareaNodes.map(sub => {
+        {subareaNodes.map((sub, subIdx) => {
           const isHighlighted = highlightedSubareas.includes(sub.id);
           const isSelected = isEditMode && swapSelection === sub.id;
-          // For demo: use progress = 100 (yellow/green) if not available
-          const progress = typeof sub.performance?.score === 'number' ? sub.performance.score : 100;
-          const borderColor = getProgressColor(progress);
+          const linkedGoals = getGoalsForSubarea(sub.id);
+          const hasAnyTarget = linkedGoals.some(goal => goal.targetValue > 0);
+          let borderColor: string;
+          if (hasAnyTarget) {
+            const progress = typeof sub.performance?.score === 'number' ? sub.performance.score : 100;
+            borderColor = getProgressColor(progress);
+          } else {
+            // Use pastel color, cycle by subarea index for variety
+            borderColor = PASTEL_COLORS[subIdx % PASTEL_COLORS.length];
+          }
           return (
             <g
               key={sub.id}

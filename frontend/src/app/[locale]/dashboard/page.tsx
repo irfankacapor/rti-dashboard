@@ -150,6 +150,8 @@ export default function DashboardPage() {
               onSubareaClick={handleSubareaClick}
               onSubareaHover={handleSubareaHover}
               onSubareaLeave={handleSubareaLeave}
+              goals={goals}
+              relationships={relationships}
             />
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center' }}>
