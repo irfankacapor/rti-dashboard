@@ -32,7 +32,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await logout();
     handleMenuClose();
-    router.push(`/${locale}/login`);
+    router.push(`/${locale}/dashboard`);
   };
 
   const handleWizardClick = () => {
