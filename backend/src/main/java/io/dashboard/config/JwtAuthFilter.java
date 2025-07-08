@@ -25,9 +25,21 @@ public class JwtAuthFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
+        // Always set CORS headers
+        res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
+
+        // Allow all OPTIONS requests to pass through for CORS preflight
+        if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+            res.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
+
         String path = req.getRequestURI();
         // Allow public endpoints
-        if (path.startsWith("/api/auth") || path.startsWith("/api/public") || path.equals("/api/health")) {
+        if (path.startsWith("/api/v1/auth") || path.startsWith("/api/public") || path.equals("/api/v1/health")) {
             chain.doFilter(request, response);
             return;
         }
