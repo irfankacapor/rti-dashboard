@@ -2,13 +2,17 @@
 import React, { useState } from "react";
 import { AppBar, Toolbar, Typography, IconButton, Button, Menu, MenuItem, Avatar, Box } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import EditIcon from "@mui/icons-material/Edit";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter, useParams } from "next/navigation";
+import { useDashboardEditMode } from "@/hooks/useDashboardEditMode";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { canAccessWizard, canAccessAdmin, UserRole } from "@/utils/accessControl";
 
 export default function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { isEditMode, toggleEditMode } = useDashboardEditMode();
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const locale = (params?.locale as string) || "en";
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -45,9 +49,14 @@ export default function Navbar() {
     handleMenuClose();
   };
 
+  const handleEditModeToggle = () => {
+    toggleEditMode();
+  };
+
   const userRole = user?.role as UserRole | null;
   const canAccessWizardPage = canAccessWizard(userRole);
   const canAccessAdminPage = canAccessAdmin(userRole);
+  const canEditDashboard = canAccessWizardPage; // Same logic as wizard access
 
   return (
     <AppBar position="static" color="default" elevation={1} sx={{ mb: 2 }}>
@@ -62,6 +71,17 @@ export default function Navbar() {
         </Typography>
         {isLoading ? null : isAuthenticated ? (
           <>
+            {/* Dashboard Edit Mode Button - only show on dashboard page for admin/manager */}
+            {canEditDashboard && pathname?.includes('/dashboard') && (
+              <IconButton
+                color={isEditMode ? "primary" : "default"}
+                onClick={handleEditModeToggle}
+                title={isEditMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+                sx={{ mr: 1 }}
+              >
+                <EditIcon />
+              </IconButton>
+            )}
             <IconButton color="inherit" onClick={handleMenuOpen} size="large">
               {user?.username ? (
                 <Avatar sx={{ bgcolor: "primary.main" }}>
