@@ -26,30 +26,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper to check if JWT cookie is present
-  function hasJwtCookie() {
-    if (typeof document === 'undefined') return false;
-    return document.cookie.split(';').some(c => c.trim().startsWith('token='));
-  }
-
   const fetchUser = async () => {
-    // Avoid request if no JWT cookie
-    if (!hasJwtCookie()) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
+    console.log('Fetching user...');
     setIsLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/me`, { credentials: "include" });
+      console.log('Response status:', res.status);
       if (res.ok) {
         const data = await res.json();
+        console.log('User data:', data);
         setUser(data);
       } else {
+        console.log('Failed to fetch user, status:', res.status);
         setUser(null);
       }
     } catch (err) {
+      console.log('Error fetching user:', err);
       setUser(null);
       setError("Failed to fetch user");
     } finally {
