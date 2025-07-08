@@ -76,11 +76,34 @@ export interface DataTuple {
 
 // CSV processing state interface
 export interface CsvProcessingState {
-  currentPhase: 'upload' | 'selection' | 'mapping' | 'assignment';
+  currentPhase: 'upload' | 'selection' | 'mapping' | 'encoding' | 'assignment';
   csvFile?: CsvFile;
   csvData?: string[][];
   dimensionMappings: DimensionMapping[];
   processedIndicators: ProcessedIndicator[];
   isLoading: boolean;
   error?: string;
+}
+
+export interface EncodingLocation {
+  rowIndex: number;
+  colIndex: number;
+  dimensionType: string;
+  originalValue: string; // Full cell value containing the issue
+  previewFixed: string; // How it would look after fix
+}
+
+export interface EncodingIssue {
+  problematicText: string;
+  suggestedReplacement: string;
+  issueType: 'KNOWN_ENCODING' | 'POTENTIAL_ENCODING';
+  occurrenceCount: number;
+  locations: EncodingLocation[];
+}
+
+export interface EncodingFixState {
+  detectedIssues: EncodingIssue[];
+  userReplacements: Map<string, string>; // problematicText -> userReplacement
+  isScanning: boolean;
+  hasIssues: boolean;
 } 

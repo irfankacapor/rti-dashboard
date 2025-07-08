@@ -15,6 +15,7 @@ import { CsvUploadSection } from './CsvUploadSection';
 import { CsvTable } from './CsvTable';
 import { DimensionMappingPopup } from './DimensionMappingPopup';
 import { IndicatorAssignment } from './IndicatorAssignment';
+import { EncodingFixStep } from './EncodingFixStep';
 
 import { 
   CsvFile, 
@@ -37,6 +38,7 @@ const PHASES = [
   { id: 'upload', label: 'Upload CSV File' },
   { id: 'selection', label: 'Select Data Ranges' },
   { id: 'mapping', label: 'Map Dimensions' },
+  { id: 'encoding', label: 'Encoding Fixes' },
   { id: 'assignment', label: 'Assign Indicators' }
 ];
 
@@ -172,15 +174,31 @@ export const CsvProcessingStep: React.FC = () => {
         throw new Error(`Mapping validation failed: ${validation.errors.join(', ')}`);
       }
 
-      // Generate data tuples
-      const tuples = generateDataTuples(state.dimensionMappings, state.csvData);
-      
-      // Group by indicator name to create processed indicators
+      // Move to encoding fix step instead of directly to assignment
+      setState(prev => ({
+        ...prev,
+        currentPhase: 'encoding',
+        isLoading: false
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to process mappings',
+        isLoading: false
+      }));
+    }
+  };
+
+  const handleApplyEncodingFixes = (fixedData: string[][], appliedFixesCount: number) => {
+    // Update the csvData with fixed version
+    setState(prev => ({ ...prev, csvData: fixedData }));
+
+    // Now process the fixed data into indicators
+    try {
+      const tuples = generateDataTuples(state.dimensionMappings, fixedData);
       const indicatorMap = new Map<string, ProcessedIndicator>();
-      
       tuples.forEach(tuple => {
         const indicatorName = tuple.coordinates.indicator_names || 'Unknown Indicator';
-        
         if (!indicatorMap.has(indicatorName)) {
           indicatorMap.set(indicatorName, {
             id: uuidv4(),
@@ -191,50 +209,54 @@ export const CsvProcessingStep: React.FC = () => {
             valueCount: 0,
             unit: tuple.coordinates.unit,
             source: tuple.coordinates.source,
-            dataPoints: [] // Initialize empty array for data points
+            dataPoints: []
           });
         }
-        
         const indicator = indicatorMap.get(indicatorName)!;
         indicator.valueCount++;
-        
-        // Add the actual data point with dimensional context
         const dataPoint = {
           value: parseFloat(tuple.value) || 0,
           timeValue: tuple.coordinates.time,
-          timeType: 'year', // Default to year, could be made configurable
+          timeType: 'year',
           locationValue: tuple.coordinates.locations,
-          locationType: 'state', // Default to state, could be made configurable
+          locationType: 'state',
           customDimensions: Object.entries(tuple.coordinates)
-            .filter(([key, value]) => 
-              key !== 'indicator_names' && 
-              key !== 'time' && 
-              key !== 'locations' && 
-              key !== 'unit' && 
-              key !== 'source' && 
+            .filter(([key, value]) =>
+              key !== 'indicator_names' &&
+              key !== 'time' &&
+              key !== 'locations' &&
+              key !== 'unit' &&
+              key !== 'source' &&
               value
             )
             .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
         };
-        
         indicator.dataPoints!.push(dataPoint);
       });
-
       const processedIndicators = Array.from(indicatorMap.values());
-      
       setState(prev => ({
         ...prev,
         processedIndicators,
         currentPhase: 'assignment',
         isLoading: false
       }));
+      // Show success message if fixes were applied
+      if (appliedFixesCount > 0) {
+        // Add success notification here
+        console.log(`Applied ${appliedFixesCount} encoding fixes successfully`);
+      }
     } catch (error) {
       setState(prev => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Failed to process mappings',
+        error: error instanceof Error ? error.message : 'Failed to process fixed data',
         isLoading: false
       }));
     }
+  };
+
+  const handleSkipEncodingFixes = () => {
+    // Process data without encoding fixes
+    handleApplyEncodingFixes(state.csvData || [], 0);
   };
 
   const handleIndicatorAssign = (indicatorId: string, field: 'subareaId' | 'direction', value: string) => {
@@ -356,6 +378,16 @@ export const CsvProcessingStep: React.FC = () => {
               {state.isLoading ? 'Processing...' : 'Continue to Assignment'}
             </Button>
           </Box>
+        );
+
+      case 'encoding':
+        return (
+          <EncodingFixStep
+            csvData={state.csvData || []}
+            dimensionMappings={state.dimensionMappings}
+            onApplyFixes={handleApplyEncodingFixes}
+            onSkip={handleSkipEncodingFixes}
+          />
         );
 
       case 'assignment':
