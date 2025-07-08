@@ -30,13 +30,13 @@ public class AuthController {
     public ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request, HttpServletResponse response) {
         UserResponse user = userService.login(request);
         String token = jwtUtil.generateToken(userService.getUserEntity(user.getUsername()));
-        response.addHeader("Set-Cookie", "token=" + token + "; HttpOnly; Path=/; Max-Age=86400");
+        response.addHeader("Set-Cookie", "token=" + token + "; HttpOnly; Path=/; Max-Age=86400; SameSite=None; Secure");
         return ResponseEntity.ok(user);
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
-        response.addHeader("Set-Cookie", "token=; HttpOnly; Path=/; Max-Age=0");
+        response.addHeader("Set-Cookie", "token=; HttpOnly; Path=/; Max-Age=0; SameSite=None; Secure");
         return ResponseEntity.ok().build();
     }
 } 

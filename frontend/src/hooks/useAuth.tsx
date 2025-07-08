@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Helper to check if JWT cookie is present
   function hasJwtCookie() {
     if (typeof document === 'undefined') return false;
-    return document.cookie.split(';').some(c => c.trim().startsWith('jwt='));
+    return document.cookie.split(';').some(c => c.trim().startsWith('token='));
   }
 
   const fetchUser = async () => {
