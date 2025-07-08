@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 import { WizardContainer } from './WizardContainer';
 import { CsvUploadSection } from './CsvUploadSection';
@@ -83,28 +84,40 @@ export const CsvProcessingStep: React.FC = () => {
     setDelimiter(selectedDelimiter);
 
     try {
-      // Parse CSV data
-      let csvText: string;
-      if (selectedEncoding === 'utf-8' || selectedEncoding === 'utf-8-bom') {
-        csvText = await csvFile.file.text();
-        if (selectedEncoding === 'utf-8-bom' && csvText.charCodeAt(0) === 0xFEFF) {
-          csvText = csvText.slice(1); // Remove BOM
-        }
-      } else {
-        // Use TextDecoder for other encodings
+      // Parse CSV or Excel data
+      let csvData: string[][] = [];
+      const fileNameLower = csvFile.name.toLowerCase();
+      if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) {
+        // Parse Excel file
         const arrayBuffer = await csvFile.file.arrayBuffer();
-        const decoder = new TextDecoder(selectedEncoding);
-        csvText = decoder.decode(arrayBuffer);
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        csvData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      } else {
+        // Parse CSV data
+        let csvText: string;
+        if (selectedEncoding === 'utf-8' || selectedEncoding === 'utf-8-bom') {
+          csvText = await csvFile.file.text();
+          if (selectedEncoding === 'utf-8-bom' && csvText.charCodeAt(0) === 0xFEFF) {
+            csvText = csvText.slice(1); // Remove BOM
+          }
+        } else {
+          // Use TextDecoder for other encodings
+          const arrayBuffer = await csvFile.file.arrayBuffer();
+          const decoder = new TextDecoder(selectedEncoding);
+          csvText = decoder.decode(arrayBuffer);
+        }
+        let delimiterChar = ',';
+        if (selectedDelimiter === ';') delimiterChar = ';';
+        else if (selectedDelimiter === '\t') delimiterChar = '\t';
+        // Use PapaParse with custom delimiter
+        const result = Papa.parse(csvText, { header: false, delimiter: delimiterChar });
+        if (result.errors.length > 0) {
+          throw new Error(`CSV parsing errors: ${result.errors.map(e => e.message).join(', ')}`);
+        }
+        csvData = result.data as string[][];
       }
-      let delimiterChar = ',';
-      if (selectedDelimiter === ';') delimiterChar = ';';
-      else if (selectedDelimiter === '\t') delimiterChar = '\t';
-      // Use PapaParse with custom delimiter
-      const result = Papa.parse(csvText, { header: false, delimiter: delimiterChar });
-      if (result.errors.length > 0) {
-        throw new Error(`CSV parsing errors: ${result.errors.map(e => e.message).join(', ')}`);
-      }
-      const csvData = result.data as string[][];
       setState(prev => ({ 
         ...prev, 
         csvData, 
@@ -114,7 +127,7 @@ export const CsvProcessingStep: React.FC = () => {
     } catch (error) {
       setState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error.message : 'Failed to process CSV file',
+        error: error instanceof Error ? error.message : 'Failed to process file',
         isLoading: false 
       }));
     }

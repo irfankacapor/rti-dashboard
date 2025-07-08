@@ -158,8 +158,9 @@ export const extractUniqueValues = (
   const values = new Set<string>();
   
   selection.selectedCells.forEach(cell => {
-    if (cell.value && cell.value.trim() !== '') {
-      values.add(cell.value.trim());
+    const strValue = (cell.value ?? '').toString();
+    if (strValue.trim() !== '') {
+      values.add(strValue.trim());
     }
   });
   

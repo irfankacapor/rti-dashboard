@@ -32,7 +32,7 @@ interface CsvUploadSectionProps {
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-const ACCEPTED_TYPES = ['.csv', 'text/csv'];
+const ACCEPTED_TYPES = ['.csv', 'text/csv', '.xlsx', '.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
 
 export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
   onFileUploaded,
@@ -54,7 +54,7 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
       if (rejection.errors.some((e: any) => e.code === 'file-too-large')) {
         setError('File size exceeds 25MB limit');
       } else if (rejection.errors.some((e: any) => e.code === 'file-invalid-type')) {
-        setError('Please upload a valid CSV file');
+        setError('Please upload a valid CSV or Excel (.xlsx, .xls) file');
       } else {
         setError('Invalid file. Please try again.');
       }
@@ -70,8 +70,10 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
       return;
     }
 
-    if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
-      setError('Please upload a valid CSV file');
+    const validExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileNameLower = file.name.toLowerCase();
+    if (!validExtensions.some(ext => fileNameLower.endsWith(ext))) {
+      setError('Please upload a valid CSV or Excel (.xlsx, .xls) file');
       return;
     }
 
@@ -116,7 +118,9 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'text/csv': ['.csv']
+      'text/csv': ['.csv'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls']
     },
     maxSize: MAX_FILE_SIZE,
     multiple: false,
@@ -134,11 +138,11 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Upload CSV File
+        Upload CSV or Excel File
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Upload a CSV file containing your data. Maximum file size: 25MB
+        Upload a CSV or Excel (.xlsx, .xls) file containing your data. Maximum file size: 25MB
       </Typography>
 
       <Box display="flex" gap={2} mb={2}>
@@ -199,7 +203,7 @@ export const CsvUploadSection: React.FC<CsvUploadSectionProps> = ({
           <input {...getInputProps()} />
           <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
-            {isDragActive ? 'Drop the CSV file here' : 'Drag & drop a CSV file here'}
+            {isDragActive ? 'Drop the file here' : 'Drag & drop a CSV or Excel file here'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             or click to browse files
