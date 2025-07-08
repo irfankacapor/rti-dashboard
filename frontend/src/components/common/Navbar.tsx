@@ -4,6 +4,7 @@ import { AppBar, Toolbar, Typography, IconButton, Button, Menu, MenuItem, Avatar
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter, useParams } from "next/navigation";
+import { canAccessWizard, canAccessAdmin, UserRole } from "@/utils/accessControl";
 
 export default function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -34,6 +35,20 @@ export default function Navbar() {
     router.push(`/${locale}/login`);
   };
 
+  const handleWizardClick = () => {
+    router.push(`/${locale}/wizard`);
+    handleMenuClose();
+  };
+
+  const handleAdminClick = () => {
+    router.push(`/${locale}/admin`);
+    handleMenuClose();
+  };
+
+  const userRole = user?.role as UserRole | null;
+  const canAccessWizardPage = canAccessWizard(userRole);
+  const canAccessAdminPage = canAccessAdmin(userRole);
+
   return (
     <AppBar position="static" color="default" elevation={1} sx={{ mb: 2 }}>
       <Toolbar>
@@ -63,6 +78,12 @@ export default function Navbar() {
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
+              {canAccessWizardPage && (
+                <MenuItem onClick={handleWizardClick}>Setup Wizard</MenuItem>
+              )}
+              {canAccessAdminPage && (
+                <MenuItem onClick={handleAdminClick}>Admin Panel</MenuItem>
+              )}
               <MenuItem onClick={handleLogout}>Sign out</MenuItem>
             </Menu>
           </>
