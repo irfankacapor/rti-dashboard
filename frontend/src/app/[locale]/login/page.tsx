@@ -12,6 +12,7 @@ import {
   Stack,
 } from "@mui/material";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
+import { useAuth } from "@/hooks/useAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || "en";
+  const { refresh, user } = useAuth();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +39,14 @@ export default function LoginPage() {
         credentials: "include",
       });
       if (res.ok) {
-        router.push(`/${locale}/dashboard`);
+        const userRes = await fetch(`${API_BASE}/me`, { credentials: "include" });
+        const userData = userRes.ok ? await userRes.json() : null;
+        if (userData?.role === "ADMIN") {
+          router.push(`/${locale}/admin`);
+        } else {
+          router.push(`/${locale}/dashboard`);
+        }
+        refresh();
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data?.message || "Invalid credentials");
