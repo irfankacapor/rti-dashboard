@@ -13,13 +13,14 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-    private final String SECRET_KEY = "replace_this_with_a_strong_secret_key";
-    private final long EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+    private final String SECRET_KEY = System.getenv("JWT_SECRET") != null ? System.getenv("JWT_SECRET") : "replace_this_with_a_strong_secret_key";
+    private final long EXPIRATION_MS = 4 * 60 * 60 * 1000; // 4 hours
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
         claims.put("email", user.getEmail());
+        claims.put("userId", user.getId());
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getUsername())
@@ -46,5 +47,15 @@ public class JwtUtil {
     public String getRoleFromToken(String token) {
         Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
         return (String) claims.get("role");
+    }
+
+    public Long getUserIdFromToken(String token) {
+        Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+        return ((Number) claims.get("userId")).longValue();
+    }
+
+    public String getEmailFromToken(String token) {
+        Claims claims = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+        return (String) claims.get("email");
     }
 } 
