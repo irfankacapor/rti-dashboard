@@ -17,8 +17,9 @@ export function useIndicatorModal({ indicatorId, timeRange }: UseIndicatorModalO
 
   // Get all available dimensions robustly
   const availableDimensions: string[] = useMemo(() => {
-    if (dimensionMeta && dimensionMeta.dimensionColumns) {
-      return dimensionMeta.dimensionColumns;
+    if (dimensionMeta && dimensionMeta.availableDimensions) {
+      // Extract the 'type' field from each dimension info object
+      return dimensionMeta.availableDimensions.map((dim: any) => dim.type);
     }
     return ['time'];
   }, [dimensionMeta]);

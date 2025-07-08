@@ -115,6 +115,7 @@ class IndicatorControllerIntegrationTest {
         dimTime.setMonth(1);
         dimTime.setDay(1);
         dimTime.setQuarter(1);
+        dimTime.setValue("2024-01");
         dimTime = dimTimeRepository.save(dimTime);
         
         dimLocation = new DimLocation();
@@ -397,5 +398,115 @@ class IndicatorControllerIntegrationTest {
         
         mockMvc.perform(delete("/api/v1/indicators/" + indicator.getId() + "/subareas/" + subarea.getId()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getIndicatorChart_shouldReturnAggregatedData() throws Exception {
+        Indicator indicator = new Indicator();
+        indicator.setCode("CHART1");
+        indicator.setName("Chart Indicator");
+        indicator.setIsComposite(false);
+        indicator.setUnit(unit);
+        indicator = indicatorRepository.save(indicator);
+        // Add some fact values
+        FactIndicatorValue value1 = FactIndicatorValue.builder()
+            .indicator(indicator)
+            .value(BigDecimal.valueOf(10))
+            .time(dimTime)
+            .sourceRowHash("chart-1")
+            .build();
+        factIndicatorValueRepository.save(value1);
+        FactIndicatorValue value2 = FactIndicatorValue.builder()
+            .indicator(indicator)
+            .value(BigDecimal.valueOf(20))
+            .time(dimTime)
+            .sourceRowHash("chart-2")
+            .build();
+        factIndicatorValueRepository.save(value2);
+        // Capture and print response for debugging
+        var result = mockMvc.perform(get("/api/v1/indicators/" + indicator.getId() + "/chart?aggregateBy=time"))
+            .andReturn();
+        int status = result.getResponse().getStatus();
+        if (status != 200) {
+            System.out.println("Response body: " + result.getResponse().getContentAsString());
+        }
+        // Now assert as before
+        mockMvc.perform(get("/api/v1/indicators/" + indicator.getId() + "/chart?aggregateBy=time"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.indicatorId").value(String.valueOf(indicator.getId())))
+            .andExpect(jsonPath("$.dataPoints").isArray());
+    }
+
+    @Test
+    void getIndicatorDimensions_shouldReturnAvailableDimensions() throws Exception {
+        Indicator indicator = new Indicator();
+        indicator.setCode("DIM1");
+        indicator.setName("Dim Indicator");
+        indicator.setIsComposite(false);
+        indicator = indicatorRepository.save(indicator);
+        FactIndicatorValue value = FactIndicatorValue.builder()
+            .indicator(indicator)
+            .value(BigDecimal.valueOf(5))
+            .time(dimTime)
+            .sourceRowHash("dim-1")
+            .build();
+        factIndicatorValueRepository.save(value);
+        mockMvc.perform(get("/api/v1/indicators/" + indicator.getId() + "/dimensions"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.indicatorId").value(String.valueOf(indicator.getId())))
+            .andExpect(jsonPath("$.availableDimensions").isArray());
+    }
+
+    @Test
+    void getIndicatorHistorical_shouldReturnHistoricalData() throws Exception {
+        Indicator indicator = new Indicator();
+        indicator.setCode("HIST1");
+        indicator.setName("Hist Indicator");
+        indicator.setIsComposite(false);
+        indicator = indicatorRepository.save(indicator);
+        FactIndicatorValue value = FactIndicatorValue.builder()
+            .indicator(indicator)
+            .value(BigDecimal.valueOf(15))
+            .time(dimTime)
+            .sourceRowHash("hist-1")
+            .build();
+        factIndicatorValueRepository.save(value);
+        mockMvc.perform(get("/api/v1/indicators/" + indicator.getId() + "/historical"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.indicatorId").value(String.valueOf(indicator.getId())))
+            .andExpect(jsonPath("$.dataPoints").isArray());
+    }
+
+    @Test
+    void getIndicatorValidation_shouldReturnValidationResult() throws Exception {
+        Indicator indicator = new Indicator();
+        indicator.setCode("VAL1");
+        indicator.setName("Val Indicator");
+        indicator.setIsComposite(false);
+        indicator = indicatorRepository.save(indicator);
+        FactIndicatorValue value = FactIndicatorValue.builder()
+            .indicator(indicator)
+            .value(BigDecimal.valueOf(25))
+            .time(dimTime)
+            .sourceRowHash("val-1")
+            .build();
+        factIndicatorValueRepository.save(value);
+        mockMvc.perform(get("/api/v1/indicators/" + indicator.getId() + "/validation"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.indicatorId").value(indicator.getId().intValue()))
+            .andExpect(jsonPath("$.isValid").value(true));
+    }
+
+    @Test
+    void createSampleHistoricalData_shouldCreateAndReturnData() throws Exception {
+        Indicator indicator = new Indicator();
+        indicator.setCode("SAMPLE1");
+        indicator.setName("Sample Indicator");
+        indicator.setIsComposite(false);
+        indicator = indicatorRepository.save(indicator);
+        mockMvc.perform(post("/api/v1/indicators/" + indicator.getId() + "/sample-data"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.indicatorId").value(String.valueOf(indicator.getId())))
+            .andExpect(jsonPath("$.dataPoints").isArray());
     }
 } 

@@ -47,8 +47,9 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ ope
 
   // Get all available dimensions robustly
   const availableDimensions: string[] = React.useMemo(() => {
-    if (dimensionMeta && dimensionMeta.dimensionColumns) {
-      return dimensionMeta.dimensionColumns;
+    if (dimensionMeta && dimensionMeta.availableDimensions) {
+      // Extract the 'type' field from each dimension info object
+      return dimensionMeta.availableDimensions.map((dim: any) => dim.type);
     }
     return ['time'];
   }, [dimensionMeta]);

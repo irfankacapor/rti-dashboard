@@ -6,6 +6,10 @@ import io.dashboard.dto.IndicatorUpdateRequest;
 import io.dashboard.dto.SubareaIndicatorRequest;
 import io.dashboard.dto.IndicatorValuesResponse;
 import io.dashboard.dto.IndicatorValueUpdate;
+import io.dashboard.dto.IndicatorChartResponse;
+import io.dashboard.dto.IndicatorDimensionsResponse;
+import io.dashboard.dto.HistoricalDataResponse;
+import io.dashboard.dto.DataValidationResponse;
 import io.dashboard.service.IndicatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -103,5 +107,73 @@ public class IndicatorController {
             @RequestParam String dimension) {
         Map<String, Double> result = indicatorService.getAggregatedByDimension(id, dimension);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/indicators/{id}/raw-data")
+    public ResponseEntity<IndicatorValuesResponse> getIndicatorRawData(@PathVariable Long id) {
+        IndicatorValuesResponse response = indicatorService.getIndicatorValues(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/indicators/{id}/chart")
+    public ResponseEntity<IndicatorChartResponse> getIndicatorChart(
+            @PathVariable Long id,
+            @RequestParam String aggregateBy,
+            @RequestParam(required = false) Long subareaId) {
+        IndicatorChartResponse response = indicatorService.getIndicatorChart(id, aggregateBy, subareaId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/indicators/{id}/dimensions")
+    public ResponseEntity<IndicatorDimensionsResponse> getIndicatorDimensions(@PathVariable Long id) {
+        IndicatorDimensionsResponse response = indicatorService.getIndicatorDimensions(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/indicators/{id}/historical")
+    public ResponseEntity<HistoricalDataResponse> getHistoricalData(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "12") int months,
+            @RequestParam(required = false) String range,
+            @RequestParam(required = false) String dimension) {
+        // If range is provided, convert to months
+        int monthsToFetch = months;
+        if (range != null && !range.isEmpty()) {
+            monthsToFetch = convertRangeToMonths(range);
+        }
+        HistoricalDataResponse response = indicatorService.getHistoricalData(id, monthsToFetch, dimension);
+        return ResponseEntity.ok(response);
+    }
+
+    private int convertRangeToMonths(String range) {
+        if (range == null || range.isEmpty()) {
+            return 12; // default
+        }
+        String unit = range.substring(range.length() - 1).toUpperCase();
+        int value = Integer.parseInt(range.substring(0, range.length() - 1));
+        switch (unit) {
+            case "Y":
+                return value * 12;
+            case "M":
+                return value;
+            case "W":
+                return (int) Math.ceil(value / 4.0); // approximate weeks to months
+            case "D":
+                return (int) Math.ceil(value / 30.0); // approximate days to months
+            default:
+                return 12; // default fallback
+        }
+    }
+
+    @GetMapping("/indicators/{id}/validation")
+    public ResponseEntity<DataValidationResponse> validateIndicatorData(@PathVariable Long id) {
+        DataValidationResponse response = indicatorService.getDataValidation(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/indicators/{id}/sample-data")
+    public ResponseEntity<HistoricalDataResponse> createSampleHistoricalData(@PathVariable Long id) {
+        HistoricalDataResponse response = indicatorService.createSampleHistoricalData(id);
+        return ResponseEntity.ok(response);
     }
 } 

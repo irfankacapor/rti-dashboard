@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class SubareaServiceTest {
     @Mock
@@ -75,9 +76,10 @@ class SubareaServiceTest {
         Subarea sub = new Subarea();
         sub.setId(3L);
         sub.setCode("S3");
-        when(subareaRepository.findById(3L)).thenReturn(Optional.of(sub));
+        when(subareaRepository.findByIdWithArea(3L)).thenReturn(Optional.of(sub));
         SubareaResponse resp = subareaService.findById(3L);
-        assertThat(resp.getCode()).isEqualTo("S3");
+        assertNotNull(resp);
+        assertEquals("S3", resp.getCode());
     }
 
     @Test

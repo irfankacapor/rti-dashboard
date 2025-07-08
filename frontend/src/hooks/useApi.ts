@@ -66,19 +66,20 @@ export function useIndicatorData(
       effectiveDefault = availableDimensions[0];
     }
 
-    // If the selected dimension is the default (or not set), fetch raw data
+    // If the selected dimension is the default (or not set), fetch raw historical data
     if (!dimension || dimension === effectiveDefault) {
-      let url = `${API_BASE}/dashboard-data/historical/${indicatorId}?range=${timeRange}`;
+      let url = `${API_BASE}/indicators/${indicatorId}/historical?range=${timeRange}`;
       fetch(url)
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
           return res.json();
         })
         .then(responseData => {
+          // The new DTO returns dataPoints, startDate, endDate, etc.
           if (responseData.dataPoints && Array.isArray(responseData.dataPoints)) {
             setData({
               timeSeries: responseData.dataPoints.map((point: any) => ({
-                label: point.timestamp,
+                label: point.timestamp || point.label,
                 value: point.value
               })),
               dimensions: responseData.dimensions || [effectiveDefault],
@@ -96,18 +97,22 @@ export function useIndicatorData(
         })
         .finally(() => setLoading(false));
     } else {
-      // Otherwise, fetch aggregated data
-      fetch(`${API_BASE}/indicators/${indicatorId}/aggregate?dimension=${dimension}`)
+      // Otherwise, fetch aggregated chart data from the new endpoint
+      fetch(`${API_BASE}/indicators/${indicatorId}/chart?aggregateBy=${dimension}`)
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
           return res.json();
         })
         .then((result) => {
-          const chartData = Object.entries(result).map(([label, value]) => ({ label, value }));
+          // The new DTO returns dataPoints as an array
+          const chartData = (result.dataPoints || []).map((point: any) => ({
+            label: point.label,
+            value: point.value
+          }));
           setData({
             chartData,
             dimension,
-            availableDimensions: [dimension],
+            availableDimensions: result.availableDimensions || [dimension],
           });
         })
         .catch((err) => {
@@ -257,7 +262,7 @@ export function useIndicatorDimensionValues(indicatorId: string) {
     if (!indicatorId) return;
     setLoading(true);
     setError(null);
-    fetch(`${API_BASE}/indicators/${indicatorId}/values`)
+    fetch(`${API_BASE}/indicators/${indicatorId}/dimensions`)
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -266,8 +271,8 @@ export function useIndicatorDimensionValues(indicatorId: string) {
       })
       .then(setData)
       .catch((err) => {
-        console.error('Error fetching indicator dimension values:', err);
-        setError('Failed to fetch indicator dimension values');
+        console.error('Error fetching indicator dimensions:', err);
+        setError('Failed to fetch indicator dimensions');
       })
       .finally(() => setLoading(false));
   }, [indicatorId]);
@@ -289,10 +294,10 @@ export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
     setLoading(true);
     setError(null);
     
-    // Fetch dimension values for all indicators in parallel
+    // Fetch dimension metadata for all indicators in parallel
     Promise.all(
       indicatorIds.map(id => 
-        fetch(`${API_BASE}/indicators/${id}/values`)
+        fetch(`${API_BASE}/indicators/${id}/dimensions`)
           .then(res => {
             if (!res.ok) {
               throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -300,7 +305,7 @@ export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
             return res.json();
           })
           .catch((err) => {
-            console.error(`Error fetching indicator ${id} dimension values:`, err);
+            console.error(`Error fetching indicator ${id} dimensions:`, err);
             return null; // Return null for failed requests
           })
       )
@@ -309,8 +314,8 @@ export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
         setData(results.filter(result => result !== null));
       })
       .catch((err) => {
-        console.error('Error fetching multiple indicator dimension values:', err);
-        setError('Failed to fetch indicator dimension values');
+        console.error('Error fetching multiple indicator dimensions:', err);
+        setError('Failed to fetch indicator dimensions');
       })
       .finally(() => setLoading(false));
   }, [indicatorIds.join(',')]); // Use join to create a stable dependency

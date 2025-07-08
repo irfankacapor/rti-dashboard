@@ -41,13 +41,11 @@ export default function SubareaDetailPage() {
   const dimensionValueSets = useMemo(() => {
     return indicators.map((indicator: any, index: number) => {
       const dimensionData = dimensionValuesData[index];
-      if (!dimensionData || !dimensionData.rows) return new Set<string>();
-      
-      return new Set<string>(
-        dimensionData.rows
-          .filter((row: any) => row.dimensions && row.dimensions[selectedDimension])
-          .map((row: any) => row.dimensions[selectedDimension])
-      );
+      if (!dimensionData || !dimensionData.availableDimensions) return new Set<string>();
+      // Find the dimension info object for the selected dimension
+      const dimInfo = dimensionData.availableDimensions.find((dim: any) => dim.type === selectedDimension);
+      if (!dimInfo || !dimInfo.values) return new Set<string>();
+      return new Set<string>(dimInfo.values);
     });
   }, [indicators, dimensionValuesData, selectedDimension]);
 
@@ -219,11 +217,12 @@ export default function SubareaDetailPage() {
                 ) : (
                   indicators.map((indicator: any, index: number) => {
                     const dimensionData = dimensionValuesData[index];
-                    const hasDimensionValue = dimensionData && dimensionData.rows && 
-                      dimensionData.rows.some((row: any) => 
-                        row.dimensions && row.dimensions[selectedDimension] === hoveredDimensionValue
-                      );
-                    
+                    // For highlighting, check if the selected dimension's values include the hovered value
+                    let hasDimensionValue = false;
+                    if (dimensionData && dimensionData.availableDimensions) {
+                      const dimInfo = dimensionData.availableDimensions.find((dim: any) => dim.type === selectedDimension);
+                      hasDimensionValue = !!(dimInfo && dimInfo.values && dimInfo.values.includes(hoveredDimensionValue));
+                    }
                     return (
                       <IndicatorListItem
                         key={indicator.id}

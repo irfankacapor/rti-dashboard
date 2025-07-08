@@ -146,93 +146,6 @@ class DashboardDataControllerTest {
         verify(dashboardDataService).getPerformanceMetrics(1L);
     }
 
-    // ========== GET DATA AGGREGATION TESTS ==========
-
-    @Test
-    void getDataAggregation_shouldReturnAggregatedData() throws Exception {
-        DataAggregationResponse response = new DataAggregationResponse();
-        response.setIndicatorId(1L);
-        response.setAggregationType("SUM");
-        Map<String, Object> data = new HashMap<>();
-        data.put("value", 300.0);
-        data.put("count", 3);
-        response.setData(data);
-        
-        when(dashboardDataService.getDataAggregation(eq(1L), eq("SUM"), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
-                .param("indicatorId", "1")
-                .param("aggregationType", "SUM")
-                .param("startDate", "2023-01-01T00:00:00")
-                .param("endDate", "2023-12-31T23:59:59")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.indicatorId").value(1))
-                .andExpect(jsonPath("$.aggregationType").value("SUM"))
-                .andExpect(jsonPath("$.data.value").value(300.0))
-                .andExpect(jsonPath("$.data.count").value(3));
-
-        verify(dashboardDataService).getDataAggregation(eq(1L), eq("SUM"), any(LocalDateTime.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    void getDataAggregation_shouldHandleMissingParameters() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getDataAggregation(anyLong(), anyString(), any(LocalDateTime.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    void getDataAggregation_shouldHandleInvalidIndicatorId() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
-                .param("indicatorId", "-1")
-                .param("aggregationType", "SUM")
-                .param("startDate", "2023-01-01T00:00:00")
-                .param("endDate", "2023-12-31T23:59:59")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getDataAggregation(anyLong(), anyString(), any(LocalDateTime.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    void getDataAggregation_shouldHandleInvalidDateFormats() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
-                .param("indicatorId", "1")
-                .param("aggregationType", "SUM")
-                .param("startDate", "invalid-date")
-                .param("endDate", "invalid-date")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getDataAggregation(anyLong(), anyString(), any(LocalDateTime.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    void getDataAggregation_shouldHandleDifferentAggregationTypes() throws Exception {
-        DataAggregationResponse response = new DataAggregationResponse();
-        response.setIndicatorId(1L);
-        response.setAggregationType("AVERAGE");
-        Map<String, Object> data = new HashMap<>();
-        data.put("value", 150.0);
-        response.setData(data);
-        
-        when(dashboardDataService.getDataAggregation(eq(1L), eq("AVERAGE"), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
-                .param("indicatorId", "1")
-                .param("aggregationType", "AVERAGE")
-                .param("startDate", "2023-01-01T00:00:00")
-                .param("endDate", "2023-12-31T23:59:59")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.aggregationType").value("AVERAGE"))
-                .andExpect(jsonPath("$.data.value").value(150.0));
-
-        verify(dashboardDataService).getDataAggregation(eq(1L), eq("AVERAGE"), any(LocalDateTime.class), any(LocalDateTime.class));
-    }
-
     // ========== GET REAL-TIME UPDATES TESTS ==========
 
     @Test
@@ -261,68 +174,6 @@ class DashboardDataControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(dashboardDataService, never()).getRealTimeUpdates(anyLong());
-    }
-
-    // ========== GET HISTORICAL DATA TESTS ==========
-
-    @Test
-    void getHistoricalData_shouldReturnHistoricalData() throws Exception {
-        // Given
-        HistoricalDataResponse mockResponse = new HistoricalDataResponse();
-        mockResponse.setIndicatorId(1L);
-        when(dashboardDataService.getHistoricalData(1L, 6)).thenReturn(mockResponse);
-
-        // When & Then
-        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
-                .param("months", "6"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.indicatorId").value(1));
-    }
-
-    @Test
-    void getHistoricalData_shouldHandleInvalidIndicatorId() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", -1L)
-                .param("months", "12")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getHistoricalData(anyLong(), anyInt());
-    }
-
-    @Test
-    void getHistoricalData_shouldHandleInvalidMonths() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
-                .param("months", "-1")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getHistoricalData(anyLong(), anyInt());
-    }
-
-    @Test
-    void getHistoricalData_shouldHandleZeroMonths() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
-                .param("months", "0")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getHistoricalData(anyLong(), anyInt());
-    }
-
-    @Test
-    void getHistoricalData_shouldHandleLargeMonthRange() throws Exception {
-        HistoricalDataResponse response = new HistoricalDataResponse();
-        response.setIndicatorId(1L);
-        response.setStartDate(LocalDateTime.now().minusMonths(100));
-        response.setEndDate(LocalDateTime.now());
-        response.setDataPoints(Collections.emptyList());
-        
-        when(dashboardDataService.getHistoricalData(1L, 100)).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/dashboard-data/historical/{indicatorId}", 1L)
-                .param("months", "100")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.indicatorId").value(1));
-
-        verify(dashboardDataService).getHistoricalData(1L, 100);
     }
 
     // ========== GET DATA EXPORT TESTS ==========
@@ -375,41 +226,6 @@ class DashboardDataControllerTest {
                 .andExpect(jsonPath("$.format").value("CSV"));
 
         verify(dashboardDataService).getDataExport(1L, "CSV");
-    }
-
-    // ========== GET DATA VALIDATION TESTS ==========
-
-    @Test
-    void getDataValidation_shouldReturnValidationResults() throws Exception {
-        DataValidationResponse response = new DataValidationResponse();
-        response.setIndicatorId(1L);
-        response.setTotalRecords(100L);
-        response.setValidRecords(95L);
-        response.setInvalidRecords(5L);
-        response.setIsValid(false);
-        response.setValidationErrors(Arrays.asList("Invalid value at record 1"));
-        
-        when(dashboardDataService.getDataValidation(1L)).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/dashboard-data/validation/{indicatorId}", 1L)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.indicatorId").value(1))
-                .andExpect(jsonPath("$.totalRecords").value(100))
-                .andExpect(jsonPath("$.validRecords").value(95))
-                .andExpect(jsonPath("$.invalidRecords").value(5))
-                .andExpect(jsonPath("$.isValid").value(false))
-                .andExpect(jsonPath("$.validationErrors").isArray());
-
-        verify(dashboardDataService).getDataValidation(1L);
-    }
-
-    @Test
-    void getDataValidation_shouldHandleInvalidIndicatorId() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard-data/validation/{indicatorId}", -1L)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        verify(dashboardDataService, never()).getDataValidation(anyLong());
     }
 
     // ========== GET DATA QUALITY METRICS TESTS ==========
@@ -554,30 +370,6 @@ class DashboardDataControllerTest {
         mockMvc.perform(get("/api/v1/dashboard-data/{dashboardId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lastUpdated").exists());
-    }
-
-    @Test
-    void getDataAggregation_shouldHandleLargeDateRanges() throws Exception {
-        DataAggregationResponse response = new DataAggregationResponse();
-        response.setIndicatorId(1L);
-        response.setAggregationType("SUM");
-        Map<String, Object> data = new HashMap<>();
-        data.put("value", 1000000.0);
-        response.setData(data);
-        
-        when(dashboardDataService.getDataAggregation(eq(1L), eq("SUM"), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/dashboard-data/aggregation")
-                .param("indicatorId", "1")
-                .param("aggregationType", "SUM")
-                .param("startDate", "2020-01-01T00:00:00")
-                .param("endDate", "2023-12-31T23:59:59")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.value").value(1000000.0));
-
-        verify(dashboardDataService).getDataAggregation(eq(1L), eq("SUM"), any(LocalDateTime.class), any(LocalDateTime.class));
     }
 
     // ========== INTEGRATION SCENARIO TESTS ==========

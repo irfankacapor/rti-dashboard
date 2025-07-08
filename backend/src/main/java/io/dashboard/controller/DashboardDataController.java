@@ -100,25 +100,7 @@ public class DashboardDataController {
             @RequestParam String aggregationType,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        log.info("Retrieving data aggregation for indicator ID: {} with type: {}", indicatorId, aggregationType);
-        
-        // Validate parameters
-        if (indicatorId == null || indicatorId <= 0) {
-            throw new BadRequestException("Indicator ID must be a positive number");
-        }
-        if (aggregationType == null || aggregationType.trim().isEmpty()) {
-            throw new BadRequestException("Aggregation type is required");
-        }
-        
-        try {
-            LocalDateTime start = startDate != null ? startDate : LocalDateTime.now().minusMonths(1);
-            LocalDateTime end = endDate != null ? endDate : LocalDateTime.now();
-            DataAggregationResponse response = dashboardDataService.getDataAggregation(indicatorId, aggregationType, start, end);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error retrieving data aggregation: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        throw new UnsupportedOperationException("This endpoint has been moved to IndicatorController");
     }
 
     @GetMapping("/real-time-updates/{dashboardId}")
@@ -145,31 +127,7 @@ public class DashboardDataController {
             @RequestParam(defaultValue = "12") int months,
             @RequestParam(required = false) String range,
             @RequestParam(required = false) String dimension) {
-        log.info("Retrieving historical data for indicator ID: {} for {} months, range: {}, dimension: {}", 
-                indicatorId, months, range, dimension);
-        
-        // Validate parameters
-        if (indicatorId == null || indicatorId <= 0) {
-            throw new BadRequestException("Indicator ID must be a positive number");
-        }
-        
-        // Convert range to months if provided
-        int monthsToFetch = months;
-        if (range != null && !range.isEmpty()) {
-            monthsToFetch = convertRangeToMonths(range);
-        }
-        
-        if (monthsToFetch <= 0) {
-            throw new BadRequestException("Months must be a positive number");
-        }
-        
-        try {
-            HistoricalDataResponse response = dashboardDataService.getHistoricalData(indicatorId, monthsToFetch, dimension);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error retrieving historical data: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        throw new UnsupportedOperationException("This endpoint has been moved to IndicatorController");
     }
     
     private int convertRangeToMonths(String range) {
@@ -217,20 +175,7 @@ public class DashboardDataController {
 
     @GetMapping("/validation/{indicatorId}")
     public ResponseEntity<DataValidationResponse> validateIndicatorData(@PathVariable Long indicatorId) {
-        log.info("Validating data for indicator ID: {}", indicatorId);
-        
-        // Validate indicator ID
-        if (indicatorId == null || indicatorId <= 0) {
-            throw new BadRequestException("Indicator ID must be a positive number");
-        }
-        
-        try {
-            DataValidationResponse response = dashboardDataService.getDataValidation(indicatorId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error validating indicator data: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        throw new UnsupportedOperationException("This endpoint has been moved to IndicatorController");
     }
 
     @GetMapping("/quality-metrics/{dashboardId}")
@@ -296,54 +241,6 @@ public class DashboardDataController {
 
     @PostMapping("/historical/{indicatorId}/sample-data")
     public ResponseEntity<HistoricalDataResponse> createSampleHistoricalData(@PathVariable Long indicatorId) {
-        log.info("Creating sample historical data for indicator ID: {}", indicatorId);
-        
-        // Validate indicator ID
-        if (indicatorId == null || indicatorId <= 0) {
-            throw new BadRequestException("Indicator ID must be a positive number");
-        }
-        
-        try {
-            // Check if indicator exists
-            if (!indicatorRepository.existsById(indicatorId)) {
-                throw new BadRequestException("Indicator not found with ID: " + indicatorId);
-            }
-            
-            // Create sample data for the last 12 months
-            LocalDateTime now = LocalDateTime.now();
-            List<FactIndicatorValue> sampleValues = new ArrayList<>();
-            
-            for (int i = 11; i >= 0; i--) {
-                LocalDateTime date = now.minusMonths(i);
-                
-                // Create time dimension
-                DimTime time = new DimTime();
-                time.setValue(date.getYear() + "-" + String.format("%02d", date.getMonthValue()));
-                time.setYear(date.getYear());
-                time.setMonth(date.getMonthValue());
-                time.setDay(1);
-                time = dimTimeRepository.save(time);
-                
-                // Create fact value with random data
-                double randomValue = 50 + Math.random() * 50; // Random value between 50-100
-                
-                FactIndicatorValue fact = FactIndicatorValue.builder()
-                    .indicator(indicatorRepository.findById(indicatorId).get())
-                    .value(BigDecimal.valueOf(randomValue))
-                    .time(time)
-                    .sourceRowHash("sample-" + indicatorId + "-" + i)
-                    .build();
-                
-                sampleValues.add(factRepository.save(fact));
-            }
-            
-            // Return the historical data
-            HistoricalDataResponse response = dashboardDataService.getHistoricalData(indicatorId, 12);
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("Error creating sample historical data: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        throw new UnsupportedOperationException("This endpoint has been moved to IndicatorController");
     }
 } 
