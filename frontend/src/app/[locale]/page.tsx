@@ -8,12 +8,14 @@ import {
   Paper,
   Stack
 } from '@mui/material';
-import { PlayArrow, Dashboard } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
+import { LockOpen, Dashboard } from '@mui/icons-material';
+import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 export default function LandingPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const t = useTranslations('Landing');
 
   const handleStartConfiguration = () => {
@@ -74,8 +76,8 @@ export default function LandingPage() {
               <Button
                 variant="contained"
                 size="large"
-                startIcon={<PlayArrow />}
-                onClick={handleStartConfiguration}
+                startIcon={<LockOpen />}
+                onClick={() => router.push(`/${locale}/login`)}
                 sx={{ 
                   px: 4, 
                   py: 2, 
@@ -83,16 +85,16 @@ export default function LandingPage() {
                   borderRadius: 3,
                   textTransform: 'none'
                 }}
-                data-testid="start-configuration-button"
+                data-testid="login-button"
               >
-                Start Configuration
+                Login
               </Button>
               
               <Button
                 variant="outlined"
                 size="large"
                 startIcon={<Dashboard />}
-                onClick={handleGoToDashboard}
+                onClick={() => router.push(`/${locale}/dashboard`)}
                 sx={{ 
                   px: 4, 
                   py: 2, 
