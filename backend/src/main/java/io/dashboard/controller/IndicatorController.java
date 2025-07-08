@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.annotation.Secured;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 import java.util.Map;
@@ -27,44 +29,52 @@ public class IndicatorController {
     private final IndicatorService indicatorService;
 
     @GetMapping("/indicators")
+    @PermitAll
     public List<IndicatorResponse> getAllIndicators() {
         return indicatorService.findAll();
     }
 
     @GetMapping("/indicators/{id}")
+    @PermitAll
     public IndicatorResponse getIndicatorById(@PathVariable Long id) {
         return indicatorService.findById(id);
     }
 
     @GetMapping("/subareas/{subareaId}/indicators")
+    @PermitAll
     public List<IndicatorResponse> getIndicatorsBySubarea(@PathVariable Long subareaId) {
         return indicatorService.findBySubareaId(subareaId);
     }
 
     @PostMapping("/indicators")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<IndicatorResponse> createIndicator(@Valid @RequestBody IndicatorCreateRequest request) {
         IndicatorResponse response = indicatorService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/indicators/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public IndicatorResponse updateIndicator(@PathVariable Long id, @Valid @RequestBody IndicatorUpdateRequest request) {
         return indicatorService.update(id, request);
     }
 
     @DeleteMapping("/indicators/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> deleteIndicator(@PathVariable Long id) {
         indicatorService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/indicators/{id}/with-data")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> deleteIndicatorWithData(@PathVariable Long id) {
         indicatorService.deleteWithData(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/indicators/{indicatorId}/subareas/{subareaId}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> assignIndicatorToSubarea(
             @PathVariable Long indicatorId,
             @PathVariable Long subareaId,
@@ -74,6 +84,7 @@ public class IndicatorController {
     }
 
     @DeleteMapping("/indicators/{indicatorId}/subareas/{subareaId}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> removeIndicatorFromSubarea(
             @PathVariable Long indicatorId,
             @PathVariable Long subareaId) {
@@ -82,18 +93,21 @@ public class IndicatorController {
     }
 
     @GetMapping("/indicators/{id}/values")
+    @PermitAll
     public ResponseEntity<IndicatorValuesResponse> getIndicatorValues(@PathVariable Long id) {
         IndicatorValuesResponse response = indicatorService.getIndicatorValues(id);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/indicators/{id}/values")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> updateIndicatorValues(@PathVariable Long id, @RequestBody List<IndicatorValueUpdate> updates) {
         indicatorService.updateIndicatorValues(id, updates);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/indicator-types")
+    @PermitAll
     public ResponseEntity<List<String>> getIndicatorTypes() {
         List<String> types = java.util.Arrays.stream(io.dashboard.model.Direction.values())
                 .map(Enum::name)
@@ -102,6 +116,7 @@ public class IndicatorController {
     }
 
     @GetMapping("/indicators/{id}/aggregate")
+    @PermitAll
     public ResponseEntity<Map<String, Double>> getIndicatorAggregatedByDimension(
             @PathVariable Long id,
             @RequestParam String dimension) {
@@ -110,12 +125,14 @@ public class IndicatorController {
     }
 
     @GetMapping("/indicators/{id}/raw-data")
+    @PermitAll
     public ResponseEntity<IndicatorValuesResponse> getIndicatorRawData(@PathVariable Long id) {
         IndicatorValuesResponse response = indicatorService.getIndicatorValues(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/indicators/{id}/chart")
+    @PermitAll
     public ResponseEntity<IndicatorChartResponse> getIndicatorChart(
             @PathVariable Long id,
             @RequestParam String aggregateBy,
@@ -125,12 +142,14 @@ public class IndicatorController {
     }
 
     @GetMapping("/indicators/{id}/dimensions")
+    @PermitAll
     public ResponseEntity<IndicatorDimensionsResponse> getIndicatorDimensions(@PathVariable Long id) {
         IndicatorDimensionsResponse response = indicatorService.getIndicatorDimensions(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/indicators/{id}/historical")
+    @PermitAll
     public ResponseEntity<HistoricalDataResponse> getHistoricalData(
             @PathVariable Long id,
             @RequestParam(defaultValue = "12") int months,
@@ -166,12 +185,14 @@ public class IndicatorController {
     }
 
     @GetMapping("/indicators/{id}/validation")
+    @PermitAll
     public ResponseEntity<DataValidationResponse> validateIndicatorData(@PathVariable Long id) {
         DataValidationResponse response = indicatorService.getDataValidation(id);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/indicators/{id}/sample-data")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<HistoricalDataResponse> createSampleHistoricalData(@PathVariable Long id) {
         HistoricalDataResponse response = indicatorService.createSampleHistoricalData(id);
         return ResponseEntity.ok(response);

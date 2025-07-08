@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import jakarta.annotation.security.PermitAll;
 
 @RestController
 @RequestMapping("/api/v1/charts")
@@ -18,6 +19,7 @@ public class ChartDataController {
     private ChartDataService chartDataService;
 
     @GetMapping("/indicators/{indicatorId}/time-series")
+    @PermitAll
     public ResponseEntity<TimeSeriesDataResponse> getTimeSeriesData(
             @PathVariable Long indicatorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -28,6 +30,7 @@ public class ChartDataController {
     }
 
     @GetMapping("/indicators/{indicatorId}/location-comparison")
+    @PermitAll
     public ResponseEntity<LocationComparisonResponse> getLocationComparison(
             @PathVariable Long indicatorId,
             @RequestParam List<Long> locationIds) {
@@ -37,6 +40,7 @@ public class ChartDataController {
     }
 
     @GetMapping("/indicators/{indicatorId}/dimension-breakdown")
+    @PermitAll
     public ResponseEntity<DimensionBreakdownResponse> getDimensionBreakdown(
             @PathVariable Long indicatorId,
             @RequestParam String dimensionType) {
@@ -46,6 +50,7 @@ public class ChartDataController {
     }
 
     @GetMapping("/correlation")
+    @PermitAll
     public ResponseEntity<CorrelationDataResponse> getCorrelationData(
             @RequestParam List<Long> indicatorIds) {
         
@@ -54,6 +59,7 @@ public class ChartDataController {
     }
 
     @GetMapping("/goals/{goalId}/progress")
+    @PermitAll
     public ResponseEntity<TimeSeriesDataResponse> getGoalProgressChart(
             @PathVariable Long goalId) {
         
@@ -62,6 +68,7 @@ public class ChartDataController {
     }
 
     @GetMapping("/areas/{areaId}/heatmap")
+    @PermitAll
     public ResponseEntity<HeatmapDataResponse> getAreaHeatmap(
             @PathVariable Long areaId) {
         
@@ -70,6 +77,7 @@ public class ChartDataController {
     }
 
     @GetMapping("/indicators/{indicatorId}/trend")
+    @PermitAll
     public ResponseEntity<TrendAnalysisResponse> getTrendAnalysis(
             @PathVariable Long indicatorId,
             @RequestParam(defaultValue = "12") int periods) {

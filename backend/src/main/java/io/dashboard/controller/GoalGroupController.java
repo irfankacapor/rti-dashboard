@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.security.access.annotation.Secured;
+import jakarta.annotation.security.PermitAll;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class GoalGroupController {
     private final GoalGroupService goalGroupService;
     
     @GetMapping
+    @PermitAll
     public ResponseEntity<List<GoalGroupResponse>> getAllGoalGroups() {
         log.debug("Getting all goal groups");
         List<GoalGroupResponse> goalGroups = goalGroupService.findAll();
@@ -30,6 +33,7 @@ public class GoalGroupController {
     }
     
     @GetMapping("/{id}")
+    @PermitAll
     public ResponseEntity<GoalGroupResponse> getGoalGroupById(@PathVariable Long id) {
         log.debug("Getting goal group by ID: {}", id);
         GoalGroupResponse goalGroup = goalGroupService.findById(id);
@@ -37,6 +41,7 @@ public class GoalGroupController {
     }
     
     @PostMapping
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalGroupResponse> createGoalGroup(@Valid @RequestBody GoalGroupCreateRequest request) {
         log.debug("Creating new goal group: {}", request.getName());
         
@@ -50,6 +55,7 @@ public class GoalGroupController {
     }
     
     @PutMapping("/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalGroupResponse> updateGoalGroup(@PathVariable Long id, 
                                                           @Valid @RequestBody GoalGroupUpdateRequest request) {
         log.debug("Updating goal group with ID: {}", id);
@@ -65,6 +71,7 @@ public class GoalGroupController {
     }
     
     @DeleteMapping("/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> deleteGoalGroup(@PathVariable Long id) {
         log.debug("Deleting goal group with ID: {}", id);
         goalGroupService.delete(id);

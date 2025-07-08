@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.annotation.Secured;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -18,6 +19,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER", "ROLE_USER"})
     public ResponseEntity<UserResponse> getCurrentUser(HttpServletRequest request) {
         String username = (String) request.getAttribute("username");
         if (username == null) {
@@ -30,5 +32,12 @@ public class UserController {
         resp.setEmail(user.getEmail());
         resp.setRole(user.getRole());
         return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/users")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
+    public ResponseEntity<java.util.List<UserResponse>> getAllUsers() {
+        java.util.List<UserResponse> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 } 

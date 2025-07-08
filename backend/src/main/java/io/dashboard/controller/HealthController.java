@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.annotation.security.PermitAll;
 import java.time.LocalDateTime;
 
 @RestController
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 public class HealthController {
     
     @GetMapping("/health")
+    @PermitAll
     public ResponseEntity<HealthResponse> health() {
         return ResponseEntity.ok(new HealthResponse("UP", LocalDateTime.now()));
     }

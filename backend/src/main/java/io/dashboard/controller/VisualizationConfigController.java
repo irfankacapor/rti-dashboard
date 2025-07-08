@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.annotation.Secured;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 
@@ -18,6 +20,7 @@ public class VisualizationConfigController {
     private VisualizationConfigService visualizationConfigService;
 
     @GetMapping("/indicators/{indicatorId}")
+    @PermitAll
     public ResponseEntity<List<VisualizationConfigResponse>> getConfigsForIndicator(
             @PathVariable Long indicatorId) {
         
@@ -26,6 +29,7 @@ public class VisualizationConfigController {
     }
 
     @GetMapping("/{id}")
+    @PermitAll
     public ResponseEntity<VisualizationConfigResponse> getConfigById(
             @PathVariable Long id) {
         
@@ -35,6 +39,7 @@ public class VisualizationConfigController {
     }
 
     @PostMapping
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<VisualizationConfigResponse> createConfig(
             @RequestBody VisualizationConfigRequest request) {
         
@@ -43,6 +48,7 @@ public class VisualizationConfigController {
     }
 
     @PutMapping("/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<VisualizationConfigResponse> updateConfig(
             @PathVariable Long id,
             @RequestBody VisualizationConfigRequest request) {
@@ -52,6 +58,7 @@ public class VisualizationConfigController {
     }
 
     @DeleteMapping("/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> deleteConfig(
             @PathVariable Long id) {
         
@@ -60,6 +67,7 @@ public class VisualizationConfigController {
     }
 
     @PostMapping("/{id}/set-default")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<VisualizationConfigResponse> setAsDefault(
             @PathVariable Long id) {
         
@@ -68,6 +76,7 @@ public class VisualizationConfigController {
     }
 
     @PostMapping("/{id}/clone")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<VisualizationConfigResponse> cloneConfig(
             @PathVariable Long id,
             @RequestParam String newTitle) {
