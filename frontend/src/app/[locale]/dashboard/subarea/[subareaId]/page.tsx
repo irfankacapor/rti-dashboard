@@ -8,10 +8,13 @@ import IndicatorListItem from '@/components/IndicatorListItem';
 import { useSubareaData, useSubareaAggregatedValue, useSubareaAggregatedByTime, useSubareaAggregatedByLocation, useSubareaAggregatedByDimension, useMultipleIndicatorDimensionValues } from '@/hooks/useApi';
 import { useDashboardWithRelationships } from '@/hooks/useDashboardWithRelationships';
 import { GoalsSidebar } from '@/components/dashboard';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import Link from 'next/link';
 
 export default function SubareaDetailPage() {
   const params = useParams();
   const subareaId = params?.subareaId as string;
+  const locale = params?.locale as string || 'en';
   const { indicators, subarea, loading, error } = useSubareaData(subareaId);
   const { goals, goalGroups, relationships } = useDashboardWithRelationships();
 
@@ -120,6 +123,14 @@ export default function SubareaDetailPage() {
       )}
       {/* Main content */}
       <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
+        {/* Back to dashboard button */}
+        <Box mb={2}>
+          <Link href={`/${locale}/dashboard`} style={{ textDecoration: 'none' }}>
+            <Button startIcon={<ArrowBackIcon />} variant="outlined" color="primary">
+              Back to Dashboard
+            </Button>
+          </Link>
+        </Box>
         <Paper sx={{ p: 4, mb: 4 }}>
           <Typography variant="h4" gutterBottom>
             {subarea?.name || ''}
