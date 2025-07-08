@@ -31,7 +31,25 @@ public class UserService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(UserRole.USER)
+                .role(UserRole.USER) // Always USER for public registration
+                .build();
+        User saved = userRepository.save(user);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public UserResponse createUserByAdmin(io.dashboard.dto.UserCreateByAdminRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BadRequestException("Username already exists");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException("Email already exists");
+        }
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole())
                 .build();
         User saved = userRepository.save(user);
         return toResponse(saved);
@@ -53,12 +71,21 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    private UserResponse toResponse(User user) {
+    public UserResponse toResponse(User user) {
         UserResponse resp = new UserResponse();
         resp.setId(user.getId());
         resp.setUsername(user.getUsername());
         resp.setEmail(user.getEmail());
         resp.setRole(user.getRole());
         return resp;
+    }
+
+    public java.util.List<UserResponse> getAllUsers() {
+        java.util.List<User> users = userRepository.findAll();
+        java.util.List<UserResponse> responses = new java.util.ArrayList<>();
+        for (User user : users) {
+            responses.add(toResponse(user));
+        }
+        return responses;
     }
 } 
