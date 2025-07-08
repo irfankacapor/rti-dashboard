@@ -13,6 +13,8 @@ import {
 } from "@mui/material";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
 export default function LoginPage() {
   const router = useRouter();
   const params = useParams();
@@ -28,7 +30,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usernameOrEmail, password }),

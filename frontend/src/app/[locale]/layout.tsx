@@ -1,6 +1,7 @@
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import { Providers } from '../providers';
+import { AuthProvider } from '@/hooks/useAuth';
 
 export default async function LocaleLayout(props: {
   children: React.ReactNode;
@@ -12,9 +13,11 @@ export default async function LocaleLayout(props: {
 
   return (
     <NextIntlClientProvider messages={messages} locale={resolvedParams.locale}>
-      <Providers>
-        {children}
-      </Providers>
+      <AuthProvider>
+        <Providers>
+          {children}
+        </Providers>
+      </AuthProvider>
     </NextIntlClientProvider>
   );
 }

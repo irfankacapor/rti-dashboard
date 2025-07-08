@@ -13,6 +13,8 @@ import {
 } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
 export default function RegisterPage() {
   const router = useRouter();
   const params = useParams();
@@ -31,7 +33,7 @@ export default function RegisterPage() {
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
