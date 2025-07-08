@@ -128,6 +128,12 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
     }
   };
 
+  // Determine if any subarea has a goal with a targetValue > 0
+  const anySubareaHasTarget = subareaNodes.some(sub => {
+    const linkedGoals = getGoalsForSubarea(sub.id);
+    return linkedGoals.some(goal => goal.targetValue > 0);
+  });
+
   return (
     <Box sx={{ width: '100%', height: '100%', overflow: 'auto', background: BACKGROUND_COLOR }}>
       <svg
@@ -239,28 +245,30 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
           );
         })}
 
-        {/* Color scale legend */}
-        <g>
-          <defs>
-            <linearGradient id="progress-gradient" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#e74c3c" />
-              <stop offset="35%" stopColor="#f39c12" />
-              <stop offset="60%" stopColor="#f7e017" />
-              <stop offset="100%" stopColor="#27ae60" />
-            </linearGradient>
-          </defs>
-          <rect x={LEGEND_X} y={LEGEND_Y} width={LEGEND_WIDTH} height={LEGEND_HEIGHT} fill="url(#progress-gradient)" rx={3} />
-          {LEGEND_TICKS.map((val) => {
-            // Proportional position
-            const pos = LEGEND_X + ((val - LEGEND_MIN) / (LEGEND_MAX - LEGEND_MIN)) * LEGEND_WIDTH;
-            return (
-              <g key={val}>
-                <line x1={pos} y1={LEGEND_Y} x2={pos} y2={LEGEND_Y + 15} stroke="#222" strokeWidth={2} />
-                <text x={pos} y={LEGEND_Y + 32} textAnchor="middle" fontSize="16px" fill="#222">{val}</text>
-              </g>
-            );
-          })}
-        </g>
+        {/* Color scale legend: only show if any subarea has a goal with a target */}
+        {anySubareaHasTarget && (
+          <g>
+            <defs>
+              <linearGradient id="progress-gradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#e74c3c" />
+                <stop offset="35%" stopColor="#f39c12" />
+                <stop offset="60%" stopColor="#f7e017" />
+                <stop offset="100%" stopColor="#27ae60" />
+              </linearGradient>
+            </defs>
+            <rect x={LEGEND_X} y={LEGEND_Y} width={LEGEND_WIDTH} height={LEGEND_HEIGHT} fill="url(#progress-gradient)" rx={3} />
+            {LEGEND_TICKS.map((val) => {
+              // Proportional position
+              const pos = LEGEND_X + ((val - LEGEND_MIN) / (LEGEND_MAX - LEGEND_MIN)) * LEGEND_WIDTH;
+              return (
+                <g key={val}>
+                  <line x1={pos} y1={LEGEND_Y} x2={pos} y2={LEGEND_Y + 15} stroke="#222" strokeWidth={2} />
+                  <text x={pos} y={LEGEND_Y + 32} textAnchor="middle" fontSize="16px" fill="#222">{val}</text>
+                </g>
+              );
+            })}
+          </g>
+        )}
       </svg>
       {isEditMode && (
         <Box sx={{ position: 'absolute', top: 24, right: 32, bgcolor: '#fff', p: 2, borderRadius: 2, boxShadow: 2, zIndex: 10 }}>
