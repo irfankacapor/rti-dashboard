@@ -22,4 +22,16 @@ export interface IndicatorValueEdit {
   originalValue?: number;
   newValue: number;
   isNew: boolean;
+}
+
+export interface NewIndicatorValueRow {
+  tempId: string; // Temporary ID for new rows
+  dimensions: Record<string, string>;
+  value: number;
+  isNewRow: true;
+}
+
+export interface IndicatorValueCreate {
+  dimensions: Record<string, string>;
+  value: number;
 } 

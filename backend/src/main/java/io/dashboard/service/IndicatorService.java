@@ -49,6 +49,9 @@ import java.util.Map;
 import io.dashboard.dto.IndicatorChartResponse;
 import io.dashboard.dto.IndicatorDimensionsResponse;
 import java.math.BigDecimal;
+import io.dashboard.dto.IndicatorValueCreate;
+import io.dashboard.model.DimensionType;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +65,7 @@ public class IndicatorService {
     private final FactIndicatorValueRepository factIndicatorValueRepository;
     private final AggregationService aggregationService;
     private final DimTimeRepository dimTimeRepository;
+    private final io.dashboard.repository.DimLocationRepository dimLocationRepository;
 
     public List<IndicatorResponse> findAll() {
         return indicatorRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
@@ -362,8 +366,148 @@ public class IndicatorService {
         }
     }
 
+    public void createIndicatorValues(Long indicatorId, List<IndicatorValueCreate> newValues) {
+        Indicator indicator = indicatorRepository.findById(indicatorId)
+            .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", indicatorId));
+        
+        for (IndicatorValueCreate newValue : newValues) {
+            FactIndicatorValue fact = new FactIndicatorValue();
+            fact.setIndicator(indicator);
+            fact.setValue(newValue.getValue());
+            
+            // Handle time dimension (reuse if exists)
+            if (newValue.getDimensions().containsKey("time")) {
+                String timeValue = newValue.getDimensions().get("time");
+                DimTime time = parseTimeValue(timeValue);
+                fact.setTime(time);
+            }
+            
+            // Handle location dimension (reuse if exists)
+            if (newValue.getDimensions().containsKey("location")) {
+                String locationName = newValue.getDimensions().get("location");
+                DimLocation location = dimLocationRepository.findByName(locationName).orElse(null);
+                if (location == null) {
+                    location = DimLocation.builder().name(locationName).build();
+                    location = dimLocationRepository.save(location);
+                }
+                fact.setLocation(location);
+            }
+            
+            // Handle generic dimensions (not yet implemented)
+            // ...
+            
+            fact.setSourceRowHash("manual-" + System.currentTimeMillis() + "-" + Math.random());
+            factIndicatorValueRepository.save(fact);
+        }
+    }
+
+    private Integer extractYear(String timeValue) {
+        try {
+            return Integer.parseInt(timeValue);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private DimTime parseTimeValue(String timeValue) {
+        if (timeValue == null || timeValue.trim().isEmpty()) {
+            return null;
+        }
+        
+        // Try to find existing time record first
+        Optional<DimTime> existing = dimTimeRepository.findByValue(timeValue);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        
+        // Parse the time value
+        Integer year = null;
+        Integer month = null;
+        Integer day = null;
+        DimensionType timeType = DimensionType.TIME;
+        
+        // Handle different time formats
+        if (timeValue.matches("^\\d{4}$")) {
+            // Year only: "2024"
+            year = Integer.parseInt(timeValue);
+        } else if (timeValue.matches("^\\d{4}-\\d{1,2}$")) {
+            // Year-Month: "2024-01" or "2024-1"
+            String[] parts = timeValue.split("-");
+            year = Integer.parseInt(parts[0]);
+            month = Integer.parseInt(parts[1]);
+        } else if (timeValue.matches("^\\d{4}-\\d{1,2}-\\d{1,2}$")) {
+            // Year-Month-Day: "2024-01-15" or "2024-1-5"
+            String[] parts = timeValue.split("-");
+            year = Integer.parseInt(parts[0]);
+            month = Integer.parseInt(parts[1]);
+            day = Integer.parseInt(parts[2]);
+        } else {
+            // Try to extract year from any format
+            try {
+                year = Integer.parseInt(timeValue);
+            } catch (NumberFormatException e) {
+                // If we can't parse it, just store the original value
+                return DimTime.builder()
+                    .value(timeValue)
+                    .timeType(DimensionType.TIME)
+                    .build();
+            }
+        }
+        
+        // Validate parsed values
+        if (year != null && (year < 1900 || year > 2100)) {
+            throw new BadRequestException("Year must be between 1900 and 2100");
+        }
+        if (month != null && (month < 1 || month > 12)) {
+            throw new BadRequestException("Month must be between 1 and 12");
+        }
+        if (day != null && (day < 1 || day > 31)) {
+            throw new BadRequestException("Day must be between 1 and 31");
+        }
+        
+        // Create new time record
+        DimTime dimTime = DimTime.builder()
+            .value(timeValue)
+            .timeType(timeType)
+            .year(year)
+            .month(month)
+            .day(day)
+            .build();
+        
+        return dimTimeRepository.save(dimTime);
+    }
+
     public Map<String, Double> getAggregatedByDimension(Long indicatorId, String dimension) {
         return aggregationService.getIndicatorAggregatedByDimension(indicatorId, dimension);
+    }
+
+    public HistoricalDataResponse getHistoricalData(Long indicatorId, int months, String range, String dimension) {
+        // Convert range to months if provided
+        int monthsToFetch = months;
+        if (range != null && !range.isEmpty()) {
+            monthsToFetch = convertRangeToMonths(range);
+        }
+        return getHistoricalData(indicatorId, monthsToFetch, dimension);
+    }
+
+    private int convertRangeToMonths(String range) {
+        if (range == null || range.isEmpty()) {
+            return 12; // default
+        }
+        String unit = range.substring(range.length() - 1).toUpperCase();
+        int value = Integer.parseInt(range.substring(0, range.length() - 1));
+        switch (unit) {
+            case "Y":
+                return value * 12;
+            case "M":
+                return value;
+            case "W":
+                return (int) Math.ceil(value / 4.0); // approximate weeks to months
+            case "D":
+                return (int) Math.ceil(value / 30.0); // approximate days to months
+            default:
+                return 12; // default fallback
+        }
     }
 
     public HistoricalDataResponse getHistoricalData(Long indicatorId, int months, String dimension) {
@@ -486,6 +630,15 @@ public class IndicatorService {
         response.setValidationErrors(validationErrors);
         response.setIsValid(invalidRecords == 0);
         return response;
+    }
+
+    public DataValidationResponse validateIndicatorData(Long indicatorId) {
+        return getDataValidation(indicatorId);
+    }
+
+    public IndicatorChartResponse getIndicatorChart(Long indicatorId) {
+        // Default implementation - use time as aggregation
+        return getIndicatorChart(indicatorId, "time", null);
     }
 
     public HistoricalDataResponse createSampleHistoricalData(Long indicatorId) {

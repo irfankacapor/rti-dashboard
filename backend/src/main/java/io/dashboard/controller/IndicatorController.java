@@ -6,6 +6,7 @@ import io.dashboard.dto.IndicatorUpdateRequest;
 import io.dashboard.dto.SubareaIndicatorRequest;
 import io.dashboard.dto.IndicatorValuesResponse;
 import io.dashboard.dto.IndicatorValueUpdate;
+import io.dashboard.dto.IndicatorValueCreate;
 import io.dashboard.dto.IndicatorChartResponse;
 import io.dashboard.dto.IndicatorDimensionsResponse;
 import io.dashboard.dto.HistoricalDataResponse;
@@ -99,6 +100,13 @@ public class IndicatorController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/indicators/{id}/values")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
+    public ResponseEntity<Void> createIndicatorValues(@PathVariable Long id, @RequestBody List<IndicatorValueCreate> newValues) {
+        indicatorService.createIndicatorValues(id, newValues);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
     @PutMapping("/indicators/{id}/values")
     @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> updateIndicatorValues(@PathVariable Long id, @RequestBody List<IndicatorValueUpdate> updates) {
@@ -115,29 +123,10 @@ public class IndicatorController {
         return ResponseEntity.ok(types);
     }
 
-    @GetMapping("/indicators/{id}/aggregate")
-    @PermitAll
-    public ResponseEntity<Map<String, Double>> getIndicatorAggregatedByDimension(
-            @PathVariable Long id,
-            @RequestParam String dimension) {
-        Map<String, Double> result = indicatorService.getAggregatedByDimension(id, dimension);
-        return ResponseEntity.ok(result);
-    }
-
-    @GetMapping("/indicators/{id}/raw-data")
-    @PermitAll
-    public ResponseEntity<IndicatorValuesResponse> getIndicatorRawData(@PathVariable Long id) {
-        IndicatorValuesResponse response = indicatorService.getIndicatorValues(id);
-        return ResponseEntity.ok(response);
-    }
-
     @GetMapping("/indicators/{id}/chart")
     @PermitAll
-    public ResponseEntity<IndicatorChartResponse> getIndicatorChart(
-            @PathVariable Long id,
-            @RequestParam String aggregateBy,
-            @RequestParam(required = false) Long subareaId) {
-        IndicatorChartResponse response = indicatorService.getIndicatorChart(id, aggregateBy, subareaId);
+    public ResponseEntity<IndicatorChartResponse> getIndicatorChart(@PathVariable Long id) {
+        IndicatorChartResponse response = indicatorService.getIndicatorChart(id);
         return ResponseEntity.ok(response);
     }
 
@@ -155,39 +144,23 @@ public class IndicatorController {
             @RequestParam(defaultValue = "12") int months,
             @RequestParam(required = false) String range,
             @RequestParam(required = false) String dimension) {
-        // If range is provided, convert to months
-        int monthsToFetch = months;
-        if (range != null && !range.isEmpty()) {
-            monthsToFetch = convertRangeToMonths(range);
-        }
-        HistoricalDataResponse response = indicatorService.getHistoricalData(id, monthsToFetch, dimension);
+        HistoricalDataResponse response = indicatorService.getHistoricalData(id, months, range, dimension);
         return ResponseEntity.ok(response);
-    }
-
-    private int convertRangeToMonths(String range) {
-        if (range == null || range.isEmpty()) {
-            return 12; // default
-        }
-        String unit = range.substring(range.length() - 1).toUpperCase();
-        int value = Integer.parseInt(range.substring(0, range.length() - 1));
-        switch (unit) {
-            case "Y":
-                return value * 12;
-            case "M":
-                return value;
-            case "W":
-                return (int) Math.ceil(value / 4.0); // approximate weeks to months
-            case "D":
-                return (int) Math.ceil(value / 30.0); // approximate days to months
-            default:
-                return 12; // default fallback
-        }
     }
 
     @GetMapping("/indicators/{id}/validation")
     @PermitAll
     public ResponseEntity<DataValidationResponse> validateIndicatorData(@PathVariable Long id) {
-        DataValidationResponse response = indicatorService.getDataValidation(id);
+        DataValidationResponse response = indicatorService.validateIndicatorData(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/indicators/{id}/aggregation")
+    @PermitAll
+    public ResponseEntity<Map<String, Double>> getAggregatedByDimension(
+            @PathVariable Long id,
+            @RequestParam String dimension) {
+        Map<String, Double> response = indicatorService.getAggregatedByDimension(id, dimension);
         return ResponseEntity.ok(response);
     }
 
