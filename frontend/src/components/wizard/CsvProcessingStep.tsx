@@ -91,7 +91,31 @@ export const CsvProcessingStep: React.FC = () => {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        csvData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        let rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+        console.log('Excel data before merged cell fill:', JSON.parse(JSON.stringify(rawData)));
+        // Fill merged cells for Excel: copy the value from the top-left cell to all other cells in the merged region if they are empty
+        if (worksheet['!merges'] && Array.isArray(worksheet['!merges'])) {
+          worksheet['!merges'].forEach((mergeRegion: any) => {
+            const startRow = mergeRegion.s.r;
+            const endRow = mergeRegion.e.r;
+            const startCol = mergeRegion.s.c;
+            const endCol = mergeRegion.e.c;
+            const mergedValue = (rawData[startRow] && rawData[startRow][startCol] !== undefined && rawData[startRow][startCol] !== null)
+              ? String(rawData[startRow][startCol])
+              : '';
+            for (let row = startRow; row <= endRow; row++) {
+              if (!rawData[row]) continue; // skip if row does not exist
+              for (let col = startCol; col <= endCol; col++) {
+                // Skip the top-left cell, only fill if cell is empty/undefined
+                if ((row !== startRow || col !== startCol) && (rawData[row][col] === undefined || rawData[row][col] === null || rawData[row][col] === '')) {
+                  rawData[row][col] = mergedValue;
+                }
+              }
+            }
+          });
+        }
+        console.log('Excel data after merged cell fill:', JSON.parse(JSON.stringify(rawData)));
+        csvData = rawData;
       } else {
         // Parse CSV data
         let csvText: string;

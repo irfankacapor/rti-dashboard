@@ -48,8 +48,21 @@ export const CsvTable: React.FC<CsvTableProps> = ({
   const [showCoordinates, setShowCoordinates] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
+  // Preprocess data: do not hard-code header rows. For each row, keep leading empty cell if present, otherwise do not add one. Pad all rows at the end to the max row length.
+  let processedData = data.map(row => [...row]);
+  // Find the maximum row length
+  const maxCols = Math.max(...processedData.map(row => row.length));
+  // Pad all rows at the end to the max row length
+  processedData = processedData.map(row => {
+    const newRow = [...row];
+    while (newRow.length < maxCols) {
+      newRow.push('');
+    }
+    return newRow;
+  });
+
   // Limit display size for performance
-  const displayData = data.slice(0, maxDisplayRows).map(row => row.slice(0, maxDisplayCols));
+  const displayData = processedData.slice(0, maxDisplayRows).map(row => row.slice(0, maxDisplayCols));
   const hasMoreRows = data.length > maxDisplayRows;
   const hasMoreCols = data[0]?.length > maxDisplayCols;
 
