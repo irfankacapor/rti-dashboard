@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { CircularLayoutProps } from '@/types/dashboard';
 import { PASTEL_COLORS } from '@/constants';
@@ -6,8 +6,9 @@ import { DashboardGoal } from '@/types/dashboard';
 
 const AREA_RADIUS = 120;
 const SUBAREA_RADIUS = 80; // at least twice as big
-const SVG_WIDTH = 1200;
-const SVG_HEIGHT = 800;
+// Remove fixed SVG_WIDTH and SVG_HEIGHT
+// const SVG_WIDTH = 1200;
+// const SVG_HEIGHT = 800;
 const BACKGROUND_COLOR = '#f5f6fa';
 const AREA_FILL = '#fff';
 const AREA_STROKE = '#222';
@@ -16,13 +17,13 @@ const SUBAREA_FILL = '#fff';
 const SUBAREA_STROKE_WIDTH = 8;
 
 // Color scale legend constants
-const LEGEND_MIN = 75;
-const LEGEND_MAX = 110;
-const LEGEND_WIDTH = 300;
-const LEGEND_X = SVG_WIDTH / 2 - LEGEND_WIDTH / 2;
-const LEGEND_Y = SVG_HEIGHT - 60;
-const LEGEND_HEIGHT = 10;
-const LEGEND_TICKS = [75, 90, 100, 110];
+// const LEGEND_MIN = 75;
+// const LEGEND_MAX = 110;
+// const LEGEND_WIDTH = 300;
+// const LEGEND_X = SVG_WIDTH / 2 - LEGEND_WIDTH / 2;
+// const LEGEND_Y = SVG_HEIGHT - 60;
+// const LEGEND_HEIGHT = 10;
+// const LEGEND_TICKS = [75, 90, 100, 110];
 
 function getProgressColor(progress: number) {
   if (progress < 75) return '#e74c3c'; // red
@@ -52,27 +53,76 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
   goals,
   relationships
 }) => {
+  // Responsive SVG: measure parent size
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
+
+  useEffect(() => {
+    function updateSize() {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight
+        });
+      }
+    }
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const SVG_WIDTH = containerSize.width;
+  const SVG_HEIGHT = containerSize.height;
+
+  // Move legend constants here so they can use SVG_WIDTH/SVG_HEIGHT
+  const LEGEND_MIN = 75;
+  const LEGEND_MAX = 110;
+  const LEGEND_WIDTH = 300;
+  const LEGEND_X = SVG_WIDTH / 2 - LEGEND_WIDTH / 2;
+  const LEGEND_Y = SVG_HEIGHT - 60;
+  const LEGEND_HEIGHT = 10;
+  const LEGEND_TICKS = [75, 90, 100, 110];
+
   // Edit mode: track selected subarea for swapping
   const [swapSelection, setSwapSelection] = useState<string | null>(null);
   const [customOrder, setCustomOrder] = useState<Record<string, string[]>>({}); // areaId -> subareaId[]
 
+  // Dynamic area and subarea radii based on number of subareas
+  const minAreaRadius = 120;
+  const maxAreaRadius = 220;
+  const minSubareaRadius = 70;
+  const maxSubareaRadius = 120;
+
+  // For each area, calculate dynamic radius based on number of subareas
+  const getAreaRadius = (subareaCount: number) => {
+    // More subareas, larger area circle, but clamp
+    return Math.min(maxAreaRadius, minAreaRadius + subareaCount * 10);
+  };
+  const getSubareaRadius = (subareaCount: number) => {
+    // More subareas, slightly larger subarea circles, but clamp
+    return Math.min(maxSubareaRadius, minSubareaRadius + subareaCount * 5);
+  };
+
   // Place areas in a circle (if >1), otherwise center
   const areaCenters = areas.map((area, i) => {
     const n = areas.length;
+    const areaSubareas = subareas.filter(s => s.areaId === area.id);
+    const areaRadius = getAreaRadius(areaSubareas.length);
     if (n === 1) {
-      return { ...area, x: SVG_WIDTH / 2, y: SVG_HEIGHT / 2 };
+      return { ...area, x: SVG_WIDTH / 2, y: SVG_HEIGHT / 2, areaRadius };
     }
     const angle = (2 * Math.PI * i) / n;
     const r = 300;
     return {
       ...area,
       x: SVG_WIDTH / 2 + r * Math.cos(angle),
-      y: SVG_HEIGHT / 2 + r * Math.sin(angle)
+      y: SVG_HEIGHT / 2 + r * Math.sin(angle),
+      areaRadius
     };
   });
 
   // Map areaId to center
-  const areaIdToCenter = Object.fromEntries(areaCenters.map(a => [a.id, { x: a.x, y: a.y }]));
+  const areaIdToCenter = Object.fromEntries(areaCenters.map(a => [a.id, { x: a.x, y: a.y, areaRadius: a.areaRadius }]));
 
   // For each area, get subareas in custom order (if set)
   const getOrderedSubareas = (areaId: string) => {
@@ -87,16 +137,26 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
   const subareaNodes = areaCenters.flatMap(area => {
     const siblings = getOrderedSubareas(area.id);
     const n = siblings.length;
+    const subareaRadius = getSubareaRadius(n);
+    // Special case: if exactly 4 subareas, use square-like positions
+    let angles: number[];
+    if (n === 4) {
+      // Square corners: 45°, 135°, 225°, 315°
+      angles = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4];
+    } else {
+      angles = Array.from({ length: n }, (_, i) => (2 * Math.PI * i) / n - Math.PI / 2);
+    }
     return siblings.map((sub, i) => {
-      const angle = (2 * Math.PI * i) / n - Math.PI / 2; // start at top
+      const angle = angles[i % angles.length];
       return {
         ...sub,
-        x: area.x + AREA_RADIUS * Math.cos(angle),
-        y: area.y + AREA_RADIUS * Math.sin(angle),
+        x: area.x + area.areaRadius * Math.cos(angle),
+        y: area.y + area.areaRadius * Math.sin(angle),
         angle,
         areaCenter: area,
         index: i,
-        total: n
+        total: n,
+        subareaRadius
       };
     });
   });
@@ -135,54 +195,40 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
   });
 
   return (
-    <Box sx={{ width: '100%', height: '100%', overflow: 'auto', background: BACKGROUND_COLOR }}>
+    <Box ref={containerRef} sx={{ width: '100%', height: '100%', overflow: 'auto', background: BACKGROUND_COLOR, position: 'relative' }}>
       <svg
-        width={SVG_WIDTH}
-        height={SVG_HEIGHT}
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
         style={{ display: 'block', margin: '0 auto', background: BACKGROUND_COLOR }}
       >
         {/* Draw area circles */}
         {areaCenters.map(area => {
-          const areaSubareas = getOrderedSubareas(area.id);
-          const showNameOutside = areaSubareas.length > 2;
+          // Always show name inside the area circle
           return (
             <g key={area.id}>
               <circle
                 cx={area.x}
                 cy={area.y}
-                r={AREA_RADIUS}
+                r={area.areaRadius}
                 fill={AREA_FILL}
                 stroke={AREA_STROKE}
                 strokeWidth={AREA_STROKE_WIDTH}
                 opacity={1}
               />
-              {/* Area name: inside or outside */}
-              {showNameOutside ? (
-                <text
-                  x={area.x + AREA_RADIUS + 80}
-                  y={area.y}
-                  textAnchor="start"
-                  alignmentBaseline="middle"
-                  fontSize="28px"
-                  fontWeight="bold"
-                  fill="#111"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  {area.name}
-                </text>
-              ) : (
-                <text
-                  x={area.x}
-                  y={area.y}
-                  textAnchor="middle"
-                  dy="0.35em"
-                  fontSize="22px"
-                  fontWeight="bold"
-                  fill="#111"
-                >
-                  {area.name}
-                </text>
-              )}
+              {/* Area name: always inside */}
+              <text
+                x={area.x}
+                y={area.y}
+                textAnchor="middle"
+                dy="0.35em"
+                fontSize="22px"
+                fontWeight="bold"
+                fill="#111"
+                style={{ pointerEvents: 'none' }}
+              >
+                {area.name}
+              </text>
             </g>
           );
         })}
@@ -201,6 +247,25 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
             // Use pastel color, cycle by subarea index for variety
             borderColor = PASTEL_COLORS[subIdx % PASTEL_COLORS.length];
           }
+          // Calculate font size based on text length and circle size
+          const baseFontSize = 18;
+          const minFontSize = 12;
+          const maxCharsPerLine = 14;
+          const words = sub.name.split(' ');
+          let lines: string[] = [];
+          let currentLine = '';
+          words.forEach(word => {
+            if ((currentLine + ' ' + word).trim().length > maxCharsPerLine) {
+              lines.push(currentLine.trim());
+              currentLine = word;
+            } else {
+              currentLine += ' ' + word;
+            }
+          });
+          if (currentLine) lines.push(currentLine.trim());
+          const fontSize = Math.max(minFontSize, baseFontSize - Math.max(0, lines.length - 1) * 2);
+          const lineHeight = fontSize + 2;
+          const textYStart = sub.y - ((lines.length - 1) / 2) * lineHeight;
           return (
             <g
               key={sub.id}
@@ -212,7 +277,7 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
               <circle
                 cx={sub.x}
                 cy={sub.y}
-                r={SUBAREA_RADIUS}
+                r={sub.subareaRadius}
                 fill={SUBAREA_FILL}
                 stroke={isHighlighted ? '#1976d2' : borderColor}
                 strokeWidth={isHighlighted ? SUBAREA_STROKE_WIDTH + 4 : SUBAREA_STROKE_WIDTH}
@@ -226,21 +291,25 @@ export const CircularLayout: React.FC<CircularLayoutExtendedProps> = ({
                   transition: 'all 0.2s ease'
                 }}
               />
-              <text
-                x={sub.x}
-                y={sub.y}
-                textAnchor="middle"
-                dy="0.35em"
-                fontSize="22px"
-                fontWeight="bold"
-                fill={isHighlighted ? "#1976d2" : "#222"}
-                style={{ 
-                  filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(25, 118, 210, 0.4))' : undefined,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {sub.name}
-              </text>
+              {/* Use SVG text for multi-line wrapping */}
+              {lines.map((line, idx) => (
+                <text
+                  key={idx}
+                  x={sub.x}
+                  y={textYStart + idx * lineHeight}
+                  textAnchor="middle"
+                  fontSize={fontSize}
+                  fontWeight="bold"
+                  fill={isHighlighted ? "#1976d2" : "#222"}
+                  style={{
+                    filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(25, 118, 210, 0.4))' : undefined,
+                    transition: 'all 0.2s ease',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {line}
+                </text>
+              ))}
             </g>
           );
         })}
