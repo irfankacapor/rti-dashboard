@@ -15,6 +15,8 @@ import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 import java.util.Map;
+import io.dashboard.model.FactIndicatorValue;
+import io.dashboard.dto.IndicatorValuesResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -153,6 +155,32 @@ public class SubareaController {
             log.error("Error in test endpoint for subarea: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/subareas/{subareaId}/indicators/{indicatorId}/values")
+    @PermitAll
+    public ResponseEntity<IndicatorValuesResponse> getIndicatorValuesForSubarea(@PathVariable Long subareaId, @PathVariable Long indicatorId) {
+        IndicatorValuesResponse response = subareaService.getIndicatorValuesResponseForSubarea(indicatorId, subareaId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/subareas/{subareaId}/indicators/{indicatorId}/aggregation")
+    @PermitAll
+    public ResponseEntity<Map<String, Object>> getIndicatorAggregatedValueForSubarea(@PathVariable Long subareaId, @PathVariable Long indicatorId) {
+        double aggregatedValue = subareaService.getIndicatorAggregatedValueForSubarea(indicatorId, subareaId);
+        Map<String, Object> response = Map.of(
+            "subareaId", subareaId,
+            "indicatorId", indicatorId,
+            "aggregatedValue", aggregatedValue
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/subareas/{subareaId}/indicators/{indicatorId}/dimensions")
+    @PermitAll
+    public ResponseEntity<List<String>> getIndicatorDimensionsForSubarea(@PathVariable Long subareaId, @PathVariable Long indicatorId) {
+        List<String> dimensions = subareaService.getIndicatorDimensionsForSubarea(indicatorId, subareaId);
+        return ResponseEntity.ok(dimensions);
     }
 
     @GetMapping("/subareas/{id}/aggregated-by-{dimension}")

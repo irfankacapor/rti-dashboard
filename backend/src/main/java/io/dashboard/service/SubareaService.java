@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import io.dashboard.dto.IndicatorValuesResponse;
+import io.dashboard.dto.IndicatorValueRow;
 
 @Service
 @RequiredArgsConstructor
@@ -196,5 +198,88 @@ public class SubareaService {
             log.error("Error getting aggregated data by {} for subarea ID {}: {}", dimension, subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to get aggregated data by " + dimension + " for subarea: " + e.getMessage(), e);
         }
+    }
+
+    public List<FactIndicatorValue> getIndicatorValuesForSubarea(Long indicatorId, Long subareaId) {
+        try {
+            log.debug("Getting values for indicator {} and subarea {}", indicatorId, subareaId);
+            List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
+            log.debug("Found {} fact values for indicator {} and subarea {}", values.size(), indicatorId, subareaId);
+            return values;
+        } catch (Exception e) {
+            log.error("Error getting values for indicator {} and subarea {}: {}", indicatorId, subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get values for indicator and subarea: " + e.getMessage(), e);
+        }
+    }
+
+    public double getIndicatorAggregatedValueForSubarea(Long indicatorId, Long subareaId) {
+        try {
+            log.debug("Getting aggregated value for indicator {} and subarea {}", indicatorId, subareaId);
+            List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
+            log.debug("Found {} fact values for aggregation", values.size());
+            if (values.isEmpty()) return 0.0;
+            double result = values.stream().mapToDouble(v -> v.getValue().doubleValue()).average().orElse(0.0);
+            log.debug("Calculated aggregated value: {}", result);
+            return result;
+        } catch (Exception e) {
+            log.error("Error getting aggregated value for indicator {} and subarea {}: {}", indicatorId, subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get aggregated value for indicator and subarea: " + e.getMessage(), e);
+        }
+    }
+
+    public List<String> getIndicatorDimensionsForSubarea(Long indicatorId, Long subareaId) {
+        try {
+            log.debug("Getting dimensions for indicator {} and subarea {}", indicatorId, subareaId);
+            List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
+            log.debug("Found {} fact values for indicator {} and subarea {}", values.size(), indicatorId, subareaId);
+            
+            // Collect all dimension names present in the values
+            java.util.Set<String> dimensions = new java.util.HashSet<>();
+            if (values.stream().anyMatch(f -> f.getTime() != null)) dimensions.add("time");
+            if (values.stream().anyMatch(f -> f.getLocation() != null)) dimensions.add("location");
+            for (FactIndicatorValue fact : values) {
+                if (fact.getGenerics() != null) {
+                    for (var g : fact.getGenerics()) {
+                        if (g.getDimensionName() != null) dimensions.add(g.getDimensionName());
+                    }
+                }
+            }
+            log.debug("Found dimensions: {}", dimensions);
+            return new java.util.ArrayList<>(dimensions);
+        } catch (Exception e) {
+            log.error("Error getting dimensions for indicator {} and subarea {}: {}", indicatorId, subareaId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get dimensions for indicator and subarea: " + e.getMessage(), e);
+        }
+    }
+
+    public IndicatorValuesResponse getIndicatorValuesResponseForSubarea(Long indicatorId, Long subareaId) {
+        List<FactIndicatorValue> facts = getIndicatorValuesForSubarea(indicatorId, subareaId);
+        List<String> dimensionColumns = getIndicatorDimensionsForSubarea(indicatorId, subareaId);
+        List<IndicatorValueRow> rows = facts.stream().map(this::toIndicatorValueRow).collect(java.util.stream.Collectors.toList());
+        String indicatorName = facts.isEmpty() ? null : facts.get(0).getIndicator().getName();
+        String dataType = facts.isEmpty() || facts.get(0).getIndicator().getDataType() == null ? null : facts.get(0).getIndicator().getDataType().getName();
+        return IndicatorValuesResponse.builder()
+            .rows(rows)
+            .dimensionColumns(dimensionColumns)
+            .indicatorName(indicatorName)
+            .dataType(dataType)
+            .build();
+    }
+
+    private IndicatorValueRow toIndicatorValueRow(FactIndicatorValue fact) {
+        java.util.HashMap<String, String> dims = new java.util.HashMap<>();
+        if (fact.getTime() != null) dims.put("time", fact.getTime().getValue());
+        if (fact.getLocation() != null) dims.put("location", fact.getLocation().getName());
+        if (fact.getGenerics() != null) {
+            for (var g : fact.getGenerics()) {
+                if (g.getDimensionName() != null) dims.put(g.getDimensionName(), g.getValue());
+            }
+        }
+        return IndicatorValueRow.builder()
+            .factId(fact.getId())
+            .dimensions(dims)
+            .value(fact.getValue())
+            .isEmpty(fact.getValue() == null)
+            .build();
     }
 } 

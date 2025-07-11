@@ -17,6 +17,7 @@ interface IndividualIndicatorModalProps {
   onClose: () => void;
   indicatorId: string;
   indicatorData: any;
+  subareaId?: string; // NEW
 }
 
 const style = {
@@ -38,12 +39,18 @@ const chartTypes = [
   { label: 'Line', value: 'line' },
 ];
 
-const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ open, onClose, indicatorId, indicatorData }) => {
+const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ open, onClose, indicatorId, indicatorData, subareaId }) => {
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [timeRange, setTimeRange] = useState('1Y');
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
-  const { data: dimensionMeta, loading: dimensionMetaLoading } = useIndicatorDimensionValues(indicatorId);
+  const { data: dimensionMeta, loading: dimensionMetaLoading } = useIndicatorDimensionValues(indicatorId, subareaId);
+
+  // Log the full responses from the backend
+  console.log('Indicator Modal - Indicator Data Response:', indicatorData);
+  console.log('Indicator Modal - Dimension Meta Response:', dimensionMeta);
+  console.log('Indicator Modal - Subarea ID:', subareaId);
+  console.log('Indicator Modal - Indicator ID:', indicatorId);
 
   // Get all available dimensions robustly
   const availableDimensions: string[] = React.useMemo(() => {
@@ -73,7 +80,8 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ ope
     timeRange,
     selectedDimension,
     defaultDimension,
-    availableDimensions
+    availableDimensions,
+    subareaId
   );
 
   // Process chart data using utility function

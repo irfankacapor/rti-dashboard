@@ -19,6 +19,7 @@ import io.dashboard.repository.DimTimeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
+import io.dashboard.repository.SubareaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ public class IndicatorBatchService {
     private final DimGenericRepository dimGenericRepository;
     private final FactIndicatorValueRepository factRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
+    private final SubareaRepository subareaRepository;
     
     public IndicatorBatchResponse createFromCsvData(IndicatorBatchRequest request) {
         List<IndicatorResponse> createdIndicators = new ArrayList<>();
@@ -58,7 +60,7 @@ public class IndicatorBatchService {
                 createSubareaRelationship(indicator, csvIndicator);
                 
                 // 3. Process all values and create fact records
-                int factCount = processIndicatorValues(indicator, csvIndicator.getValues());
+                int factCount = processIndicatorValues(indicator, csvIndicator.getValues(), csvIndicator.getSubareaId());
                 totalFactRecords += factCount;
                 
                 // 4. Add to response only if not already added (for duplicates)
@@ -127,25 +129,22 @@ public class IndicatorBatchService {
         }
     }
     
-    private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values) {
+    private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values, Long subareaId) {
         int count = 0;
-        
+        Subarea subarea = subareaRepository.findById(subareaId).orElse(null);
         for (IndicatorValue value : values) {
             try {
                 // Create dimension records
                 DimTime timeId = value.getTimeValue() != null ? 
                     createOrFindTimeValue(value.getTimeValue(), value.getTimeType()) : null;
-                    
                 DimLocation locationId = value.getLocationValue() != null ?
                     createOrFindLocationValue(value.getLocationValue(), value.getLocationType()) : null;
-                
                 List<DimGeneric> generics = new ArrayList<>();
                 if (value.getCustomDimensions() != null && !value.getCustomDimensions().isEmpty()) {
                     for (Map.Entry<String, String> entry : value.getCustomDimensions().entrySet()) {
                         generics.add(createOrFindGenericDimension(entry.getKey(), entry.getValue()));
                     }
                 }
-                
                 // Create fact record
                 FactIndicatorValue fact = FactIndicatorValue.builder()
                     .indicator(indicator)
@@ -153,18 +152,16 @@ public class IndicatorBatchService {
                     .time(timeId)
                     .location(locationId)
                     .generics(generics)
+                    .subarea(subarea)
                     .sourceRowHash(generateHash(value))
                     .build();
-                    
                 factRepository.save(fact);
                 count++;
-                
             } catch (Exception e) {
                 log.warn("Failed to create fact record for indicator {} and value {}", 
                     indicator.getName(), value.getValue(), e);
             }
         }
-        
         return count;
     }
     

@@ -39,7 +39,12 @@ export default function SubareaDetailPage() {
   const indicatorIds = indicators.map((indicator: any) => indicator.id);
 
   // Fetch dimension values for all indicators
-  const { data: dimensionValuesData, loading: dimensionValuesLoading } = useMultipleIndicatorDimensionValues(indicatorIds);
+  const { data: dimensionValuesData, loading: dimensionValuesLoading } = useMultipleIndicatorDimensionValues(indicatorIds, subareaId);
+
+  // Log the full response from the backend
+  console.log('Subarea Page - Dimension Values Response:', dimensionValuesData);
+  console.log('Subarea Page - Subarea ID:', subareaId);
+  console.log('Subarea Page - Indicator IDs:', indicatorIds);
 
   // Compute all dimension values for the selected dimension for each indicator
   const dimensionValueSets = useMemo(() => {

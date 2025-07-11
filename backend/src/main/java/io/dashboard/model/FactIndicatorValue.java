@@ -42,6 +42,10 @@ public class FactIndicatorValue {
     @JoinColumn(name = "location_id")
     private DimLocation location;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subarea_id")
+    private Subarea subarea;
+    
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "fact_indicator_value_generic",
