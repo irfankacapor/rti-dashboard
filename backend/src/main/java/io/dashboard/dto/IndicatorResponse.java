@@ -20,7 +20,4 @@ public class IndicatorResponse {
     private Long subareaId;
     private String subareaName;
     private String direction;
-    private Double latestValue;
-    private String latestValueUnit;
-    private String aggregationMethod;
 } 

@@ -8,17 +8,16 @@ function mapIndicatorApiToFrontend(apiIndicator: any) {
     id: String(apiIndicator.id),
     name: apiIndicator.name,
     description: apiIndicator.description,
-    unit: apiIndicator.unit?.code || apiIndicator.latestValueUnit || '',
+    unit: apiIndicator.unit?.code || '',
     direction: apiIndicator.direction,
     valueCount: apiIndicator.valueCount,
     dimensions: apiIndicator.dimensions || [],
     subareaId: String(apiIndicator.subareaId),
     subareaName: apiIndicator.subareaName,
     dataType: apiIndicator.dataType?.code || '',
-    latestValue: apiIndicator.aggregationMethod === 'NO_TIME_DIMENSION' 
-      ? null 
-      : (apiIndicator.latestValue !== null ? apiIndicator.latestValue.toFixed(2) : '--'),
-    aggregationMethod: apiIndicator.aggregationMethod || 'N/A',
+    isComposite: apiIndicator.isComposite || false,
+    createdAt: apiIndicator.createdAt,
+    code: apiIndicator.code || ''
   };
 }
 

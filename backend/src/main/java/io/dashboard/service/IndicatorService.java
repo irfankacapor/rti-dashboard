@@ -218,7 +218,53 @@ public class IndicatorService {
     }
 
     private IndicatorResponse toResponse(Indicator indicator) {
-        return toResponse(indicator, null);
+        IndicatorResponse resp = new IndicatorResponse();
+        resp.setId(indicator.getId());
+        resp.setCode(indicator.getCode());
+        resp.setName(indicator.getName());
+        resp.setDescription(indicator.getDescription());
+        resp.setIsComposite(indicator.getIsComposite());
+        resp.setCreatedAt(indicator.getCreatedAt());
+        
+        // Set unit
+        if (indicator.getUnit() != null) {
+            UnitResponse unitResp = new UnitResponse();
+            unitResp.setId(indicator.getUnit().getId());
+            unitResp.setCode(indicator.getUnit().getCode());
+            unitResp.setDescription(indicator.getUnit().getDescription());
+            resp.setUnit(unitResp);
+        }
+        
+        // Set data type
+        if (indicator.getDataType() != null) {
+            DataTypeResponse dataTypeResp = new DataTypeResponse();
+            dataTypeResp.setId(indicator.getDataType().getId());
+            dataTypeResp.setName(indicator.getDataType().getName());
+            resp.setDataType(dataTypeResp);
+        }
+        
+        // Get subarea indicators
+        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findByIndicatorIdWithSubarea(indicator.getId());
+        List<SubareaIndicatorResponse> subareaIndicatorResponses = subareaIndicators.stream()
+                .map(this::toSubareaIndicatorResponse)
+                .collect(Collectors.toList());
+        resp.setSubareaIndicators(subareaIndicatorResponses);
+        
+        // Set subareaId, subareaName, direction from first subareaIndicator if present
+        if (!subareaIndicators.isEmpty()) {
+            SubareaIndicator si = subareaIndicators.get(0);
+            resp.setSubareaId(si.getSubarea().getId());
+            resp.setSubareaName(si.getSubarea().getName());
+            resp.setDirection(si.getDirection() != null ? si.getDirection().name() : null);
+        }
+        
+        // Set valueCount and dimensions
+        long valueCount = factIndicatorValueRepository.countByIndicatorId(indicator.getId());
+        resp.setValueCount(valueCount);
+        List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorId(indicator.getId());
+        resp.setDimensions(dimensions);
+        
+        return resp;
     }
 
     private IndicatorResponse toResponse(Indicator indicator, Long subareaId) {
@@ -230,22 +276,20 @@ public class IndicatorService {
         resp.setIsComposite(indicator.getIsComposite());
         resp.setCreatedAt(indicator.getCreatedAt());
         
+        // Set unit
         if (indicator.getUnit() != null) {
             UnitResponse unitResp = new UnitResponse();
             unitResp.setId(indicator.getUnit().getId());
             unitResp.setCode(indicator.getUnit().getCode());
             unitResp.setDescription(indicator.getUnit().getDescription());
-            unitResp.setCreatedAt(indicator.getUnit().getCreatedAt());
             resp.setUnit(unitResp);
         }
         
+        // Set data type
         if (indicator.getDataType() != null) {
             DataTypeResponse dataTypeResp = new DataTypeResponse();
             dataTypeResp.setId(indicator.getDataType().getId());
-            dataTypeResp.setCode(indicator.getDataType().getName());
             dataTypeResp.setName(indicator.getDataType().getName());
-            dataTypeResp.setDescription(null);
-            dataTypeResp.setCreatedAt(indicator.getDataType().getCreatedAt());
             resp.setDataType(dataTypeResp);
         }
         
@@ -266,130 +310,22 @@ public class IndicatorService {
         
         // Set valueCount and dimensions - filter by subarea if provided
         if (subareaId != null) {
-            // ✅ CORRECT: Count values only for this indicator in this subarea
+            // Count values only for this indicator in this subarea
             long valueCount = factIndicatorValueRepository.countByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
             resp.setValueCount(valueCount);
-            
-            // ✅ CORRECT: Discover dimensions only from facts for this indicator in this subarea
+     
+            // Discover dimensions only from facts for this indicator in this subarea
             List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
             resp.setDimensions(dimensions);
-            
-            // ✅ CORRECT: Calculate latest value only for this subarea
-            calculateAndSetLatestValueForSubarea(resp, indicator.getId(), subareaId);
         } else {
             // Original behavior for non-subarea context
             long valueCount = factIndicatorValueRepository.countByIndicatorId(indicator.getId());
             resp.setValueCount(valueCount);
             List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorId(indicator.getId());
             resp.setDimensions(dimensions);
-            calculateAndSetLatestValue(resp, indicator.getId());
         }
         
         return resp;
-    }
-    
-    private void calculateAndSetLatestValue(IndicatorResponse resp, Long indicatorId) {
-        try {
-            // Use the aggregation service to calculate the proper aggregated value
-            double aggregatedValue = aggregationService.calculateIndicatorAggregatedValue(indicatorId);
-            
-            if (aggregatedValue == 0.0) {
-                resp.setLatestValue(null);
-                resp.setLatestValueUnit(null);
-                resp.setAggregationMethod("NO_DATA");
-                return;
-            }
-            
-            resp.setLatestValue(aggregatedValue);
-            
-            // Get the unit from the first fact value or indicator
-            List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorId(indicatorId);
-            if (!values.isEmpty() && values.get(0).getUnit() != null) {
-                resp.setLatestValueUnit(values.get(0).getUnit().getCode());
-            } else if (resp.getUnit() != null) {
-                resp.setLatestValueUnit(resp.getUnit().getCode());
-            }
-            
-            resp.setAggregationMethod("AGGREGATED");
-        } catch (Exception e) {
-            log.warn("Error calculating latest value for indicator {}: {}", indicatorId, e.getMessage());
-            resp.setLatestValue(null);
-            resp.setLatestValueUnit(null);
-            resp.setAggregationMethod("ERROR");
-        }
-    }
-
-    private void calculateAndSetLatestValueForSubarea(IndicatorResponse resp, Long indicatorId, Long subareaId) {
-        log.debug("calculateAndSetLatestValueForSubarea called with indicatorId: {}, subareaId: {}", indicatorId, subareaId);
-        
-        try {
-            // First, let's check if we can find any values at all
-            List<FactIndicatorValue> allValues = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
-            log.debug("Found {} total values for indicator {} in subarea {}", allValues.size(), indicatorId, subareaId);
-            
-            if (allValues.isEmpty()) {
-                log.debug("No values found, setting aggregationMethod to NO_DATA");
-                resp.setLatestValue(null);
-                resp.setLatestValueUnit(null);
-                resp.setAggregationMethod("NO_DATA");
-                return;
-            }
-            
-            // Log some details about the values we found
-            for (int i = 0; i < Math.min(3, allValues.size()); i++) {
-                FactIndicatorValue val = allValues.get(i);
-                log.debug("Value {}: id={}, value={}, time={}, subarea={}", 
-                    i, val.getId(), val.getValue(), 
-                    val.getTime() != null ? val.getTime().getValue() : "null",
-                    val.getSubarea() != null ? val.getSubarea().getId() : "null");
-            }
-            
-            // Use the new method to find the actual latest value by date
-            Double latestValue = aggregationService.findLatestValueByDate(indicatorId, subareaId);
-            log.debug("findLatestValueByDate returned: {}", latestValue);
-            
-            if (latestValue == null) {
-                // No time dimension or no values found - try to get any value as fallback
-                log.debug("Latest value is null, using average as fallback");
-                double averageValue = allValues.stream()
-                    .mapToDouble(v -> v.getValue().doubleValue())
-                    .average()
-                    .orElse(0.0);
-                
-                log.debug("Using average value as fallback: {}", averageValue);
-                resp.setLatestValue(averageValue);
-                resp.setAggregationMethod("AVERAGE");
-            } else {
-                log.debug("Setting latestValue to: {}", latestValue);
-                resp.setLatestValue(latestValue);
-                resp.setAggregationMethod("LATEST_BY_DATE");
-            }
-            
-            // Get the unit from the fact record that has the latest value
-            if (!allValues.isEmpty()) {
-                // Find the value with time dimension and get its unit
-                FactIndicatorValue valueWithUnit = allValues.stream()
-                    .filter(v -> v.getTime() != null && v.getUnit() != null)
-                    .findFirst()
-                    .orElse(allValues.stream()
-                        .filter(v -> v.getUnit() != null)
-                        .findFirst()
-                        .orElse(null));
-                
-                if (valueWithUnit != null && valueWithUnit.getUnit() != null) {
-                    resp.setLatestValueUnit(valueWithUnit.getUnit().getCode());
-                } else if (resp.getUnit() != null) {
-                    resp.setLatestValueUnit(resp.getUnit().getCode());
-                }
-            }
-            
-            log.debug("Successfully set aggregationMethod to {}", resp.getAggregationMethod());
-        } catch (Exception e) {
-            log.error("Error calculating latest value for indicator {} in subarea {}: {}", indicatorId, subareaId, e.getMessage(), e);
-            resp.setLatestValue(null);
-            resp.setLatestValueUnit(null);
-            resp.setAggregationMethod("ERROR");
-        }
     }
 
     private SubareaIndicatorResponse toSubareaIndicatorResponse(SubareaIndicator subareaIndicator) {

@@ -53,16 +53,15 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
             <FiberManualRecordIcon fontSize="small" sx={{ mr: 1 }} />
           )}
         </Tooltip>
-        <Typography variant="body1" sx={{ flex: 1 }}>{indicator.name}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>{indicator.unit}</Typography>
-        {indicator.latestValue !== null && (
-          <Typography variant="body2" color="primary">{indicator.latestValue}</Typography>
-        )}
-        {hasHighlightedDimensionValue && highlightedDimensionValue && selectedDimension && (
-          <Typography variant="caption" color="secondary" sx={{ ml: 2 }}>
-            {selectedDimension}: {highlightedDimensionValue}
-          </Typography>
-        )}
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <Typography variant="body1" sx={{ flex: 1 }}>{indicator.name}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>{indicator.unit}</Typography>
+          {hasHighlightedDimensionValue && highlightedDimensionValue && selectedDimension && (
+            <Typography variant="caption" color="secondary" sx={{ ml: 2 }}>
+              {selectedDimension}: {highlightedDimensionValue}
+            </Typography>
+          )}
+        </Box>
       </Box>
       <IndividualIndicatorModal
         open={open}
