@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { formatNumber } from '../../utils/formatNumber';
 
 interface SubareaAggregatedChartProps {
   data: any;
@@ -83,8 +84,8 @@ export default function SubareaAggregatedChart({ data, loading, error, dimension
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" tickFormatter={cleanTimeLabel} />
-          <YAxis />
-          <Tooltip formatter={(value, name, props) => value} labelFormatter={cleanTimeLabel} />
+          <YAxis tickFormatter={formatNumber} />
+          <Tooltip formatter={(value, name, props) => formatNumber(value as number)} labelFormatter={cleanTimeLabel} />
           <Bar dataKey="value" fill="#8884d8">
             {chartData.map((entry, idx) => (
               <Cell

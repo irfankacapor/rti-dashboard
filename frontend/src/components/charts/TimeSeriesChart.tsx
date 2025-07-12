@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResponsiveContainer, BarChart, LineChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import { formatNumber } from '../../utils/formatNumber';
 
 interface TimeSeriesChartProps {
   data: any[];
@@ -45,10 +46,10 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
         <BarChart data={chartData} margin={{ top: 16, right: 16, left: 0, bottom: 16 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="year" tickFormatter={xAxisFormatter} />
-          <YAxis />
+          <YAxis tickFormatter={formatNumber} />
           <Tooltip 
             labelFormatter={xAxisFormatter}
-            formatter={(value: any, name: string) => [value, name]}
+            formatter={(value: number) => formatNumber(value)}
           />
           <Legend />
           {isGrouped ? (
@@ -70,10 +71,10 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
         <LineChart data={chartData} margin={{ top: 16, right: 16, left: 0, bottom: 16 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="year" tickFormatter={xAxisFormatter} />
-          <YAxis />
+          <YAxis tickFormatter={formatNumber} />
           <Tooltip 
             labelFormatter={xAxisFormatter}
-            formatter={(value: any, name: string) => [value, name]}
+            formatter={(value: number) => formatNumber(value)}
           />
           <Legend />
           {isGrouped ? (
