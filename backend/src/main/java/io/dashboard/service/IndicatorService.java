@@ -320,30 +320,72 @@ public class IndicatorService {
     }
 
     private void calculateAndSetLatestValueForSubarea(IndicatorResponse resp, Long indicatorId, Long subareaId) {
+        log.debug("calculateAndSetLatestValueForSubarea called with indicatorId: {}, subareaId: {}", indicatorId, subareaId);
+        
         try {
-            // Use the aggregation service to calculate the proper aggregated value for the subarea
-            double aggregatedValue = aggregationService.calculateIndicatorAggregatedValue(indicatorId, subareaId);
+            // First, let's check if we can find any values at all
+            List<FactIndicatorValue> allValues = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
+            log.debug("Found {} total values for indicator {} in subarea {}", allValues.size(), indicatorId, subareaId);
             
-            if (aggregatedValue == 0.0) {
+            if (allValues.isEmpty()) {
+                log.debug("No values found, setting aggregationMethod to NO_DATA");
                 resp.setLatestValue(null);
                 resp.setLatestValueUnit(null);
                 resp.setAggregationMethod("NO_DATA");
                 return;
             }
             
-            resp.setLatestValue(aggregatedValue);
-            
-            // Get the unit from the first fact value or indicator
-            List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
-            if (!values.isEmpty() && values.get(0).getUnit() != null) {
-                resp.setLatestValueUnit(values.get(0).getUnit().getCode());
-            } else if (resp.getUnit() != null) {
-                resp.setLatestValueUnit(resp.getUnit().getCode());
+            // Log some details about the values we found
+            for (int i = 0; i < Math.min(3, allValues.size()); i++) {
+                FactIndicatorValue val = allValues.get(i);
+                log.debug("Value {}: id={}, value={}, time={}, subarea={}", 
+                    i, val.getId(), val.getValue(), 
+                    val.getTime() != null ? val.getTime().getValue() : "null",
+                    val.getSubarea() != null ? val.getSubarea().getId() : "null");
             }
             
-            resp.setAggregationMethod("AGGREGATED");
+            // Use the new method to find the actual latest value by date
+            Double latestValue = aggregationService.findLatestValueByDate(indicatorId, subareaId);
+            log.debug("findLatestValueByDate returned: {}", latestValue);
+            
+            if (latestValue == null) {
+                // No time dimension or no values found - try to get any value as fallback
+                log.debug("Latest value is null, using average as fallback");
+                double averageValue = allValues.stream()
+                    .mapToDouble(v -> v.getValue().doubleValue())
+                    .average()
+                    .orElse(0.0);
+                
+                log.debug("Using average value as fallback: {}", averageValue);
+                resp.setLatestValue(averageValue);
+                resp.setAggregationMethod("AVERAGE");
+            } else {
+                log.debug("Setting latestValue to: {}", latestValue);
+                resp.setLatestValue(latestValue);
+                resp.setAggregationMethod("LATEST_BY_DATE");
+            }
+            
+            // Get the unit from the fact record that has the latest value
+            if (!allValues.isEmpty()) {
+                // Find the value with time dimension and get its unit
+                FactIndicatorValue valueWithUnit = allValues.stream()
+                    .filter(v -> v.getTime() != null && v.getUnit() != null)
+                    .findFirst()
+                    .orElse(allValues.stream()
+                        .filter(v -> v.getUnit() != null)
+                        .findFirst()
+                        .orElse(null));
+                
+                if (valueWithUnit != null && valueWithUnit.getUnit() != null) {
+                    resp.setLatestValueUnit(valueWithUnit.getUnit().getCode());
+                } else if (resp.getUnit() != null) {
+                    resp.setLatestValueUnit(resp.getUnit().getCode());
+                }
+            }
+            
+            log.debug("Successfully set aggregationMethod to {}", resp.getAggregationMethod());
         } catch (Exception e) {
-            log.warn("Error calculating latest value for indicator {} in subarea {}: {}", indicatorId, subareaId, e.getMessage());
+            log.error("Error calculating latest value for indicator {} in subarea {}: {}", indicatorId, subareaId, e.getMessage(), e);
             resp.setLatestValue(null);
             resp.setLatestValueUnit(null);
             resp.setAggregationMethod("ERROR");
@@ -776,21 +818,33 @@ public class IndicatorService {
                 .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", indicatorId));
         List<String> dims = factIndicatorValueRepository.findDimensionsByIndicatorId(indicatorId);
         List<IndicatorDimensionsResponse.DimensionInfo> dimensionInfos = new ArrayList<>();
+        
         for (String dim : dims) {
             List<String> values = new ArrayList<>();
             switch (dim) {
                 case "time":
-                    List<DimTime> times = dimTimeRepository.findByYear(indicator.getCreatedAt().getYear());
-                    for (DimTime t : times) {
-                        values.add(t.getValue());
-                    }
+                    // Get all time values for this indicator
+                    List<FactIndicatorValue> timeFacts = factIndicatorValueRepository.findByIndicatorIdWithGenerics(indicatorId);
+                    Set<String> timeValues = timeFacts.stream()
+                        .filter(v -> v.getTime() != null)
+                        .map(v -> v.getTime().getValue())
+                        .collect(Collectors.toSet());
+                    values.addAll(timeValues);
+                    
                     dimensionInfos.add(IndicatorDimensionsResponse.DimensionInfo.builder()
                             .type("time").displayName("Time").values(values).build());
                     break;
                 case "location":
-                    // Not implemented: would need DimLocationRepository
+                    // Get all location values for this indicator
+                    List<FactIndicatorValue> locationFacts = factIndicatorValueRepository.findByIndicatorIdWithGenerics(indicatorId);
+                    Set<String> locationValues = locationFacts.stream()
+                        .filter(v -> v.getLocation() != null)
+                        .map(v -> v.getLocation().getName())
+                        .collect(Collectors.toSet());
+                    values.addAll(locationValues);
+                    
                     dimensionInfos.add(IndicatorDimensionsResponse.DimensionInfo.builder()
-                            .type("location").displayName("Location").values(new ArrayList<>()).build());
+                            .type("location").displayName("Location").values(values).build());
                     break;
                 default:
                     // Custom dimension: get all values from FactIndicatorValue generics
@@ -805,8 +859,10 @@ public class IndicatorService {
                             }
                         }
                     }
+                    values.addAll(customValues);
+                    
                     dimensionInfos.add(IndicatorDimensionsResponse.DimensionInfo.builder()
-                            .type(dim).displayName(dim.substring(0, 1).toUpperCase() + dim.substring(1)).values(new ArrayList<>(customValues)).build());
+                            .type(dim).displayName(dim.substring(0, 1).toUpperCase() + dim.substring(1)).values(values).build());
                     break;
             }
         }

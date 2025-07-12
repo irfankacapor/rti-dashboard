@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 function mapIndicatorApiToFrontend(apiIndicator: any) {
+  console.log("mapIndicatorApiToFrontend Input: ", apiIndicator);
   return {
     id: String(apiIndicator.id),
     name: apiIndicator.name,
@@ -14,7 +15,9 @@ function mapIndicatorApiToFrontend(apiIndicator: any) {
     subareaId: String(apiIndicator.subareaId),
     subareaName: apiIndicator.subareaName,
     dataType: apiIndicator.dataType?.code || '',
-    latestValue: apiIndicator.latestValue !== null ? apiIndicator.latestValue.toFixed(2) : '--',
+    latestValue: apiIndicator.aggregationMethod === 'NO_TIME_DIMENSION' 
+      ? null 
+      : (apiIndicator.latestValue !== null ? apiIndicator.latestValue.toFixed(2) : '--'),
     aggregationMethod: apiIndicator.aggregationMethod || 'N/A',
   };
 }

@@ -17,7 +17,8 @@ interface IndividualIndicatorModalProps {
   onClose: () => void;
   indicatorId: string;
   indicatorData: any;
-  subareaId?: string; // NEW
+  subareaId?: string;
+  comprehensiveData?: any; // NEW: Pass comprehensive data to avoid API calls
 }
 
 const style = {
@@ -39,27 +40,47 @@ const chartTypes = [
   { label: 'Line', value: 'line' },
 ];
 
-const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ open, onClose, indicatorId, indicatorData, subareaId }) => {
+const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ 
+  open, 
+  onClose, 
+  indicatorId, 
+  indicatorData, 
+  subareaId,
+  comprehensiveData 
+}) => {
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [timeRange, setTimeRange] = useState('1Y');
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
-  const { data: dimensionMeta, loading: dimensionMetaLoading } = useIndicatorDimensionValues(indicatorId, subareaId);
+  
+  // Use subarea data if available, otherwise fall back to API calls
+  const useSubareaData = comprehensiveData && comprehensiveData.dimensionMetadata && comprehensiveData.dimensionMetadata[indicatorId];
+  
+  // Only make API calls if subarea data is not available
+  const { data: dimensionMeta, loading: dimensionMetaLoading } = useIndicatorDimensionValues(
+    useSubareaData ? '' : indicatorId, 
+    useSubareaData ? undefined : subareaId
+  );
 
   // Log the full responses from the backend
   console.log('Indicator Modal - Indicator Data Response:', indicatorData);
-  console.log('Indicator Modal - Dimension Meta Response:', dimensionMeta);
+  console.log('Indicator Modal - Dimension Meta Response:', useSubareaData ? comprehensiveData.dimensionMetadata[indicatorId] : dimensionMeta);
   console.log('Indicator Modal - Subarea ID:', subareaId);
   console.log('Indicator Modal - Indicator ID:', indicatorId);
 
   // Get all available dimensions robustly
   const availableDimensions: string[] = React.useMemo(() => {
-    if (dimensionMeta && dimensionMeta.availableDimensions) {
+    if (useSubareaData) {
+      const metadata = comprehensiveData.dimensionMetadata[indicatorId];
+      if (metadata && metadata.availableDimensions) {
+        return metadata.availableDimensions.map((dim: any) => dim.type);
+      }
+    } else if (dimensionMeta && dimensionMeta.availableDimensions) {
       // Extract the 'type' field from each dimension info object
       return dimensionMeta.availableDimensions.map((dim: any) => dim.type);
     }
     return ['time'];
-  }, [dimensionMeta]);
+  }, [useSubareaData, comprehensiveData, indicatorId, dimensionMeta]);
 
   // Determine the default dimension (prefer 'time', else first available)
   const defaultDimension = React.useMemo(() => {
@@ -74,24 +95,37 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ ope
     }
   }, [availableDimensions, selectedDimension, defaultDimension]);
 
+  // Use subarea data for aggregated data if available
+  const aggregatedData = useSubareaData ? comprehensiveData.aggregatedData : {};
+  
   // Fetch indicator data (raw or aggregated depending on selected dimension)
   const { data, loading, error } = useIndicatorData(
-    indicatorId,
+    useSubareaData ? '' : indicatorId, // Don't make API call if we have subarea data
     timeRange,
     selectedDimension,
     defaultDimension,
     availableDimensions,
-    subareaId
+    useSubareaData ? undefined : subareaId
   );
+
+  // Use subarea data for chart data if available
+  const chartDataFromSubarea = useSubareaData && aggregatedData[selectedDimension] ? 
+    Object.entries(aggregatedData[selectedDimension]).map(([key, value]) => ({
+      label: key,
+      value: value as number
+    })) : [];
 
   // Process chart data using utility function
   const chartData: IndicatorChartData[] = React.useMemo(() => {
+    if (useSubareaData && chartDataFromSubarea.length > 0) {
+      return chartDataFromSubarea;
+    }
     return processChartData({
       selectedDimension,
       defaultDimension,
       data
     });
-  }, [selectedDimension, defaultDimension, data]);
+  }, [useSubareaData, chartDataFromSubarea, selectedDimension, defaultDimension, data]);
 
   // Determine time granularity and build time range options
   const timeGranularity = React.useMemo(() => 

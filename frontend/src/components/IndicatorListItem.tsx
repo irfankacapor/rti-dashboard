@@ -10,9 +10,19 @@ interface IndicatorListItemProps {
   highlightedDimensionValue?: string | null;
   selectedDimension?: string;
   hasHighlightedDimensionValue?: boolean;
+  subareaId?: string;
+  comprehensiveData?: any; // NEW: Pass subarea data to avoid API calls
 }
 
-const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggregated = false, highlightedDimensionValue, selectedDimension, hasHighlightedDimensionValue = false }) => {
+const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ 
+  indicator, 
+  isAggregated = false, 
+  highlightedDimensionValue, 
+  selectedDimension, 
+  hasHighlightedDimensionValue = false,
+  subareaId,
+  comprehensiveData 
+}) => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -51,7 +61,9 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggr
         </Tooltip>
         <Typography variant="body1" sx={{ flex: 1 }}>{indicator.name}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>{indicator.unit}</Typography>
-        <Typography variant="body2" color="primary">{indicator.latestValue ?? '--'}</Typography>
+        {indicator.latestValue !== null && (
+          <Typography variant="body2" color="primary">{indicator.latestValue}</Typography>
+        )}
         {hasHighlightedDimensionValue && highlightedDimensionValue && selectedDimension && (
           <Typography variant="caption" color="secondary" sx={{ ml: 2 }}>
             {selectedDimension}: {highlightedDimensionValue}
@@ -63,6 +75,8 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ indicator, isAggr
         onClose={handleClose}
         indicatorId={indicator.id}
         indicatorData={indicator}
+        subareaId={subareaId}
+        comprehensiveData={comprehensiveData}
       />
     </>
   );

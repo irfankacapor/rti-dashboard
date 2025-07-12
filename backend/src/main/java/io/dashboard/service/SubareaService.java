@@ -23,6 +23,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import io.dashboard.dto.IndicatorValuesResponse;
 import io.dashboard.dto.IndicatorValueRow;
+import io.dashboard.dto.IndicatorResponse;
+import io.dashboard.dto.IndicatorDimensionsResponse;
+import io.dashboard.dto.SubareaDataResponse;
+import io.dashboard.model.DimGeneric;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +41,7 @@ public class SubareaService {
     private final FactIndicatorValueRepository factIndicatorValueRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
     private final AggregationService aggregationService;
+    private final IndicatorService indicatorService;
 
     public List<SubareaResponse> findAll() {
         try {
@@ -280,5 +289,114 @@ public class SubareaService {
             .value(fact.getValue())
             .isEmpty(fact.getValue() == null)
             .build();
+    }
+
+    /**
+     * Get comprehensive subarea data including all indicators, aggregated data, and dimension metadata
+     * Returns partial data if some parts fail
+     */
+    public SubareaDataResponse getSubareaData(Long subareaId) {
+        SubareaDataResponse.SubareaDataResponseBuilder builder = SubareaDataResponse.builder();
+        Map<String, String> errors = new HashMap<>();
+        
+        try {
+            // Get subarea info
+            SubareaResponse subarea = findById(subareaId);
+            builder.subarea(subarea);
+        } catch (Exception e) {
+            log.error("Error fetching subarea info for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("subarea", e.getMessage());
+        }
+        
+        try {
+            // Get indicators list
+            List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+            builder.indicators(indicators);
+        } catch (Exception e) {
+            log.error("Error fetching indicators for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("indicators", e.getMessage());
+        }
+        
+        try {
+            // Get aggregated data for all available dimensions
+            Map<String, Map<String, Double>> aggregatedData = new HashMap<>();
+            List<String> availableDimensions = getAvailableDimensionsForSubarea(subareaId);
+            
+            for (String dimension : availableDimensions) {
+                try {
+                    Map<String, Double> dimensionData = aggregationService.getSubareaAggregatedByDimension(subareaId, dimension);
+                    aggregatedData.put(dimension, dimensionData);
+                } catch (Exception e) {
+                    log.error("Error fetching aggregated data for dimension {} in subarea {}: {}", dimension, subareaId, e.getMessage());
+                    errors.put("aggregatedData." + dimension, e.getMessage());
+                }
+            }
+            builder.aggregatedData(aggregatedData);
+        } catch (Exception e) {
+            log.error("Error fetching aggregated data for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("aggregatedData", e.getMessage());
+        }
+        
+        try {
+            // Get total aggregated value
+            double totalValue = aggregationService.calculateSubareaAggregatedValue(subareaId);
+            builder.totalAggregatedValue(totalValue);
+        } catch (Exception e) {
+            log.error("Error calculating total aggregated value for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("totalAggregatedValue", e.getMessage());
+        }
+        
+        try {
+            // Get dimension metadata for all indicators
+            Map<String, IndicatorDimensionsResponse> dimensionMetadata = new HashMap<>();
+            List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+            
+            for (IndicatorResponse indicator : indicators) {
+                try {
+                    IndicatorDimensionsResponse metadata = indicatorService.getIndicatorDimensions(indicator.getId());
+                    dimensionMetadata.put(indicator.getId().toString(), metadata);
+                } catch (Exception e) {
+                    log.error("Error fetching dimension metadata for indicator {} in subarea {}: {}", indicator.getId(), subareaId, e.getMessage());
+                    errors.put("dimensionMetadata." + indicator.getId(), e.getMessage());
+                }
+            }
+            builder.dimensionMetadata(dimensionMetadata);
+        } catch (Exception e) {
+            log.error("Error fetching dimension metadata for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("dimensionMetadata", e.getMessage());
+        }
+        
+        builder.errors(errors);
+        return builder.build();
+    }
+    
+    /**
+     * Get available dimensions for a subarea
+     */
+    private List<String> getAvailableDimensionsForSubarea(Long subareaId) {
+        List<String> dimensions = new ArrayList<>();
+        
+        // Always include time and location if they exist
+        try {
+            List<FactIndicatorValue> values = factIndicatorValueRepository.findBySubareaIdWithEagerLoading(subareaId);
+            if (values.stream().anyMatch(v -> v.getTime() != null)) {
+                dimensions.add("time");
+            }
+            if (values.stream().anyMatch(v -> v.getLocation() != null)) {
+                dimensions.add("location");
+            }
+            
+            // Add custom dimensions
+            Set<String> customDimensions = values.stream()
+                .flatMap(v -> v.getGenerics().stream())
+                .map(DimGeneric::getDimensionName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+            dimensions.addAll(customDimensions);
+        } catch (Exception e) {
+            log.error("Error determining available dimensions for subarea {}: {}", subareaId, e.getMessage());
+        }
+        
+        return dimensions;
     }
 } 

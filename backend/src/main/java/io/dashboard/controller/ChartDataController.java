@@ -2,6 +2,8 @@ package io.dashboard.controller;
 
 import io.dashboard.dto.*;
 import io.dashboard.service.ChartDataService;
+import io.dashboard.exception.ResourceNotFoundException;
+import io.dashboard.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -25,8 +27,14 @@ public class ChartDataController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         
-        TimeSeriesDataResponse response = chartDataService.getTimeSeriesData(indicatorId, startDate, endDate);
-        return ResponseEntity.ok(response);
+        try {
+            TimeSeriesDataResponse response = chartDataService.getTimeSeriesData(indicatorId, startDate, endDate);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving time series data", e);
+        }
     }
 
     @GetMapping("/indicators/{indicatorId}/location-comparison")
@@ -35,8 +43,14 @@ public class ChartDataController {
             @PathVariable Long indicatorId,
             @RequestParam List<Long> locationIds) {
         
-        LocationComparisonResponse response = chartDataService.getLocationComparisonData(indicatorId, locationIds);
-        return ResponseEntity.ok(response);
+        try {
+            LocationComparisonResponse response = chartDataService.getLocationComparisonData(indicatorId, locationIds);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving location comparison data", e);
+        }
     }
 
     @GetMapping("/indicators/{indicatorId}/dimension-breakdown")
@@ -45,8 +59,14 @@ public class ChartDataController {
             @PathVariable Long indicatorId,
             @RequestParam String dimensionType) {
         
-        DimensionBreakdownResponse response = chartDataService.getDimensionBreakdownData(indicatorId, dimensionType);
-        return ResponseEntity.ok(response);
+        try {
+            DimensionBreakdownResponse response = chartDataService.getDimensionBreakdownData(indicatorId, dimensionType);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving dimension breakdown data", e);
+        }
     }
 
     @GetMapping("/correlation")
@@ -54,8 +74,14 @@ public class ChartDataController {
     public ResponseEntity<CorrelationDataResponse> getCorrelationData(
             @RequestParam List<Long> indicatorIds) {
         
-        CorrelationDataResponse response = chartDataService.getIndicatorCorrelationData(indicatorIds);
-        return ResponseEntity.ok(response);
+        try {
+            CorrelationDataResponse response = chartDataService.getIndicatorCorrelationData(indicatorIds);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving correlation data", e);
+        }
     }
 
     @GetMapping("/goals/{goalId}/progress")
@@ -63,8 +89,14 @@ public class ChartDataController {
     public ResponseEntity<TimeSeriesDataResponse> getGoalProgressChart(
             @PathVariable Long goalId) {
         
-        TimeSeriesDataResponse response = chartDataService.getGoalProgressChartData(goalId);
-        return ResponseEntity.ok(response);
+        try {
+            TimeSeriesDataResponse response = chartDataService.getGoalProgressChartData(goalId);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving goal progress data", e);
+        }
     }
 
     @GetMapping("/areas/{areaId}/heatmap")
@@ -72,8 +104,14 @@ public class ChartDataController {
     public ResponseEntity<HeatmapDataResponse> getAreaHeatmap(
             @PathVariable Long areaId) {
         
-        HeatmapDataResponse response = chartDataService.getSubareaPerformanceHeatmap(areaId);
-        return ResponseEntity.ok(response);
+        try {
+            HeatmapDataResponse response = chartDataService.getSubareaPerformanceHeatmap(areaId);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving area heatmap data", e);
+        }
     }
 
     @GetMapping("/indicators/{indicatorId}/trend")
@@ -82,7 +120,13 @@ public class ChartDataController {
             @PathVariable Long indicatorId,
             @RequestParam(defaultValue = "12") int periods) {
         
-        TrendAnalysisResponse response = chartDataService.getTrendAnalysisData(indicatorId, periods);
-        return ResponseEntity.ok(response);
+        try {
+            TrendAnalysisResponse response = chartDataService.getTrendAnalysisData(indicatorId, periods);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving trend analysis data", e);
+        }
     }
 } 

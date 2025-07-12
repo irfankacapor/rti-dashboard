@@ -16,6 +16,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import java.util.Map;
 import io.dashboard.dto.IndicatorValuesResponse;
+import io.dashboard.dto.SubareaDataResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -197,5 +198,15 @@ public class SubareaController {
             log.error("Error calculating aggregated by {} for subarea: {}", dimension, id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /**
+     * Get subarea data including all indicators, aggregated data, and dimension metadata
+     */
+    @PermitAll
+    @GetMapping("/subareas/{subareaId}/data")
+    public ResponseEntity<SubareaDataResponse> getSubareaData(@PathVariable Long subareaId) {
+        SubareaDataResponse response = subareaService.getSubareaData(subareaId);
+        return ResponseEntity.ok(response);
     }
 } 

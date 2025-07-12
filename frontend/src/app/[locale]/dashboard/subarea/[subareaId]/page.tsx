@@ -1,10 +1,10 @@
 "use client";
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Box, Typography, CircularProgress, Divider, Container, Paper, ButtonGroup, Button, MenuItem, Select, FormControl, InputLabel, Checkbox, FormControlLabel, IconButton } from '@mui/material';
+import { Box, Typography, CircularProgress, Divider, Container, Paper, ButtonGroup, Button, MenuItem, Select, FormControl, InputLabel, IconButton } from '@mui/material';
 import SubareaAggregatedChart from '@/components/charts/SubareaAggregatedChart';
 import IndicatorListItem from '@/components/IndicatorListItem';
-import { useSubareaData, useSubareaAggregatedValue, useSubareaAggregatedByDimension, useMultipleIndicatorDimensionValues } from '@/hooks/useApi';
+import { useSubareaData } from '@/hooks/useSubareaData';
 import { useDashboardWithRelationships } from '@/hooks/useDashboardWithRelationships';
 import { GoalsSidebar } from '@/components/dashboard';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -16,7 +16,18 @@ export default function SubareaDetailPage() {
   const params = useParams();
   const subareaId = params?.subareaId as string;
   const locale = params?.locale as string || 'en';
-  const { indicators, subarea, loading, error } = useSubareaData(subareaId);
+  
+  // Use the new subarea data hook
+  const { 
+    subarea, 
+    indicators, 
+    aggregatedData, 
+    totalAggregatedValue, 
+    dimensionMetadata, 
+    loading, 
+    error 
+  } = useSubareaData(subareaId);
+  
   const { goals, goalGroups, relationships } = useDashboardWithRelationships();
 
   // Get all unique dimensions from indicators
@@ -31,50 +42,6 @@ export default function SubareaDetailPage() {
   // Default to first dimension if available
   const [selectedDimension, setSelectedDimension] = useState<string>(availableDimensions[0] || '');
 
-  // Highlight and filter state
-  const [hoveredDimensionValue, setHoveredDimensionValue] = useState<string | null>(null);
-  const [showOnlyCommonValues, setShowOnlyCommonValues] = useState(false);
-
-  // Get indicator IDs for this subarea
-  const indicatorIds = indicators.map((indicator: any) => indicator.id);
-
-  // Fetch dimension values for all indicators
-  const { data: dimensionValuesData, loading: dimensionValuesLoading } = useMultipleIndicatorDimensionValues(indicatorIds, subareaId);
-
-  // Log the full response from the backend
-  console.log('Subarea Page - Dimension Values Response:', dimensionValuesData);
-  console.log('Subarea Page - Subarea ID:', subareaId);
-  console.log('Subarea Page - Indicator IDs:', indicatorIds);
-
-  // Compute all dimension values for the selected dimension for each indicator
-  const dimensionValueSets = useMemo(() => {
-    return indicators.map((indicator: any, index: number) => {
-      const dimensionData = dimensionValuesData[index];
-      if (!dimensionData || !dimensionData.availableDimensions) return new Set<string>();
-      // Find the dimension info object for the selected dimension
-      const dimInfo = dimensionData.availableDimensions.find((dim: any) => dim.type === selectedDimension);
-      if (!dimInfo || !dimInfo.values) return new Set<string>();
-      return new Set<string>(dimInfo.values);
-    });
-  }, [indicators, dimensionValuesData, selectedDimension]);
-
-  // Compute common dimension values (intersection)
-  const commonDimensionValues = useMemo(() => {
-    if (dimensionValueSets.length === 0) return [] as string[];
-    let intersection = new Set<string>(dimensionValueSets[0] as Set<string>);
-    for (let i = 1; i < dimensionValueSets.length; i++) {
-      intersection = new Set<string>([...intersection].filter(x => (dimensionValueSets[i] as Set<string>).has(x)));
-    }
-    return Array.from(intersection) as string[];
-  }, [dimensionValueSets]);
-
-  // Compute all dimension values (union)
-  const allDimensionValues = useMemo(() => {
-    const union = new Set<string>();
-    dimensionValueSets.forEach(set => (set as Set<string>).forEach(v => union.add(v)));
-    return Array.from(union) as string[];
-  }, [dimensionValueSets]);
-
   // Update selectedDimension if availableDimensions changes
   React.useEffect(() => {
     if (availableDimensions.length > 0 && !availableDimensions.includes(selectedDimension)) {
@@ -82,25 +49,16 @@ export default function SubareaDetailPage() {
     }
   }, [availableDimensions, selectedDimension]);
 
-  const { data: aggregatedData, loading: aggregatedLoading, error: aggregatedError } = useSubareaAggregatedByDimension(subareaId, selectedDimension);
-  const { data: totalAggregatedValue, loading: totalAggregatedLoading } = useSubareaAggregatedValue(subareaId);
-
-  // Filtered dimension values for chart
-  const filteredDimensionValues = useMemo(() => {
-    if (!showOnlyCommonValues || !aggregatedData?.data) {
-      return null; // Show all data from backend
+  // Get aggregated data for the selected dimension
+  const selectedDimensionData = useMemo(() => {
+    if (!selectedDimension || !aggregatedData[selectedDimension]) {
+      return null;
     }
-    
-    // Get dimension values that exist in the aggregated data
-    const availableDimensionValues = Object.keys(aggregatedData.data);
-    
-    // Filter common values to only include those that have aggregated data
-    const filteredCommonValues = commonDimensionValues.filter(value => 
-      availableDimensionValues.includes(value)
-    );
-    
-    return filteredCommonValues.length > 0 ? filteredCommonValues : null;
-  }, [showOnlyCommonValues, aggregatedData, commonDimensionValues]);
+    return {
+      data: aggregatedData[selectedDimension],
+      dimension: selectedDimension
+    };
+  }, [selectedDimension, aggregatedData]);
 
   // Get goal IDs linked to this subarea from relationships
   const goalIdsForSubarea = relationships?.subareaToGoals?.[subareaId] || [];
@@ -116,7 +74,8 @@ export default function SubareaDetailPage() {
   React.useEffect(() => {
     // eslint-disable-next-line no-console
     console.log('Subarea object:', subarea);
-  }, [subarea]);
+    console.log('Subarea data:', { subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata });
+  }, [subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata]);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -218,42 +177,31 @@ export default function SubareaDetailPage() {
                   </FormControl>
                 )
               )}
-              {/* Checkbox for filtering common dimension values */}
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={showOnlyCommonValues}
-                    onChange={e => setShowOnlyCommonValues(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Show only common dimension values"
-              />
             </Box>
           </Box>
 
           {/* Subarea aggregated chart */}
           <SubareaAggregatedChart
-            data={aggregatedData}
-            loading={aggregatedLoading}
-            error={aggregatedError}
+            data={selectedDimensionData}
+            loading={loading}
+            error={error}
             dimensionLabel={selectedDimension ? selectedDimension.charAt(0).toUpperCase() + selectedDimension.slice(1) : ''}
-            onBarHover={setHoveredDimensionValue}
-            highlightedBar={hoveredDimensionValue}
-            filteredDimensionValues={filteredDimensionValues}
+            onBarHover={() => {}}
+            highlightedBar={null}
+            filteredDimensionValues={null} // Removed filteredDimensionValues as it's not needed here
           />
 
           <Divider sx={{ my: 2 }} />
 
-          {totalAggregatedLoading ? (
+          {loading ? (
             <CircularProgress size={24} />
           ) : (
             <Typography variant="h5" color="primary" gutterBottom>
-              Total Aggregated Value: {totalAggregatedValue?.aggregatedValue ? totalAggregatedValue.aggregatedValue.toFixed(2) : '--'}
+              Total Aggregated Value: {totalAggregatedValue ? totalAggregatedValue.toFixed(2) : '--'}
             </Typography>
           )}
           <Divider sx={{ my: 2 }} />
-          {loading || dimensionValuesLoading ? (
+          {loading ? (
             <Box display="flex" justifyContent="center"><CircularProgress /></Box>
           ) : error ? (
             <Typography color="error">Failed to load subarea data.</Typography>
@@ -264,25 +212,18 @@ export default function SubareaDetailPage() {
                 {indicators.length === 0 ? (
                   <Typography>No indicators found for this subarea.</Typography>
                 ) : (
-                  indicators.map((indicator: any, index: number) => {
-                    const dimensionData = dimensionValuesData[index];
-                    // For highlighting, check if the selected dimension's values include the hovered value
-                    let hasDimensionValue = false;
-                    if (dimensionData && dimensionData.availableDimensions) {
-                      const dimInfo = dimensionData.availableDimensions.find((dim: any) => dim.type === selectedDimension);
-                      hasDimensionValue = !!(dimInfo && dimInfo.values && dimInfo.values.includes(hoveredDimensionValue));
-                    }
-                    return (
-                      <IndicatorListItem
-                        key={indicator.id}
-                        indicator={indicator}
-                        isAggregated={(indicator.dimensions || []).includes(selectedDimension)}
-                        highlightedDimensionValue={hoveredDimensionValue}
-                        selectedDimension={selectedDimension}
-                        hasHighlightedDimensionValue={hasDimensionValue}
-                      />
-                    );
-                  })
+                  indicators.map((indicator: any) => (
+                    <IndicatorListItem
+                      key={indicator.id}
+                      indicator={indicator}
+                      isAggregated={(indicator.dimensions || []).includes(selectedDimension)}
+                      highlightedDimensionValue={null}
+                      selectedDimension={selectedDimension}
+                      hasHighlightedDimensionValue={false} // Simplified since we're not pre-fetching dimension data
+                      subareaId={subareaId}
+                      comprehensiveData={{ aggregatedData, dimensionMetadata }} // Pass subarea data to avoid API calls
+                    />
+                  ))
                 )}
               </Box>
             </>
