@@ -7,6 +7,8 @@ import io.dashboard.model.DataType;
 import io.dashboard.model.Indicator;
 import io.dashboard.repository.DataTypeRepository;
 import io.dashboard.repository.IndicatorRepository;
+import io.dashboard.test.security.WithMockAdmin;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockAdmin
 @Transactional
 class DataTypeControllerIntegrationTest {
     @Autowired

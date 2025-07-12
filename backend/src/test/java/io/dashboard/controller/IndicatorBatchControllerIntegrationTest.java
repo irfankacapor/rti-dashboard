@@ -9,6 +9,7 @@ import io.dashboard.model.Direction;
 import io.dashboard.model.Subarea;
 import io.dashboard.model.Area;
 import io.dashboard.repository.SubareaRepository;
+import io.dashboard.test.security.WithMockAdmin;
 import io.dashboard.repository.AreaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockAdmin
 @Transactional
 class IndicatorBatchControllerIntegrationTest {
     

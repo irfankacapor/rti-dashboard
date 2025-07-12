@@ -2,6 +2,9 @@ package io.dashboard.controller;
 
 import io.dashboard.dto.*;
 import io.dashboard.service.ChartDataService;
+import io.dashboard.test.security.WithMockAdmin;
+import io.dashboard.util.JwtUtil;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,10 +19,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ChartDataController.class)
+@WithMockAdmin
 class ChartDataControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+
+    @MockBean
+    private JwtUtil jwtUtil;
+
+
 
     @MockBean
     private ChartDataService chartDataService;

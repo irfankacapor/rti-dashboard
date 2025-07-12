@@ -8,6 +8,8 @@ import io.dashboard.model.Subarea;
 import io.dashboard.model.SubareaIndicator;
 import io.dashboard.repository.AreaRepository;
 import io.dashboard.repository.SubareaRepository;
+import io.dashboard.test.security.WithMockAdmin;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@WithMockAdmin
 class SubareaControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;

@@ -5,6 +5,9 @@ import io.dashboard.dto.VisualizationConfigRequest;
 import io.dashboard.dto.VisualizationConfigResponse;
 import io.dashboard.entity.VisualizationType;
 import io.dashboard.service.VisualizationConfigService;
+import io.dashboard.test.security.WithMockAdmin;
+import io.dashboard.util.JwtUtil;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(VisualizationConfigController.class)
+@WithMockAdmin
 class VisualizationConfigControllerIntegrationTest {
 
     @Autowired
@@ -30,6 +34,9 @@ class VisualizationConfigControllerIntegrationTest {
 
     @MockBean
     private VisualizationConfigService visualizationConfigService;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -102,6 +109,7 @@ class VisualizationConfigControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void updateConfig_withValidData_shouldReturn200() throws Exception {
         VisualizationConfigRequest request = new VisualizationConfigRequest();
         request.setIndicatorId(1L);

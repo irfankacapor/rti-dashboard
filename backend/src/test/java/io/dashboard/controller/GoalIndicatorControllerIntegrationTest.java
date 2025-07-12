@@ -13,6 +13,9 @@ import io.dashboard.model.Unit;
 import io.dashboard.service.GoalIndicatorService;
 import io.dashboard.service.GoalService;
 import io.dashboard.service.IndicatorService;
+import io.dashboard.test.security.WithMockAdmin;
+import io.dashboard.util.JwtUtil;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -31,6 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest({GoalIndicatorController.class, IndicatorGoalController.class})
+@WithMockAdmin
 class GoalIndicatorControllerIntegrationTest {
 
     @Autowired
@@ -44,6 +50,9 @@ class GoalIndicatorControllerIntegrationTest {
 
     @MockBean
     private GoalService goalService;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @MockBean
     private IndicatorService indicatorService;
@@ -84,6 +93,7 @@ class GoalIndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void linkGoalToIndicator_shouldSucceed() throws Exception {
         // Given
         GoalIndicatorLinkRequest request = new GoalIndicatorLinkRequest();

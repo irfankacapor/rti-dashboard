@@ -19,6 +19,7 @@ import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 import io.dashboard.repository.UnitRepository;
+import io.dashboard.test.security.WithMockAdmin;
 import io.dashboard.repository.AreaRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.DimTimeRepository;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -145,6 +147,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void createIndicator_shouldSucceed() throws Exception {
         long counter = testCounter.getAndIncrement();
         IndicatorCreateRequest req = new IndicatorCreateRequest();
@@ -166,6 +169,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void createIndicator_shouldFail_duplicateCode() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -187,6 +191,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void createIndicator_shouldFail_invalidUnit() throws Exception {
         long counter = testCounter.getAndIncrement();
         IndicatorCreateRequest req = new IndicatorCreateRequest();
@@ -202,6 +207,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getAllIndicators_shouldReturnList() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -216,6 +222,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getIndicatorById_shouldReturnIndicator() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -230,12 +237,14 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getIndicatorById_shouldReturn404() throws Exception {
         mockMvc.perform(get("/api/v1/indicators/9999"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser
     void getIndicatorsBySubarea_shouldReturnList() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -261,6 +270,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void updateIndicator_shouldUpdateFields() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -283,6 +293,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void updateIndicator_shouldReturn404_whenNotFound() throws Exception {
         IndicatorUpdateRequest req = new IndicatorUpdateRequest();
         req.setName("Name");
@@ -295,6 +306,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void deleteIndicator_shouldDelete() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -310,6 +322,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void assignIndicatorToSubarea_shouldSucceed() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -331,6 +344,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void assignIndicatorToSubarea_shouldFail_alreadyAssigned() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -361,6 +375,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void removeIndicatorFromSubarea_shouldSucceed() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -387,6 +402,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void removeIndicatorFromSubarea_shouldReturn404_whenNotAssigned() throws Exception {
         long counter = testCounter.getAndIncrement();
         Indicator indicator = new Indicator();
@@ -400,6 +416,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getIndicatorChart_shouldReturnAggregatedData() throws Exception {
         Indicator indicator = new Indicator();
         indicator.setCode("CHART1");
@@ -437,6 +454,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getIndicatorDimensions_shouldReturnAvailableDimensions() throws Exception {
         Indicator indicator = new Indicator();
         indicator.setCode("DIM1");
@@ -457,6 +475,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getIndicatorHistorical_shouldReturnHistoricalData() throws Exception {
         Indicator indicator = new Indicator();
         indicator.setCode("HIST1");
@@ -477,6 +496,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void getIndicatorValidation_shouldReturnValidationResult() throws Exception {
         Indicator indicator = new Indicator();
         indicator.setCode("VAL1");
@@ -497,6 +517,7 @@ class IndicatorControllerIntegrationTest {
     }
 
     @Test
+    @WithMockAdmin
     void createSampleHistoricalData_shouldCreateAndReturnData() throws Exception {
         Indicator indicator = new Indicator();
         indicator.setCode("SAMPLE1");

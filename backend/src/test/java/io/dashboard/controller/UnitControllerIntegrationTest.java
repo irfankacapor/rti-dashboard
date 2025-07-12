@@ -7,6 +7,8 @@ import io.dashboard.model.Indicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.UnitRepository;
+import io.dashboard.test.security.WithMockAdmin;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@WithMockAdmin
 class UnitControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
