@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Objects;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -151,9 +152,9 @@ public class SubareaService {
                 throw new ResourceNotFoundException("Subarea", "id", subareaId);
             }
             
-            double aggregatedValue = aggregationService.calculateSubareaAggregatedValue(subareaId);
-            log.debug("Calculated aggregated value {} for subarea ID: {}", aggregatedValue, subareaId);
-            return aggregatedValue;
+            // Return 0 for now as requested
+            log.debug("Returning 0 for aggregated value as requested");
+            return 0.0;
         } catch (Exception e) {
             log.error("Error calculating aggregated value for subarea ID {}: {}", subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to calculate aggregated value for subarea: " + e.getMessage(), e);
@@ -338,9 +339,8 @@ public class SubareaService {
         }
         
         try {
-            // Get total aggregated value
-            double totalValue = aggregationService.calculateSubareaAggregatedValue(subareaId);
-            builder.totalAggregatedValue(totalValue);
+            // Get total aggregated value - set to 0 for now as requested
+            builder.totalAggregatedValue(0.0);
         } catch (Exception e) {
             log.error("Error calculating total aggregated value for subarea {}: {}", subareaId, e.getMessage());
             errors.put("totalAggregatedValue", e.getMessage());
@@ -366,8 +366,120 @@ public class SubareaService {
             errors.put("dimensionMetadata", e.getMessage());
         }
         
+        try {
+            // Get time series data for all indicators
+            List<Map<String, Object>> timeSeriesData = getSubareaTimeSeriesData(subareaId);
+            builder.timeSeriesData(timeSeriesData);
+        } catch (Exception e) {
+            log.error("Error fetching time series data for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("timeSeriesData", e.getMessage());
+        }
+        
+        try {
+            // Get individual indicator time series data
+            Map<String, List<Map<String, Object>>> indicatorTimeSeriesData = getIndividualIndicatorTimeSeriesData(subareaId);
+            builder.indicatorTimeSeriesData(indicatorTimeSeriesData);
+        } catch (Exception e) {
+            log.error("Error fetching individual indicator time series data for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("indicatorTimeSeriesData", e.getMessage());
+        }
+        
         builder.errors(errors);
         return builder.build();
+    }
+    
+    /**
+     * Get time series data for all indicators in a subarea
+     * Returns data in format: [{ year: string, indicators: { [indicatorName]: value } }]
+     */
+    private List<Map<String, Object>> getSubareaTimeSeriesData(Long subareaId) {
+        List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+        Map<String, Map<String, Double>> indicatorTimeData = new HashMap<>();
+        Set<String> allYears = new HashSet<>();
+        
+        // Collect time data for each indicator
+        for (IndicatorResponse indicator : indicators) {
+            if (indicator.getDimensions() != null && indicator.getDimensions().contains("time")) {
+                List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
+                Map<String, Double> timeData = new HashMap<>();
+                
+                for (FactIndicatorValue value : values) {
+                    if (value.getTime() != null && value.getTime().getValue() != null) {
+                        String year = value.getTime().getValue();
+                        allYears.add(year);
+                        timeData.put(year, value.getValue().doubleValue());
+                    }
+                }
+                
+                if (!timeData.isEmpty()) {
+                    indicatorTimeData.put(indicator.getName(), timeData);
+                }
+            }
+        }
+        
+        // If no indicators have time data, return empty list
+        if (indicatorTimeData.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Create the combined data structure
+        List<Map<String, Object>> result = new ArrayList<>();
+        List<String> sortedYears = allYears.stream().sorted().collect(Collectors.toList());
+        
+        for (String year : sortedYears) {
+            Map<String, Object> yearData = new HashMap<>();
+            yearData.put("year", year);
+            
+            Map<String, Double> indicatorsData = new HashMap<>();
+            for (Map.Entry<String, Map<String, Double>> entry : indicatorTimeData.entrySet()) {
+                String indicatorName = entry.getKey();
+                Map<String, Double> timeData = entry.getValue();
+                if (timeData.containsKey(year)) {
+                    indicatorsData.put(indicatorName, timeData.get(year));
+                }
+            }
+            
+            yearData.put("indicators", indicatorsData);
+            result.add(yearData);
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Get individual time series data for each indicator in a subarea
+     * Returns data in format: { [indicatorId]: [{ year: string, value: number }] }
+     */
+    private Map<String, List<Map<String, Object>>> getIndividualIndicatorTimeSeriesData(Long subareaId) {
+        List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+        Map<String, List<Map<String, Object>>> result = new HashMap<>();
+        
+        for (IndicatorResponse indicator : indicators) {
+            if (indicator.getDimensions() != null && indicator.getDimensions().contains("time")) {
+                List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
+                List<Map<String, Object>> timeSeries = new ArrayList<>();
+                
+                for (FactIndicatorValue value : values) {
+                    if (value.getTime() != null && value.getTime().getValue() != null) {
+                        Map<String, Object> dataPoint = new HashMap<>();
+                        dataPoint.put("year", value.getTime().getValue());
+                        dataPoint.put("value", value.getValue().doubleValue());
+                        timeSeries.add(dataPoint);
+                    }
+                }
+                
+                // Sort by year
+                timeSeries.sort((a, b) -> {
+                    String yearA = (String) a.get("year");
+                    String yearB = (String) b.get("year");
+                    return yearA.compareTo(yearB);
+                });
+                
+                result.put(indicator.getId().toString(), timeSeries);
+            }
+        }
+        
+        return result;
     }
     
     /**

@@ -62,12 +62,6 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
     useSubareaData ? undefined : subareaId
   );
 
-  // Log the full responses from the backend
-  console.log('Indicator Modal - Indicator Data Response:', indicatorData);
-  console.log('Indicator Modal - Dimension Meta Response:', useSubareaData ? comprehensiveData.dimensionMetadata[indicatorId] : dimensionMeta);
-  console.log('Indicator Modal - Subarea ID:', subareaId);
-  console.log('Indicator Modal - Indicator ID:', indicatorId);
-
   // Get all available dimensions robustly
   const availableDimensions: string[] = React.useMemo(() => {
     if (useSubareaData) {
@@ -115,8 +109,23 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
       value: value as number
     })) : [];
 
+  // Get time series data from comprehensiveData if available
+  const timeSeriesData = useSubareaData && comprehensiveData.indicatorTimeSeriesData && comprehensiveData.indicatorTimeSeriesData[indicatorId] ? 
+    comprehensiveData.indicatorTimeSeriesData[indicatorId].map((point: { year: string; value: number }) => ({
+      year: point.year,
+      value: point.value
+    })) : [];
+
   // Process chart data using utility function
   const chartData: IndicatorChartData[] = React.useMemo(() => {
+    // If we have time series data and the selected dimension is 'time', use it
+    if (useSubareaData && selectedDimension === 'time' && timeSeriesData.length > 0) {
+      return timeSeriesData.map((point: { year: string; value: number }) => ({
+        label: point.year,
+        value: point.value
+      }));
+    }
+    
     if (useSubareaData && chartDataFromSubarea.length > 0) {
       return chartDataFromSubarea;
     }
@@ -125,7 +134,7 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
       defaultDimension,
       data
     });
-  }, [useSubareaData, chartDataFromSubarea, selectedDimension, defaultDimension, data]);
+  }, [useSubareaData, timeSeriesData, selectedDimension, chartDataFromSubarea, defaultDimension, data]);
 
   // Determine time granularity and build time range options
   const timeGranularity = React.useMemo(() => 
@@ -155,6 +164,25 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
             {indicatorData?.name || 'Indicator'}
           </Typography>
           <IconButton onClick={onClose}><CloseIcon /></IconButton>
+        </Box>
+        
+        {/* Indicator metadata */}
+        <Box sx={{ mt: 1, mb: 2 }}>
+          {indicatorData?.unit && (
+            <Typography variant="body2" color="text.secondary">
+              Unit: {indicatorData.unit}
+            </Typography>
+          )}
+          {indicatorData?.description && (
+            <Typography variant="body2" color="text.secondary">
+              {indicatorData.description}
+            </Typography>
+          )}
+          {timeSeriesData.length > 0 && (
+            <Typography variant="body2" color="text.secondary">
+              Data available for {timeSeriesData.length} years ({timeSeriesData[0]?.year} - {timeSeriesData[timeSeriesData.length - 1]?.year})
+            </Typography>
+          )}
         </Box>
         
         <Box display="flex" alignItems="center" sx={{ mt: 2, mb: 2 }}>
@@ -236,6 +264,10 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
                     chartType={chartType} 
                     xAxisFormatter={cleanTimeLabel}
                   />
+                ) : selectedDimension === 'time' && timeSeriesData.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                    No time series data available for this indicator in this subarea
+                  </Typography>
                 ) : (
                   <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
                     No data available for this indicator.

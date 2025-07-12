@@ -42,6 +42,8 @@ export function useSubareaData(subareaId: string) {
           aggregatedData: data.aggregatedData || {},
           totalAggregatedValue: data.totalAggregatedValue || 0,
           dimensionMetadata: data.dimensionMetadata || {},
+          timeSeriesData: data.timeSeriesData || [],
+          indicatorTimeSeriesData: data.indicatorTimeSeriesData || {},
           errors: data.errors || {}
         };
         
@@ -67,6 +69,8 @@ export function useSubareaData(subareaId: string) {
     aggregatedData: data?.aggregatedData || {},
     totalAggregatedValue: data?.totalAggregatedValue || 0,
     dimensionMetadata: data?.dimensionMetadata || {},
+    timeSeriesData: data?.timeSeriesData || [],
+    indicatorTimeSeriesData: data?.indicatorTimeSeriesData || {},
     errors: data?.errors || {}
   };
 } 

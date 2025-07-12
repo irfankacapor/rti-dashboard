@@ -6,6 +6,8 @@ interface SubareaComprehensiveData {
   aggregatedData: Record<string, Record<string, number>>;
   totalAggregatedValue: number;
   dimensionMetadata: Record<string, any>;
+  timeSeriesData: any[];
+  indicatorTimeSeriesData: Record<string, any[]>;
   errors: Record<string, string>;
 }
 

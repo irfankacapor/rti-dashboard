@@ -1,16 +1,15 @@
 "use client";
-import React, { useMemo, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { Box, Typography, CircularProgress, Divider, Container, Paper, ButtonGroup, Button, MenuItem, Select, FormControl, InputLabel, IconButton } from '@mui/material';
-import SubareaAggregatedChart from '@/components/charts/SubareaAggregatedChart';
-import IndicatorListItem from '@/components/IndicatorListItem';
+import { Box, Typography, Paper, Grid, IconButton } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useSubareaData } from '@/hooks/useSubareaData';
 import { useDashboardWithRelationships } from '@/hooks/useDashboardWithRelationships';
 import { GoalsSidebar } from '@/components/dashboard';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import Link from 'next/link';
+import IndicatorListItem from '@/components/IndicatorListItem';
+import IndividualIndicatorModal from '@/components/IndividualIndicatorModal';
+import SubareaTimeSeriesChart from '@/components/charts/SubareaTimeSeriesChart';
 
 export default function SubareaDetailPage() {
   const params = useParams();
@@ -24,6 +23,8 @@ export default function SubareaDetailPage() {
     aggregatedData, 
     totalAggregatedValue, 
     dimensionMetadata, 
+    timeSeriesData,
+    indicatorTimeSeriesData,
     loading, 
     error 
   } = useSubareaData(subareaId);
@@ -74,10 +75,26 @@ export default function SubareaDetailPage() {
   React.useEffect(() => {
     // eslint-disable-next-line no-console
     console.log('Subarea object:', subarea);
-    console.log('Subarea data:', { subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata });
-  }, [subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata]);
+    console.log('Subarea data:', { subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata, timeSeriesData, indicatorTimeSeriesData });
+  }, [subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata, timeSeriesData, indicatorTimeSeriesData]);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Typography color="error">Error: {error}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -118,118 +135,70 @@ export default function SubareaDetailPage() {
           </IconButton>
         </Box>
       )}
+      
       {/* Main content */}
-      <Container maxWidth="md" sx={{ flex: 1, py: 4 }}>
-        {/* Back to dashboard button */}
-        <Box mb={2}>
-          <Link href={`/${locale}/dashboard`} style={{ textDecoration: 'none' }}>
-            <Button startIcon={<ArrowBackIcon />} variant="outlined" color="primary">
-              Back to Dashboard
-            </Button>
-          </Link>
-        </Box>
-        <Paper sx={{ p: 4, mb: 4 }}>
-          <Typography variant="h4" gutterBottom>
-            {subarea?.name || ''}
+      <Box sx={{ 
+        flex: 1, 
+        p: 3,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        position: 'relative',
+        '@media (min-width: 600px)': {
+          maxWidth: '720px',
+        },
+        '@media (min-width: 900px)': {
+          maxWidth: '1236px',
+        },
+        '@media (max-width: 600px)': {
+          padding: '1rem',
+        },
+      }}>
+        {/* Page Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            {subarea?.name || 'Subarea'}
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>{subarea?.description}</Typography>
-          <Divider sx={{ my: 2 }} />
-
-          {/* Aggregated Performance heading and dimension picker */}
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6">Aggregated Performance</Typography>
-            <Box display="flex" alignItems="center" gap={2}>
-              {availableDimensions.length > 0 && (
-                availableDimensions.length <= 4 ? (
-                  <ButtonGroup variant="outlined" size="small" sx={{ bgcolor: '#f5f5f5' }}>
-                    {availableDimensions.map((dim) => (
-                      <Button
-                        key={dim}
-                        variant={selectedDimension === dim ? 'contained' : 'outlined'}
-                        onClick={() => setSelectedDimension(dim)}
-                        sx={{
-                          bgcolor: selectedDimension === dim ? '#e0e0e0' : '#f5f5f5',
-                          color: '#333',
-                          borderColor: '#ccc',
-                          '&:hover': { bgcolor: '#e0e0e0' }
-                        }}
-                      >
-                        {dim.charAt(0).toUpperCase() + dim.slice(1)}
-                      </Button>
-                    ))}
-                  </ButtonGroup>
-                ) : (
-                  <FormControl size="small" sx={{ minWidth: 120, bgcolor: '#f5f5f5' }}>
-                    <InputLabel id="dimension-select-label">Dimension</InputLabel>
-                    <Select
-                      labelId="dimension-select-label"
-                      value={selectedDimension}
-                      label="Dimension"
-                      onChange={e => setSelectedDimension(e.target.value)}
-                      sx={{ bgcolor: '#f5f5f5', color: '#333', borderColor: '#ccc' }}
-                    >
-                      {availableDimensions.map((dim) => (
-                        <MenuItem key={dim} value={dim}>
-                          {dim.charAt(0).toUpperCase() + dim.slice(1)}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )
-              )}
-            </Box>
-          </Box>
-
-          {/* Subarea aggregated chart */}
-          <SubareaAggregatedChart
-            data={selectedDimensionData}
-            loading={loading}
-            error={error}
-            dimensionLabel={selectedDimension ? selectedDimension.charAt(0).toUpperCase() + selectedDimension.slice(1) : ''}
-            onBarHover={() => {}}
-            highlightedBar={null}
-            filteredDimensionValues={null} // Removed filteredDimensionValues as it's not needed here
-          />
-
-          <Divider sx={{ my: 2 }} />
-
-          {loading ? (
-            <CircularProgress size={24} />
-          ) : (
-            <Typography variant="h5" color="primary" gutterBottom>
-              Total Aggregated Value: {totalAggregatedValue ? totalAggregatedValue.toFixed(2) : '--'}
+          {subarea?.description && (
+            <Typography variant="body1" color="text.secondary">
+              {subarea.description}
             </Typography>
           )}
-          <Divider sx={{ my: 2 }} />
-          {loading ? (
-            <Box display="flex" justifyContent="center"><CircularProgress /></Box>
-          ) : error ? (
-            <Typography color="error">Failed to load subarea data.</Typography>
-          ) : (
-            <>
-              <Typography variant="subtitle2" sx={{ mt: 2 }}>Indicators</Typography>
-              <Box>
-                {indicators.length === 0 ? (
-                  <Typography>No indicators found for this subarea.</Typography>
-                ) : (
-                  indicators.map((indicator: any) => (
-                    <IndicatorListItem
-                      key={indicator.id}
-                      indicator={indicator}
-                      isAggregated={(indicator.dimensions || []).includes(selectedDimension)}
-                      highlightedDimensionValue={null}
-                      selectedDimension={selectedDimension}
-                      hasHighlightedDimensionValue={false} // Simplified since we're not pre-fetching dimension data
-                      subareaId={subareaId}
-                      comprehensiveData={{ aggregatedData, dimensionMetadata }} // Pass subarea data to avoid API calls
-                    />
-                  ))
-                )}
-              </Box>
-            </>
-          )}
+        </Box>
+
+        {/* Time Series Section */}
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <SubareaTimeSeriesChart 
+            timeSeriesData={timeSeriesData || []}
+            indicators={indicators}
+            indicatorTimeSeriesData={indicatorTimeSeriesData}
+          />
         </Paper>
-      </Container>
+
+        {/* Indicators Section */}
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Indicators ({indicators.length})
+          </Typography>
+          <Box>
+            {indicators.map((indicator: any) => (
+              <Box key={indicator.id} sx={{ mb: 2 }}>
+                <IndicatorListItem
+                  indicator={indicator}
+                  selectedDimension={selectedDimension}
+                  comprehensiveData={{
+                    dimensionMetadata,
+                    aggregatedData,
+                    indicatorTimeSeriesData
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </Paper>
+      </Box>
+
+      {/* Individual Indicator Modal */}
+      {/* The IndividualIndicatorModal component is now rendered within IndicatorListItem */}
     </Box>
   );
 } 

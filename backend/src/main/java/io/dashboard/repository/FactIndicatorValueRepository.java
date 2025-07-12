@@ -140,7 +140,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "WHERE si.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoadingGenerics(@Param("subareaId") Long subareaId);
 
-    @Query("SELECT f FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
+    @Query("SELECT f FROM FactIndicatorValue f LEFT JOIN FETCH f.time LEFT JOIN FETCH f.location LEFT JOIN FETCH f.generics WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
     List<FactIndicatorValue> findByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
 
     // Count by indicator and subarea
