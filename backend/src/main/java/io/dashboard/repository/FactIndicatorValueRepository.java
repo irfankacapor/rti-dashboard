@@ -142,4 +142,24 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
 
     @Query("SELECT f FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
     List<FactIndicatorValue> findByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
+
+    // Count by indicator and subarea
+    long countByIndicatorIdAndSubareaId(Long indicatorId, Long subareaId);
+    
+    // Find distinct dimension types for a given indicator and subarea
+    @Query(value = 
+        "SELECT 'time' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND subarea_id = :subareaId AND time_id IS NOT NULL) " +
+        "UNION ALL " +
+        "SELECT 'location' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND subarea_id = :subareaId AND location_id IS NOT NULL) " +
+        "UNION ALL " +
+        "SELECT g.dimension_name AS dimension " +
+        "FROM fact_indicator_value_generic j " +
+        "JOIN fact_indicator_values f ON j.fact_indicator_value_id = f.id " +
+        "JOIN dim_generic g ON j.generic_id = g.id " +
+        "WHERE f.indicator_id = :indicatorId AND f.subarea_id = :subareaId " +
+        "GROUP BY g.dimension_name",
+        nativeQuery = true)
+    List<String> findDimensionsByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
 } 
