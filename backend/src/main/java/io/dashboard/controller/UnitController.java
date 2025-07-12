@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.annotation.Secured;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,8 +23,8 @@ public class UnitController {
 
     @GetMapping("/units")
     @PermitAll
-    public List<UnitResponse> getAllUnits() {
-        return unitService.findAll();
+    public Map<String, List<UnitResponse>> getAllUnitsGrouped() {
+        return unitService.findAllGrouped();
     }
 
     @GetMapping("/units/{id}")

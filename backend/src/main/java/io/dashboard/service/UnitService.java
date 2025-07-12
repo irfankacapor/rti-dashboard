@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +22,14 @@ public class UnitService {
 
     public List<UnitResponse> findAll() {
         return unitRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    public Map<String, List<UnitResponse>> findAllGrouped() {
+        return unitRepository.findAll().stream()
+            .collect(Collectors.groupingBy(
+                u -> u.getGroup() != null ? u.getGroup() : "Other",
+                Collectors.mapping(this::toResponse, Collectors.toList())
+            ));
     }
 
     public UnitResponse findById(Long id) {
