@@ -32,6 +32,10 @@ public class Unit {
     @Column
     private String description;
     
+    @Size(max = 255, message = "Unit group must not exceed 255 characters")
+    @Column(name = "unit_group", length = 255)
+    private String group;
+    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
