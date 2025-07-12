@@ -1,7 +1,6 @@
 package io.dashboard.controller;
 
 import io.dashboard.dto.*;
-import io.dashboard.model.ImpactDirection;
 import io.dashboard.service.GoalIndicatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

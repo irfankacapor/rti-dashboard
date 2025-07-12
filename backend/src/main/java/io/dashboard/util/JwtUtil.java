@@ -1,7 +1,6 @@
 package io.dashboard.util;
 
 import io.dashboard.model.User;
-import io.dashboard.model.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

@@ -1,7 +1,6 @@
 package io.dashboard.dto;
 
 import java.util.List;
-import io.dashboard.dto.IndicatorProgressItem;
 
 public class GoalProgressResponse {
     // Old fields for compatibility

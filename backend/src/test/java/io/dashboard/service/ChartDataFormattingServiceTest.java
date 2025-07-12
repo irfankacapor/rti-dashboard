@@ -14,8 +14,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.dashboard.service.ChartData;
-
 class ChartDataFormattingServiceTest {
 
     private ChartDataFormattingService service;

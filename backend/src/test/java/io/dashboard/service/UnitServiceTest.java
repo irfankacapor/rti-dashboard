@@ -5,7 +5,6 @@ import io.dashboard.dto.UnitResponse;
 import io.dashboard.dto.UnitUpdateRequest;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
-import io.dashboard.model.Indicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.UnitRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 

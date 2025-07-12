@@ -1,7 +1,6 @@
 package io.dashboard.model;
 
 import jakarta.persistence.*;
-import io.dashboard.model.WidgetType;
 
 @Entity
 public class DashboardWidget {

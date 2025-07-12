@@ -8,7 +8,6 @@ import io.dashboard.dto.IndicatorValue;
 import io.dashboard.model.DimGeneric;
 import io.dashboard.model.DimLocation;
 import io.dashboard.model.DimTime;
-import io.dashboard.model.Direction;
 import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;
@@ -25,8 +24,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

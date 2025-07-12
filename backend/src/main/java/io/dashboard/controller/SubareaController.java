@@ -15,7 +15,6 @@ import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 import java.util.Map;
-import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.dto.IndicatorValuesResponse;
 
 @RestController

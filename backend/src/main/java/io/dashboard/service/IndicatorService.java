@@ -10,7 +10,6 @@ import io.dashboard.dto.UnitResponse;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.DataType;
-import io.dashboard.model.Direction;
 import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;

@@ -4,8 +4,6 @@ import io.dashboard.dto.GoalCreateRequest;
 import io.dashboard.dto.GoalResponse;
 import io.dashboard.dto.GoalTargetResponse;
 import io.dashboard.dto.GoalUpdateRequest;
-import io.dashboard.model.Goal;
-import io.dashboard.model.GoalGroup;
 import io.dashboard.service.GoalService;
 import io.dashboard.service.GoalTargetService;
 import lombok.RequiredArgsConstructor;

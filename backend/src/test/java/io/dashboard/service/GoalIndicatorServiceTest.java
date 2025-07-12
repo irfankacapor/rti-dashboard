@@ -2,7 +2,6 @@ package io.dashboard.service;
 
 import io.dashboard.dto.GoalIndicatorLinkRequest;
 import io.dashboard.dto.GoalProgressResponse;
-import io.dashboard.dto.IndicatorProgressItem;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
@@ -23,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;

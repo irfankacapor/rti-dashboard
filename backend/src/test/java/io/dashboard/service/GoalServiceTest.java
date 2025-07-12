@@ -8,7 +8,6 @@ import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalGroup;
 import io.dashboard.model.GoalIndicator;
-import io.dashboard.model.ImpactDirection;
 import io.dashboard.repository.GoalGroupRepository;
 import io.dashboard.repository.GoalIndicatorRepository;
 import io.dashboard.repository.GoalRepository;
