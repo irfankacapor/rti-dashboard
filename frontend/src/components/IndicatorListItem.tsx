@@ -27,12 +27,6 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  // Debug: log indicator and its direction
-  React.useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('Indicator in IndicatorListItem:', indicator, 'direction:', indicator.direction);
-  }, [indicator]);
-
   const normalizedDirection = (indicator.direction || '').toLowerCase();
 
   return (
