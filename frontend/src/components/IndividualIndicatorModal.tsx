@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Box, Typography, IconButton, ToggleButton, ToggleButtonGroup, MenuItem, Select, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Paper, FormControl, Stack, Grid, useMediaQuery, useTheme, Fade } from '@mui/material';
+import { Modal, Box, Typography, IconButton, ToggleButton, ToggleButtonGroup, MenuItem, Select, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Paper, FormControl, Stack, Grid, useMediaQuery, useTheme, Fade, Collapse } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import IndividualIndicatorChart from './charts/IndividualIndicatorChart';
 import { useIndicatorData, useIndicatorDimensionValues } from '../hooks/useApi';
@@ -12,6 +12,8 @@ import {
   AggregationType
 } from '../utils/chartDataProcessor';
 import { IndicatorChartData } from '../types/indicators';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 interface IndividualIndicatorModalProps {
   open: boolean;
@@ -50,6 +52,51 @@ const AGGREGATION_OPTIONS: { label: string; value: AggregationType }[] = [
   { label: 'Count', value: 'count' },
 ];
 
+// Helper to group raw data by dimension value
+function groupRawDataByDimension(indicatorValues: any[], selectedDimension: string): Record<string, number[]> {
+  const groups: Record<string, number[]> = {};
+  indicatorValues.forEach((item: any) => {
+    let dimValue = '';
+    if (["time", "year", "month", "day", "timestamp"].includes(selectedDimension) && (item.year || item.month || item.day || item.timeValue || item.timestamp)) {
+      dimValue = item.year || item.month || item.day || item.timeValue || item.timestamp;
+    } else if (selectedDimension === "location" && item.locationValue) {
+      dimValue = item.locationValue;
+    } else if (item[selectedDimension] !== undefined) {
+      dimValue = item[selectedDimension];
+    } else if (item.customDimensions && item.customDimensions[selectedDimension]) {
+      dimValue = item.customDimensions[selectedDimension];
+    }
+    if (!dimValue) return;
+    if (!groups[dimValue]) groups[dimValue] = [];
+    groups[dimValue].push(item.value);
+  });
+  return groups;
+}
+
+// Helper to aggregate values
+function aggregateValues(values: number[], aggregationType: string): number | null {
+  if (!values || values.length === 0) return null;
+  switch (aggregationType) {
+    case 'sum':
+      return values.reduce((a, b) => a + b, 0);
+    case 'average':
+      return values.reduce((a, b) => a + b, 0) / values.length;
+    case 'min':
+      return Math.min(...values);
+    case 'max':
+      return Math.max(...values);
+    case 'median': {
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+    case 'count':
+      return values.length;
+    default:
+      return values.reduce((a, b) => a + b, 0);
+  }
+}
+
 const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ 
   open, 
   onClose, 
@@ -67,6 +114,7 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
   const [aggregationType, setAggregationType] = useState<AggregationType>('sum');
   const [showAggregation, setShowAggregation] = useState(false);
   const aggregationTypePerDimension = useRef<{ [dim: string]: AggregationType }>({});
+  const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
   
   // Use subarea data if available, otherwise fall back to API calls
   const useSubareaData = comprehensiveData && comprehensiveData.dimensionMetadata && comprehensiveData.dimensionMetadata[indicatorId];
@@ -424,57 +472,79 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
               })()
             )}
             {viewMode === 'table' && (
-              indicatorDataPoints?.originalDataPoints && indicatorDataPoints.originalDataPoints.length > 0 ? (
-                <Paper sx={{ mt: 2, maxHeight: 400, overflow: 'auto' }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Timestamp</TableCell>
-                        <TableCell>Value</TableCell>
-                        {availableDimensions.filter((dim: string) => dim !== 'time').map((dim: string) => (
-                          <TableCell key={dim}>{dim.charAt(0).toUpperCase() + dim.slice(1)}</TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {indicatorDataPoints.originalDataPoints.map((row: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell>{row.timestamp || 'N/A'}</TableCell>
-                          <TableCell>{row.value?.toFixed(2) || 'N/A'}</TableCell>
-                          {availableDimensions.filter((dim: string) => dim !== 'time').map((dim: string) => (
-                            <TableCell key={dim}>
-                              {row.dimensions && row.dimensions[dim] ? row.dimensions[dim] : 'N/A'}
-                            </TableCell>
-                          ))}
+              (() => {
+                // Group raw data by dimension value
+                const groups: Record<string, number[]> = groupRawDataByDimension(indicatorValues, selectedDimension);
+                const groupKeys: string[] = Object.keys(groups).sort((a, b) => {
+                  const aNum = parseInt(a, 10);
+                  const bNum = parseInt(b, 10);
+                  if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+                  return a.localeCompare(b);
+                });
+                const toggleRow = (key: string) => setOpenRows((prev) => ({ ...prev, [key]: !prev[key] }));
+                // Table headers
+                const dimLabel = selectedDimension.charAt(0).toUpperCase() + selectedDimension.slice(1);
+                const aggLabel = aggregationType && aggregationType !== 'sum' ? `Value (${aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1)})` : 'Value';
+                return (
+                  <Paper sx={{ mt: 2, maxHeight: 400, overflow: 'auto' }}>
+                    <Table size="small" aria-label="Indicator values table">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>{dimLabel}</TableCell>
+                          <TableCell>{aggLabel}</TableCell>
+                          <TableCell>Raw Value(s)</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Paper>
-              ) : chartData.length > 0 ? (
-                <Paper sx={{ mt: 2, maxHeight: 400, overflow: 'auto' }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{displayLabel}</TableCell>
-                        <TableCell>Value</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {chartData.map((row, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{row.label}</TableCell>
-                          <TableCell>{row.value?.toFixed(2) || 'N/A'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Paper>
-              ) : (
-                <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-                  No data available for this indicator.
-                </Typography>
-              )
+                      </TableHead>
+                      <TableBody>
+                        {groupKeys.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} align="center">No data available for this indicator.</TableCell>
+                          </TableRow>
+                        )}
+                        {groupKeys.map((key: string) => {
+                          const values = groups[key];
+                          const showExpand = values.length > 1;
+                          return (
+                            <React.Fragment key={key}>
+                              <TableRow>
+                                <TableCell>{key}</TableCell>
+                                <TableCell>{aggregateValues(values, aggregationType)?.toFixed(2)}</TableCell>
+                                <TableCell>
+                                  {showExpand ? (
+                                    <>
+                                      <IconButton size="small" onClick={() => toggleRow(key)} aria-label={openRows[key] ? 'Collapse' : 'Expand'}>
+                                        {openRows[key] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                                      </IconButton>
+                                    </>
+                                  ) : (
+                                    values[0]?.toFixed(2)
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                              {showExpand && (
+                                <TableRow>
+                                  <TableCell colSpan={3} sx={{ p: 0, border: 0 }}>
+                                    <Collapse in={openRows[key]} timeout="auto" unmountOnExit>
+                                      <Box sx={{ margin: 1 }}>
+                                        <Typography variant="body2" color="text.secondary">Raw Values:</Typography>
+                                        <ul style={{ margin: 0, paddingLeft: 16 }}>
+                                          {values.map((v: number, idx: number) => (
+                                            <li key={idx}>{v.toFixed(2)}</li>
+                                          ))}
+                                        </ul>
+                                      </Box>
+                                    </Collapse>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </Paper>
+                );
+              })()
             )}
           </>
         )}
