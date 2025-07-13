@@ -202,6 +202,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     output: dirtyIndicators.filter(i => i.direction === 'output').length,
     assigned: dirtyIndicators.filter(i => i.subareaId).length,
     unassigned: dirtyIndicators.filter(i => !i.subareaId).length,
+    missingUnits: dirtyIndicators.filter(i => !i.unitId).length,
   };
 
   if (isLoadingIndicators) {
@@ -279,6 +280,16 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
               </Typography>
             </Box>
           </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Box textAlign="center">
+              <Typography variant="h4" color={stats.missingUnits > 0 ? "error" : "success.main"}>
+                {stats.missingUnits}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Missing Units
+              </Typography>
+            </Box>
+          </Grid>
         </Grid>
 
         {stats.unassigned > 0 && (
@@ -311,6 +322,19 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           onBulkDelete={handleBulkDelete}
           onBulkDeleteWithData={handleBulkDeleteWithData}
         />
+      )}
+
+      {/* Unit warning */}
+      {stats.missingUnits > 0 && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Units Required
+          </Typography>
+          <Typography variant="body2">
+            {stats.missingUnits} indicator{stats.missingUnits === 1 ? '' : 's'} {stats.missingUnits === 1 ? 'is' : 'are'} missing a unit. 
+            Please set all units before proceeding to the next step. Units are required for proper data visualization and analysis.
+          </Typography>
+        </Alert>
       )}
 
       {/* Indicators table */}

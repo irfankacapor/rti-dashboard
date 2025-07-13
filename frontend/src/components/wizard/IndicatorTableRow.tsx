@@ -188,7 +188,9 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         />
       </TableCell>
       <TableCell>
-        <Button onClick={onOpenUnitPicker}>PICK</Button>
+        <Typography variant="body2" color="text.secondary">
+          Unit can be set outside of edit mode
+        </Typography>
       </TableCell>
       <TableCell>
         <TextField
@@ -341,9 +343,32 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         </Typography>
       </TableCell>
       <TableCell>
-        <Typography variant="body2">
-          {formatUnitDisplay(indicator)}
-        </Typography>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography 
+            variant="body2" 
+            color={!indicator.unitId ? 'error' : 'inherit'}
+            sx={{ 
+              flex: 1,
+              fontStyle: !indicator.unitId ? 'italic' : 'normal'
+            }}
+          >
+            {formatUnitDisplay(indicator)}
+          </Typography>
+          <Button
+            size="small"
+            variant={!indicator.unitId ? "contained" : "outlined"}
+            color={!indicator.unitId ? "error" : "primary"}
+            onClick={onOpenUnitPicker}
+            sx={{ 
+              minWidth: 'auto', 
+              px: 1,
+              py: 0.5,
+              fontSize: '0.75rem'
+            }}
+          >
+            {!indicator.unitId ? 'SET' : 'CHANGE'}
+          </Button>
+        </Box>
       </TableCell>
       <TableCell>
         <Typography variant="body2">

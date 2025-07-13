@@ -688,6 +688,10 @@ export const useWizardStore = create<WizardState>()(
             errors.push(`Indicator "${i.name}" must have a name at least 3 characters long`);
             return false;
           }
+          if (!i.unitId) {
+            errors.push(`Indicator "${i.name}" must have a unit selected`);
+            return false;
+          }
           return true;
         });
         return { isValid, errors };
