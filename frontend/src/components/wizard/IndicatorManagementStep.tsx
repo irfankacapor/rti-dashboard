@@ -300,6 +300,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       </Paper>
 
       {/* Validation errors */}
+      {/*
       {!validation.isValid && validation.errors.length > 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="subtitle2" gutterBottom>
@@ -312,6 +313,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           </ul>
         </Alert>
       )}
+      */}
 
       {/* Bulk actions */}
       {selectedIds.length > 0 && (
