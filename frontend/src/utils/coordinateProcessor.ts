@@ -54,7 +54,25 @@ const findDimensionValueForCell = (
   csvData: string[][]
 ): string => {
   const { selection, dimensionType } = dimensionMapping;
-  
+
+  // Special handling for indicator_names: if mapping is a single cell, always return that cell's value
+  if (dimensionType === 'indicator_names') {
+    const isSingleCell =
+      selection.startRow === selection.endRow && selection.startCol === selection.endCol;
+    if (isSingleCell) {
+      return csvData[selection.startRow][selection.startCol];
+    }
+    // If it's a row (single row, multiple columns)
+    if (selection.startRow === selection.endRow) {
+      return csvData[selection.startRow][valueCol];
+    }
+    // If it's a column (single column, multiple rows)
+    if (selection.startCol === selection.endCol) {
+      return csvData[valueRow][selection.startCol];
+    }
+    // If it's a rectangle, fall through to default logic below
+  }
+
   // Special handling for additional_dimension: always return value from mapped column(s) in the same row
   if (dimensionType === 'additional_dimension') {
     for (let col = selection.startCol; col <= selection.endCol; col++) {
