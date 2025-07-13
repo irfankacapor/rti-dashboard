@@ -16,6 +16,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { SubareaData } from '@/types/subareas';
 import { IndicatorValue } from '@/types/csvProcessing';
+import { Dimension } from '@/types/dimensions';
 
 interface IndividualIndicatorModalProps {
   open: boolean;
@@ -128,31 +129,36 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
   );
 
   // Get all available dimensions robustly
-  const availableDimensions: string[] = React.useMemo(() => {
+  const availableDimensions: Dimension[] = React.useMemo(() => {
     if (useSubareaData) {
       const metadata = comprehensiveData.dimensionMetadata[indicatorId];
       if (metadata && metadata.availableDimensions) {
-        return metadata.availableDimensions.map((dim: any) => dim.type);
+        return metadata.availableDimensions;
       }
     } else if (dimensionMeta && dimensionMeta.availableDimensions) {
-      // Extract the 'type' field from each dimension info object
-      return dimensionMeta.availableDimensions.map((dim: any) => dim.type);
+      // Return full dimension objects
+      return dimensionMeta.availableDimensions;
     }
-    return ['time'];
+    return [{ type: 'time', displayName: 'Time', values: [] }];
   }, [useSubareaData, comprehensiveData, indicatorId, dimensionMeta]);
+
+  // Extract dimension types for compatibility
+  const availableDimensionTypes: string[] = React.useMemo(() => {
+    return availableDimensions.map(dim => dim.type);
+  }, [availableDimensions]);
 
   // Determine the default dimension (prefer 'time', else first available)
   const defaultDimension = React.useMemo(() => {
-    if (availableDimensions.includes('time')) return 'time';
-    return availableDimensions[0] || 'time';
-  }, [availableDimensions]);
+    if (availableDimensionTypes.includes('time')) return 'time';
+    return availableDimensionTypes[0] || 'time';
+  }, [availableDimensionTypes]);
 
   // Set default dimension on load
   useEffect(() => {
-    if (availableDimensions.length > 0 && !selectedDimension) {
+    if (availableDimensionTypes.length > 0 && !selectedDimension) {
       setSelectedDimension(defaultDimension);
     }
-  }, [availableDimensions, selectedDimension, defaultDimension]);
+  }, [availableDimensionTypes, selectedDimension, defaultDimension]);
 
   // Use subarea data for aggregated data if available
   const aggregatedData = useSubareaData ? comprehensiveData.aggregatedData : {};
@@ -163,7 +169,7 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
     timeRange,
     selectedDimension,
     defaultDimension,
-    availableDimensions,
+    availableDimensionTypes,
     useSubareaData ? undefined : subareaId
   );
 
@@ -393,8 +399,8 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
                 inputProps={{ 'aria-label': 'Select dimension' }}
               >
                 {availableDimensions.map((dim) => (
-                  <MenuItem key={dim} value={dim} aria-label={dim}>
-                    {dim.charAt(0).toUpperCase() + dim.slice(1)}
+                  <MenuItem key={dim.type} value={dim.type} aria-label={dim.displayName}>
+                    {dim.displayName}
                   </MenuItem>
                 ))}
               </Select>
