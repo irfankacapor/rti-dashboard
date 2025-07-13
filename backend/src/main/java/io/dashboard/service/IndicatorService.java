@@ -20,7 +20,7 @@ import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
-import io.dashboard.repository.UnitRepository;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +57,6 @@ import java.util.Optional;
 @Slf4j
 public class IndicatorService {
     private final IndicatorRepository indicatorRepository;
-    private final UnitRepository unitRepository;
     private final DataTypeRepository dataTypeRepository;
     private final SubareaRepository subareaRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
@@ -93,12 +92,9 @@ public class IndicatorService {
         indicator.setName(request.getName());
         indicator.setDescription(request.getDescription());
         indicator.setIsComposite(request.getIsComposite());
-        
-        if (request.getUnitId() != null) {
-            Unit unit = unitRepository.findById(request.getUnitId())
-                    .orElseThrow(() -> new BadRequestException("Unit does not exist"));
-            indicator.setUnit(unit);
-        }
+        indicator.setUnit(request.getUnit());
+        indicator.setUnitPrefix(request.getUnitPrefix());
+        indicator.setUnitSuffix(request.getUnitSuffix());
         
         if (request.getDataTypeId() != null) {
             DataType dataType = dataTypeRepository.findById(request.getDataTypeId())
@@ -118,14 +114,9 @@ public class IndicatorService {
         indicator.setName(request.getName());
         indicator.setDescription(request.getDescription());
         indicator.setIsComposite(request.getIsComposite());
-        
-        if (request.getUnitId() != null) {
-            Unit unit = unitRepository.findById(request.getUnitId())
-                    .orElseThrow(() -> new BadRequestException("Unit does not exist"));
-            indicator.setUnit(unit);
-        } else {
-            indicator.setUnit(null);
-        }
+        indicator.setUnit(request.getUnit());
+        indicator.setUnitPrefix(request.getUnitPrefix());
+        indicator.setUnitSuffix(request.getUnitSuffix());
         
         if (request.getDataTypeId() != null) {
             DataType dataType = dataTypeRepository.findById(request.getDataTypeId())
@@ -136,6 +127,37 @@ public class IndicatorService {
         }
         
         Indicator saved = indicatorRepository.save(indicator);
+        
+        // Handle subarea relationship if provided
+        if (request.getSubareaId() != null) {
+            // Remove existing relationships first
+            List<SubareaIndicator> existingRelationships = subareaIndicatorRepository.findByIndicatorId(id);
+            subareaIndicatorRepository.deleteAll(existingRelationships);
+            
+            // Create new relationship
+            Subarea subarea = subareaRepository.findById(request.getSubareaId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", request.getSubareaId()));
+            
+            SubareaIndicator subareaIndicator = new SubareaIndicator();
+            SubareaIndicator.SubareaIndicatorId subareaIndicatorId = new SubareaIndicator.SubareaIndicatorId();
+            subareaIndicatorId.setSubareaId(request.getSubareaId());
+            subareaIndicatorId.setIndicatorId(id);
+            subareaIndicator.setId(subareaIndicatorId);
+            subareaIndicator.setSubarea(subarea);
+            subareaIndicator.setIndicator(saved);
+            subareaIndicator.setDirection(request.getDirection() != null ? 
+                io.dashboard.model.Direction.valueOf(request.getDirection().toUpperCase()) : 
+                io.dashboard.model.Direction.INPUT);
+            subareaIndicator.setAggregationWeight(request.getAggregationWeight() != null ? 
+                request.getAggregationWeight() : 1.0);
+            
+            subareaIndicatorRepository.save(subareaIndicator);
+        } else {
+            // If subareaId is null, remove all existing relationships
+            List<SubareaIndicator> existingRelationships = subareaIndicatorRepository.findByIndicatorId(id);
+            subareaIndicatorRepository.deleteAll(existingRelationships);
+        }
+        
         return toResponse(saved);
     }
 
@@ -225,15 +247,9 @@ public class IndicatorService {
         resp.setDescription(indicator.getDescription());
         resp.setIsComposite(indicator.getIsComposite());
         resp.setCreatedAt(indicator.getCreatedAt());
-        
-        // Set unit
-        if (indicator.getUnit() != null) {
-            UnitResponse unitResp = new UnitResponse();
-            unitResp.setId(indicator.getUnit().getId());
-            unitResp.setCode(indicator.getUnit().getCode());
-            unitResp.setDescription(indicator.getUnit().getDescription());
-            resp.setUnit(unitResp);
-        }
+        resp.setUnit(indicator.getUnit());
+        resp.setUnitPrefix(indicator.getUnitPrefix());
+        resp.setUnitSuffix(indicator.getUnitSuffix());
         
         // Set data type
         if (indicator.getDataType() != null) {
@@ -275,15 +291,9 @@ public class IndicatorService {
         resp.setDescription(indicator.getDescription());
         resp.setIsComposite(indicator.getIsComposite());
         resp.setCreatedAt(indicator.getCreatedAt());
-        
-        // Set unit
-        if (indicator.getUnit() != null) {
-            UnitResponse unitResp = new UnitResponse();
-            unitResp.setId(indicator.getUnit().getId());
-            unitResp.setCode(indicator.getUnit().getCode());
-            unitResp.setDescription(indicator.getUnit().getDescription());
-            resp.setUnit(unitResp);
-        }
+        resp.setUnit(indicator.getUnit());
+        resp.setUnitPrefix(indicator.getUnitPrefix());
+        resp.setUnitSuffix(indicator.getUnitSuffix());
         
         // Set data type
         if (indicator.getDataType() != null) {
@@ -738,7 +748,7 @@ public class IndicatorService {
             return IndicatorChartResponse.builder()
                     .indicatorId(String.valueOf(indicatorId))
                     .indicatorName(indicator.getName())
-                    .unit(indicator.getUnit() != null ? indicator.getUnit().getCode() : null)
+                    .unit(constructUnitString(indicator))
                     .aggregationType(aggregateBy)
                     .dataPoints(dataPoints)
                     .availableDimensions(availableDimensions)
@@ -747,6 +757,17 @@ public class IndicatorService {
             log.error("Error in getIndicatorChart: {}", e.getMessage(), e);
             throw new BadRequestException("Chart aggregation failed: " + e.getMessage());
         }
+    }
+
+    private String constructUnitString(Indicator indicator) {
+        String unitString = "";
+        if (indicator.getUnitPrefix() != null) {
+            unitString += indicator.getUnitPrefix() + " ";
+        }
+        if (indicator.getUnitSuffix() != null) {
+            unitString += indicator.getUnitSuffix();
+        }
+        return unitString.trim().isEmpty() ? null : unitString.trim();
     }
 
     public IndicatorDimensionsResponse getIndicatorDimensions(Long indicatorId) {

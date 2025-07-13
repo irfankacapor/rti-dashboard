@@ -25,8 +25,6 @@ public class FactValueResponse {
     private Long genericId;
     private String genericValue;
     private BigDecimal value;
-    private Long unitId;
-    private String unitName;
     private Double confidenceScore;
     private Boolean isAggregated;
     private String sourceFile;

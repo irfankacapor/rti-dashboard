@@ -52,6 +52,14 @@ const SubareaDeleteWarningModal: React.FC<SubareaDeleteWarningModalProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const formatUnitDisplay = (indicator: ManagedIndicator) => {
+    const parts = [];
+    if (indicator.unitPrefix) parts.push(indicator.unitPrefix);
+    if (indicator.unit) parts.push(indicator.unit);
+    if (indicator.unitSuffix) parts.push(indicator.unitSuffix);
+    return parts.length > 0 ? parts.join(' ') : 'N/A';
+  };
+
   const handleDelete = async (withData: boolean = false) => {
     // Only require confirmation text if there are related indicators
     if (relatedIndicators.length > 0 && confirmationText !== 'CONFIRM DELETE') {
@@ -122,7 +130,7 @@ const SubareaDeleteWarningModal: React.FC<SubareaDeleteWarningModalProps> = ({
                     <ListItem>
                       <ListItemText
                         primary={indicator.name}
-                        secondary={`${indicator.description || 'No description'} • Unit: ${indicator.unit || 'N/A'}`}
+                        secondary={`${indicator.description || 'No description'} • Unit: ${formatUnitDisplay(indicator)}`}
                       />
                     </ListItem>
                     {index < relatedIndicators.length - 1 && <Divider />}

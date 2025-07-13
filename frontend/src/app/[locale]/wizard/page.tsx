@@ -14,7 +14,7 @@ import Snackbar from '@mui/material/Snackbar';
 
 export default function WizardPage() {
   const { currentStep, setStepValid, setStepCompleted, nextStep, steps, setCurrentStep } = useStepperStore();
-  const { dirtyAreas, dirtySubareas, saveStep, hasUnsavedChanges, isSaving } = useAreaStore();
+  const { dirtyAreas, dirtySubareas, saveStep, hasUnsavedChanges, isSaving, dirtyIndicators } = useAreaStore();
 
   // Only user-created areas (not default)
   const userAreas = dirtyAreas.filter(a => !a.isDefault);
@@ -103,9 +103,8 @@ export default function WizardPage() {
     }
     
     if (currentStep === 4) {
-      // Step 4 requires at least one indicator
-      // This will be handled by the IndicatorManagementStep component
-      return false;
+      // Step 4 requires at least one indicator and all must have a unit
+      return dirtyIndicators.length === 0 || dirtyIndicators.some(i => !i.unit);
     }
     
     return false;

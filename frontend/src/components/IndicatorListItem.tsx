@@ -29,6 +29,14 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
 
   const normalizedDirection = (indicator.direction || '').toLowerCase();
 
+  const formatUnitDisplay = (indicator: any) => {
+    const parts = [];
+    if (indicator.unitPrefix) parts.push(indicator.unitPrefix);
+    if (indicator.unit) parts.push(indicator.unit);
+    if (indicator.unitSuffix) parts.push(indicator.unitSuffix);
+    return parts.length > 0 ? parts.join(' ') : '';
+  };
+
   return (
     <>
       <Box
@@ -55,7 +63,7 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
         </Tooltip>
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <Typography variant="body1" sx={{ flex: 1 }}>{indicator.name}</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>{indicator.unit}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>{formatUnitDisplay(indicator)}</Typography>
           {hasHighlightedDimensionValue && highlightedDimensionValue && selectedDimension && (
             <Typography variant="caption" color="secondary" sx={{ ml: 2 }}>
               {selectedDimension}: {highlightedDimensionValue}

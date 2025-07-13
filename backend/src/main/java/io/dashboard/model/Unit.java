@@ -6,17 +6,17 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "units")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Unit {
     
     @Id
@@ -39,7 +39,4 @@ public class Unit {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
-    @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Indicator> indicators = new ArrayList<>();
 } 

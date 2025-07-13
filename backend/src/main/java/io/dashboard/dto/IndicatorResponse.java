@@ -12,7 +12,7 @@ public class IndicatorResponse {
     private String description;
     private Boolean isComposite;
     private LocalDateTime createdAt;
-    private UnitResponse unit;
+    private String unit;
     private DataTypeResponse dataType;
     private List<SubareaIndicatorResponse> subareaIndicators;
     private Long valueCount;
@@ -20,4 +20,6 @@ public class IndicatorResponse {
     private Long subareaId;
     private String subareaName;
     private String direction;
+    private String unitPrefix;
+    private String unitSuffix;
 } 

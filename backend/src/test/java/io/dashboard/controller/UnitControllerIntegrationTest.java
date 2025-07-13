@@ -148,24 +148,4 @@ class UnitControllerIntegrationTest {
         
         assertThat(unitRepository.findById(unit.getId())).isEmpty();
     }
-
-    @Test
-    void deleteUnit_shouldReturn400_whenHasIndicators() throws Exception {
-        Unit unit = new Unit();
-        unit.setCode("UNIT1");
-        unit.setDescription("Test Unit");
-        unit = unitRepository.save(unit);
-        
-        // Add an indicator
-        Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
-        indicator.setIsComposite(false);
-        indicator.setUnit(unit);
-        indicatorRepository.save(indicator);
-        
-        mockMvc.perform(delete("/api/v1/units/" + unit.getId()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
-    }
 } 

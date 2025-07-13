@@ -42,6 +42,7 @@ interface IndicatorTableRowProps {
   onDeleteWithData?: () => void;
   isSaving: boolean;
   onEditValues?: (indicatorId: string) => void;
+  onOpenUnitPicker: () => void;
 }
 
 export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
@@ -57,12 +58,15 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
   onDeleteWithData,
   isSaving,
   onEditValues,
+  onOpenUnitPicker,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState<IndicatorFormData>({
     name: indicator.name,
     description: indicator.description || '',
     unit: indicator.unit || '',
+    unitPrefix: indicator.unitPrefix || '',
+    unitSuffix: indicator.unitSuffix || '',
     source: indicator.source || '',
     dataType: indicator.dataType || 'decimal',
     subareaId: indicator.subareaId || '',
@@ -76,6 +80,8 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         name: indicator.name,
         description: indicator.description || '',
         unit: indicator.unit || '',
+        unitPrefix: indicator.unitPrefix || '',
+        unitSuffix: indicator.unitSuffix || '',
         source: indicator.source || '',
         dataType: indicator.dataType || 'decimal',
         subareaId: indicator.subareaId || '',
@@ -130,6 +136,14 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
     }
   };
 
+  const formatUnitDisplay = (indicator: ManagedIndicator) => {
+    const parts = [];
+    if (indicator.unitPrefix) parts.push(indicator.unitPrefix);
+    if (indicator.unit) parts.push(indicator.unit);
+    if (indicator.unitSuffix) parts.push(indicator.unitSuffix);
+    return parts.length > 0 ? parts.join(' ') : '-';
+  };
+
   const editingRow = (
     <TableRow>
       <TableCell padding="checkbox">
@@ -161,13 +175,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         />
       </TableCell>
       <TableCell>
-        <TextField
-          value={formData.unit}
-          onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-          size="small"
-          fullWidth
-          sx={{ height: 40 }}
-        />
+        <Button onClick={onOpenUnitPicker}>PICK</Button>
       </TableCell>
       <TableCell>
         <TextField
@@ -244,23 +252,47 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
       </TableCell>
       <TableCell>
         <Box display="flex" gap={0.5}>
-          <Tooltip title="Save">
+          {isEditing ? (
+            <>
+              <Tooltip title="Save">
+                <IconButton
+                  size="small"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  color="primary"
+                >
+                  <SaveIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Cancel">
+                <IconButton
+                  size="small"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  <CancelIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : (
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={onEdit}
+                disabled={isSaving}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Delete">
             <IconButton
               size="small"
-              onClick={handleSave}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isSaving}
-              color="primary"
+              color="error"
             >
-              <SaveIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Cancel">
-            <IconButton
-              size="small"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              <CancelIcon />
+              <DeleteIcon />
             </IconButton>
           </Tooltip>
         </Box>
@@ -297,7 +329,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
       </TableCell>
       <TableCell>
         <Typography variant="body2">
-          {indicator.unit || '-'}
+          {formatUnitDisplay(indicator)}
         </Typography>
       </TableCell>
       <TableCell>

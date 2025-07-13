@@ -20,7 +20,9 @@ export const indicatorManagementService = {
       name: item.name,
       description: item.description,
       code: item.code,
-      unit: item.unit?.code || '',
+      unit: item.unit || '',
+      unitPrefix: item.unitPrefix || '',
+      unitSuffix: item.unitSuffix || '',
       source: item.source || '',
       dataType: item.dataType?.code || 'decimal',
       subareaId: item.subareaId?.toString() || '',
@@ -56,8 +58,14 @@ export const indicatorManagementService = {
       name: indicator.name,
       description: indicator.description,
       isComposite: false,
-      unitId: null, // Would need to be mapped from unit string to ID
-      dataTypeId: null, // Would need to be mapped from dataType string to ID
+      unit: indicator.unit || null,
+      unitPrefix: indicator.unitPrefix || null,
+      unitSuffix: indicator.unitSuffix || null,
+      dataType: indicator.dataType || null,
+      source: indicator.source || null,
+      subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
+      direction: indicator.direction ? indicator.direction.toUpperCase() : 'INPUT',
+      aggregationWeight: indicator.aggregationWeight || 1.0,
     };
 
     const response = await fetch(`${API_BASE}/indicators`, {
@@ -72,15 +80,19 @@ export const indicatorManagementService = {
     return response.json();
   },
 
-  // Update indicator - only updates basic indicator fields
+  // Update indicator - now supports unit, unitPrefix, and unitSuffix
   updateIndicator: async (id: string, updates: Partial<ManagedIndicator>): Promise<ManagedIndicator> => {
-    // Extract only the fields that the backend IndicatorUpdateRequest supports
     const backendUpdate = {
       name: updates.name,
       description: updates.description,
-      isComposite: false, // Default value since frontend doesn't manage this
-      unitId: null, // Would need to be mapped from unit string to ID
-      dataTypeId: null, // Would need to be mapped from dataType string to ID
+      isComposite: false,
+      unit: updates.unit || null,
+      unitPrefix: updates.unitPrefix || null,
+      unitSuffix: updates.unitSuffix || null,
+      dataType: updates.dataType || null,
+      subareaId: updates.subareaId ? parseInt(updates.subareaId) : null,
+      direction: updates.direction ? updates.direction.toUpperCase() : 'INPUT',
+      aggregationWeight: updates.aggregationWeight || 1.0,
     };
 
     const response = await fetch(`${API_BASE}/indicators/${id}`, {

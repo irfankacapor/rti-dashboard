@@ -95,6 +95,9 @@ public class IndicatorBatchService {
         indicator.setName(csvIndicator.getName());
         indicator.setDescription(csvIndicator.getDescription());
         indicator.setIsComposite(false);
+        indicator.setUnit(csvIndicator.getUnit());
+        indicator.setUnitPrefix(csvIndicator.getUnitPrefix());
+        indicator.setUnitSuffix(csvIndicator.getUnitSuffix());
             
         return indicatorRepository.save(indicator);
     }
@@ -250,6 +253,9 @@ public class IndicatorBatchService {
         response.setDescription(indicator.getDescription());
         response.setIsComposite(indicator.getIsComposite());
         response.setCreatedAt(indicator.getCreatedAt());
+        response.setUnit(indicator.getUnit());
+        response.setUnitPrefix(indicator.getUnitPrefix());
+        response.setUnitSuffix(indicator.getUnitSuffix());
         return response;
     }
 } 

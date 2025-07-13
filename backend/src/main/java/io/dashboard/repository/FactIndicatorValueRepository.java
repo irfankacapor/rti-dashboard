@@ -70,12 +70,10 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     @Query("SELECT f FROM FactIndicatorValue f WHERE " +
            "(:indicatorId IS NULL OR f.indicator.id = :indicatorId) AND " +
            "(:timeId IS NULL OR f.time.id = :timeId) AND " +
-           "(:locationId IS NULL OR f.location.id = :locationId) AND " +
-           "(:unitId IS NULL OR f.unit.id = :unitId)")
+           "(:locationId IS NULL OR f.location.id = :locationId)")
     List<FactIndicatorValue> findByDimensions(@Param("indicatorId") Long indicatorId,
                                              @Param("timeId") Long timeId,
-                                             @Param("locationId") Long locationId,
-                                             @Param("unitId") Long unitId);
+                                             @Param("locationId") Long locationId);
     
     // Get distinct indicators
     @Query("SELECT DISTINCT f.indicator.id FROM FactIndicatorValue f")
@@ -107,7 +105,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "JOIN FETCH f.indicator i " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "JOIN i.subareaIndicators si " +
            "WHERE si.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoading(@Param("subareaId") Long subareaId);
@@ -116,7 +113,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     @Query("SELECT f FROM FactIndicatorValue f " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "WHERE f.indicator.id = :indicatorId")
     List<FactIndicatorValue> findByIndicatorIdWithEagerLoading(@Param("indicatorId") Long indicatorId);
     
@@ -124,7 +120,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     @Query("SELECT f FROM FactIndicatorValue f " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "LEFT JOIN FETCH f.generics " +
            "WHERE f.indicator.id = :indicatorId")
     List<FactIndicatorValue> findByIndicatorIdWithGenerics(@Param("indicatorId") Long indicatorId);
@@ -134,7 +129,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "JOIN FETCH f.indicator i " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "LEFT JOIN FETCH f.generics " +
            "JOIN i.subareaIndicators si " +
            "WHERE si.subarea.id = :subareaId")

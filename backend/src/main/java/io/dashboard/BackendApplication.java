@@ -23,37 +23,37 @@ public class BackendApplication {
 			if (unitRepository.count() == 0) {
 				List<Unit> units = Arrays.asList(
 					// Currencies
-					new Unit(null, "EUR", "Euro", "Currency", null, null),
-					new Unit(null, "USD", "US Dollar", "Currency", null, null),
-					new Unit(null, "GBP", "British Pound", "Currency", null, null),
-					new Unit(null, "CHF", "Swiss Franc", "Currency", null, null),
-					new Unit(null, "JPY", "Japanese Yen", "Currency", null, null),
+					Unit.builder().code("EUR").description("Euro").group("Currency").build(),
+					Unit.builder().code("USD").description("US Dollar").group("Currency").build(),
+					Unit.builder().code("GBP").description("British Pound").group("Currency").build(),
+					Unit.builder().code("CHF").description("Swiss Franc").group("Currency").build(),
+					Unit.builder().code("JPY").description("Japanese Yen").group("Currency").build(),
 					// Count
-					new Unit(null, "number", "Number", "Count", null, null),
-					new Unit(null, "count", "Count", "Count", null, null),
-					new Unit(null, "projects", "Number of Projects", "Count", null, null),
+					Unit.builder().code("number").description("Number").group("Count").build(),
+					Unit.builder().code("count").description("Count").group("Count").build(),
+					Unit.builder().code("projects").description("Number of Projects").group("Count").build(),
 					// Percent
-					new Unit(null, "%", "Percent", "Percent", null, null),
+					Unit.builder().code("%").description("Percent").group("Percent").build(),
 					// Time
-					new Unit(null, "s", "Seconds", "Time", null, null),
-					new Unit(null, "min", "Minutes", "Time", null, null),
-					new Unit(null, "h", "Hours", "Time", null, null),
-					new Unit(null, "d", "Days", "Time", null, null),
-					new Unit(null, "y", "Years", "Time", null, null),
+					Unit.builder().code("s").description("Seconds").group("Time").build(),
+					Unit.builder().code("min").description("Minutes").group("Time").build(),
+					Unit.builder().code("h").description("Hours").group("Time").build(),
+					Unit.builder().code("d").description("Days").group("Time").build(),
+					Unit.builder().code("y").description("Years").group("Time").build(),
 					// Length
-					new Unit(null, "m", "Meter", "Length", null, null),
-					new Unit(null, "km", "Kilometer", "Length", null, null),
-					new Unit(null, "mi", "Mile", "Length", null, null),
+					Unit.builder().code("m").description("Meter").group("Length").build(),
+					Unit.builder().code("km").description("Kilometer").group("Length").build(),
+					Unit.builder().code("mi").description("Mile").group("Length").build(),
 					// Weight
-					new Unit(null, "g", "Gram", "Weight", null, null),
-					new Unit(null, "kg", "Kilogram", "Weight", null, null),
-					new Unit(null, "t", "Ton", "Weight", null, null),
+					Unit.builder().code("g").description("Gram").group("Weight").build(),
+					Unit.builder().code("kg").description("Kilogram").group("Weight").build(),
+					Unit.builder().code("t").description("Ton").group("Weight").build(),
 					// Area
-					new Unit(null, "m²", "Square Meter", "Area", null, null),
-					new Unit(null, "km²", "Square Kilometer", "Area", null, null),
+					Unit.builder().code("m²").description("Square Meter").group("Area").build(),
+					Unit.builder().code("km²").description("Square Kilometer").group("Area").build(),
 					// Volume
-					new Unit(null, "l", "Liter", "Volume", null, null),
-					new Unit(null, "m³", "Cubic Meter", "Volume", null, null)
+					Unit.builder().code("l").description("Liter").group("Volume").build(),
+					Unit.builder().code("m³").description("Cubic Meter").group("Volume").build()
 				);
 				unitRepository.saveAll(units);
 			}

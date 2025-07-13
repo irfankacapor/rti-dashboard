@@ -5,7 +5,9 @@ export interface ManagedIndicator {
   name: string;
   description?: string;
   code?: string; // Auto-generated or manual
-  unit?: string;
+  unit?: string; // unit code
+  unitPrefix?: string;
+  unitSuffix?: string;
   source?: string;
   dataType?: string; // 'integer', 'decimal', 'percentage', etc.
   
@@ -32,6 +34,8 @@ export interface IndicatorFormData {
   name: string;
   description?: string;
   unit?: string;
+  unitPrefix?: string;
+  unitSuffix?: string;
   source?: string;
   dataType?: string;
   subareaId?: string;
@@ -100,6 +104,14 @@ export interface IndicatorAggregatedData {
   availableDimensions?: string[];
 }
 
+export interface UnitResponse {
+  id: number;
+  code: string;
+  description?: string;
+  group?: string;
+  createdAt?: string;
+}
+
 // Conversion utilities
 export const convertProcessedToManaged = (processed: ProcessedIndicator): ManagedIndicator => ({
   id: processed.id,
@@ -123,6 +135,8 @@ export const convertManagedToFormData = (indicator: ManagedIndicator): Indicator
   name: indicator.name,
   description: indicator.description,
   unit: indicator.unit,
+  unitPrefix: indicator.unitPrefix,
+  unitSuffix: indicator.unitSuffix,
   source: indicator.source,
   dataType: indicator.dataType,
   subareaId: indicator.subareaId,

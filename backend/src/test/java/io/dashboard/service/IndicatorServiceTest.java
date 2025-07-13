@@ -16,7 +16,7 @@ import io.dashboard.repository.DataTypeRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
-import io.dashboard.repository.UnitRepository;
+
 import io.dashboard.repository.FactIndicatorValueRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,8 +36,6 @@ import static org.mockito.Mockito.*;
 class IndicatorServiceTest {
     @Mock
     private IndicatorRepository indicatorRepository;
-    @Mock
-    private UnitRepository unitRepository;
     @Mock
     private DataTypeRepository dataTypeRepository;
     @Mock
@@ -129,11 +127,10 @@ class IndicatorServiceTest {
         IndicatorCreateRequest req = new IndicatorCreateRequest();
         req.setCode("IND1");
         req.setName("Indicator 1");
-        req.setUnitId(1L);
-        Unit unit = new Unit();
-        unit.setId(1L);
+        req.setUnit("EUR");
+        req.setUnitPrefix("€");
+        req.setUnitSuffix("M");
         when(indicatorRepository.existsByCode("IND1")).thenReturn(false);
-        when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
         when(indicatorRepository.save(any(Indicator.class))).thenAnswer(inv -> {
             Indicator i = inv.getArgument(0);
             i.setId(11L);
@@ -143,17 +140,7 @@ class IndicatorServiceTest {
         assertThat(resp.getId()).isEqualTo(11L);
     }
 
-    @Test
-    void create_invalidUnit() {
-        IndicatorCreateRequest req = new IndicatorCreateRequest();
-        req.setCode("IND1");
-        req.setUnitId(999L);
-        when(indicatorRepository.existsByCode("IND1")).thenReturn(false);
-        when(unitRepository.findById(999L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> indicatorService.create(req))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Unit does not exist");
-    }
+
 
     @Test
     void create_withValidDataType() {

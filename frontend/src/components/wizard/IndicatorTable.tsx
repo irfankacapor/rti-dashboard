@@ -8,23 +8,25 @@ import {
   TableHead,
   TableRow,
   Checkbox,
+  Button,
 } from '@mui/material';
 
-import { ManagedIndicator } from '@/types/indicators';
+import { ManagedIndicator, UnitResponse } from '@/types/indicators';
 import { Subarea } from '@/types/subareas';
 import { IndicatorTableRow } from './IndicatorTableRow';
+import { UnitPickerModal } from './UnitPickerModal';
 
 interface IndicatorTableProps {
   indicators: ManagedIndicator[];
-  subareas: Subarea[];
+  subareas: any[];
   selectedIds: string[];
-  onSelectionChange: (selectedIds: string[]) => void;
+  onSelectionChange: (ids: string[]) => void;
   onIndicatorUpdate: (id: string, updates: Partial<ManagedIndicator>) => void;
   onIndicatorDelete: (id: string) => void;
-  onIndicatorDeleteWithData?: (id: string) => void;
+  onIndicatorDeleteWithData: (id: string) => void;
   onBulkUpdate: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
   isSaving: boolean;
-  onEditValues?: (indicatorId: string) => void;
+  onEditValues: (indicatorId: string) => void;
 }
 
 export const IndicatorTable: React.FC<IndicatorTableProps> = ({
@@ -40,6 +42,8 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
   onEditValues,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [unitPickerModalOpen, setUnitPickerModalOpen] = useState<string | null>(null);
+  const [unitPickerInitial, setUnitPickerInitial] = useState<{unit?: string, prefix?: string, suffix?: string}>({});
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -77,6 +81,26 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
   const handleDeleteWithData = (id: string) => {
     if (onIndicatorDeleteWithData) {
       onIndicatorDeleteWithData(id);
+    }
+  };
+
+  const handleOpenUnitModal = (indicator: ManagedIndicator) => {
+    setUnitPickerModalOpen(indicator.id);
+    setUnitPickerInitial({
+      unit: indicator.unit,
+      prefix: indicator.unitPrefix,
+      suffix: indicator.unitSuffix,
+    });
+  };
+
+  const handleCloseUnitModal = () => {
+    setUnitPickerModalOpen(null);
+  };
+
+  const handleSaveUnit = (unit: string, prefix: string, suffix: string) => {
+    if (unitPickerModalOpen) {
+      onIndicatorUpdate(unitPickerModalOpen, { unit, unitPrefix: prefix, unitSuffix: suffix });
+      setUnitPickerModalOpen(null);
     }
   };
 
@@ -124,10 +148,21 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
               onDeleteWithData={() => handleDeleteWithData(indicator.id)}
               isSaving={isSaving}
               onEditValues={onEditValues}
+              onOpenUnitPicker={() => handleOpenUnitModal(indicator)}
             />
           ))}
         </TableBody>
       </Table>
+      {unitPickerModalOpen && (
+        <UnitPickerModal
+          open={!!unitPickerModalOpen}
+          initialUnit={unitPickerInitial.unit}
+          initialPrefix={unitPickerInitial.prefix}
+          initialSuffix={unitPickerInitial.suffix}
+          onSave={handleSaveUnit}
+          onClose={handleCloseUnitModal}
+        />
+      )}
     </TableContainer>
   );
 }; 

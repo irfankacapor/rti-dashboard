@@ -12,13 +12,19 @@ export const csvProcessingService = {
     const request = {
       indicators: indicators.map(indicator => {
         if ('values' in indicator) {
-          return indicator;
+          return {
+            ...indicator,
+            unitPrefix: indicator.unitPrefix || null,
+            unitSuffix: indicator.unitSuffix || null,
+          };
         }
         // Fallback: map ProcessedIndicator to backend DTO
         return {
           name: indicator.name,
           description: indicator.description,
           unit: indicator.unit,
+          unitPrefix: indicator.unitPrefix || null,
+          unitSuffix: indicator.unitSuffix || null,
           source: indicator.source,
           subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
           direction: indicator.direction?.toUpperCase(),

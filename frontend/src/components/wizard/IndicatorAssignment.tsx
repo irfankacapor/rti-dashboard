@@ -45,6 +45,10 @@ export const IndicatorAssignment: React.FC<IndicatorAssignmentProps> = ({
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [typesError, setTypesError] = useState<string | null>(null);
 
+  const formatUnitDisplay = (indicator: ProcessedIndicator) => {
+    return indicator.unit || '';
+  };
+
   useEffect(() => {
     setLoadingTypes(true);
     indicatorManagementService.getIndicatorTypes()
@@ -156,7 +160,7 @@ export const IndicatorAssignment: React.FC<IndicatorAssignmentProps> = ({
                             </Typography>
                             {indicator.unit && (
                               <Typography variant="caption" color="text.secondary">
-                                Unit: {indicator.unit}
+                                Unit: {formatUnitDisplay(indicator)}
                               </Typography>
                             )}
                             {indicator.source && (

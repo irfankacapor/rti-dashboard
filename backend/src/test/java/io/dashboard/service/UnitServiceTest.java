@@ -113,20 +113,8 @@ class UnitServiceTest {
         Unit unit = new Unit();
         unit.setId(1L);
         when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(unitRepository.hasIndicators(1L)).thenReturn(false);
         unitService.delete(1L);
         verify(unitRepository).delete(unit);
-    }
-
-    @Test
-    void delete_withIndicators() {
-        Unit unit = new Unit();
-        unit.setId(1L);
-        when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(unitRepository.hasIndicators(1L)).thenReturn(true);
-        assertThatThrownBy(() -> unitService.delete(1L))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("indicators");
     }
 
     @Test

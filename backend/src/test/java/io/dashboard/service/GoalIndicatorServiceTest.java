@@ -67,7 +67,8 @@ class GoalIndicatorServiceTest {
         indicator.setId(1L);
         indicator.setName("Test Indicator");
         indicator.setCode("TEST_IND");
-        indicator.setUnit(unit);
+        indicator.setUnitPrefix("€");
+        indicator.setUnitSuffix("thousand");
     }
 
     @Test

@@ -154,7 +154,9 @@ class IndicatorControllerIntegrationTest {
         req.setCode("IND" + counter);
         req.setName("Indicator " + counter);
         req.setIsComposite(false);
-        req.setUnitId(unit.getId());
+        req.setUnit("EUR");
+        req.setUnitPrefix("€");
+        req.setUnitSuffix("M");
         req.setDataTypeId(dataType.getId());
         
         mockMvc.perform(post("/api/v1/indicators")
@@ -162,7 +164,7 @@ class IndicatorControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("IND" + counter))
-                .andExpect(jsonPath("$.unit.id").value(unit.getId()))
+                .andExpect(jsonPath("$.unit").value("EUR"))
                 .andExpect(jsonPath("$.dataType.id").value(dataType.getId()));
         
         assertThat(indicatorRepository.findByCode("IND" + counter)).isPresent();
@@ -197,7 +199,7 @@ class IndicatorControllerIntegrationTest {
         IndicatorCreateRequest req = new IndicatorCreateRequest();
         req.setCode("IND" + counter);
         req.setName("Indicator " + counter);
-        req.setUnitId(9999L);
+        req.setUnit("INVALID");
         
         mockMvc.perform(post("/api/v1/indicators")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -282,7 +284,9 @@ class IndicatorControllerIntegrationTest {
         IndicatorUpdateRequest req = new IndicatorUpdateRequest();
         req.setName("Updated");
         req.setIsComposite(true);
-        req.setUnitId(unit.getId());
+        req.setUnit("USD");
+        req.setUnitPrefix("$");
+        req.setUnitSuffix("K");
         
         mockMvc.perform(put("/api/v1/indicators/" + indicator.getId())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -422,7 +426,8 @@ class IndicatorControllerIntegrationTest {
         indicator.setCode("CHART1");
         indicator.setName("Chart Indicator");
         indicator.setIsComposite(false);
-        indicator.setUnit(unit);
+        indicator.setUnitPrefix("€");
+        indicator.setUnitSuffix("thousand");
         indicator = indicatorRepository.save(indicator);
         // Add some fact values
         FactIndicatorValue value1 = FactIndicatorValue.builder()

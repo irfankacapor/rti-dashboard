@@ -44,9 +44,14 @@ public class Indicator {
     @Column(name = "is_composite", nullable = false)
     private Boolean isComposite = false;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id")
-    private Unit unit;
+    @Column(name = "unit_prefix", length = 100)
+    private String unitPrefix;
+
+    @Column(name = "unit", length = 50)
+    private String unit;
+
+    @Column(name = "unit_suffix", length = 100)
+    private String unitSuffix;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "data_type_id")

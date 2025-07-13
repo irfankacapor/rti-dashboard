@@ -21,6 +21,8 @@ public class CsvIndicatorData {
     
     private String description;
     private String unit;
+    private String unitPrefix;
+    private String unitSuffix;
     private String source;
     
     @NotNull(message = "Subarea ID is required")

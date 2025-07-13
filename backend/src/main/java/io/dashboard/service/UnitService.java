@@ -63,9 +63,6 @@ public class UnitService {
     public void delete(Long id) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Unit", "id", id));
-        if (unitRepository.hasIndicators(id)) {
-            throw new BadRequestException("Cannot delete unit with indicators");
-        }
         unitRepository.delete(unit);
     }
 
@@ -75,6 +72,7 @@ public class UnitService {
         resp.setCode(unit.getCode());
         resp.setDescription(unit.getDescription());
         resp.setCreatedAt(unit.getCreatedAt());
+        resp.setGroup(unit.getGroup());
         return resp;
     }
 } 
