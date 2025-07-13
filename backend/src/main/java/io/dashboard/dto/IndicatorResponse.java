@@ -13,6 +13,7 @@ public class IndicatorResponse {
     private Boolean isComposite;
     private LocalDateTime createdAt;
     private String unit;
+    private Long unitId;
     private DataTypeResponse dataType;
     private List<SubareaIndicatorResponse> subareaIndicators;
     private Long valueCount;

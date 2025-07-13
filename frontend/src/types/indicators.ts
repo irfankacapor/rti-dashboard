@@ -5,7 +5,8 @@ export interface ManagedIndicator {
   name: string;
   description?: string;
   code?: string; // Auto-generated or manual
-  unit?: string; // unit code
+  unit?: string; // unit code (for display)
+  unitId?: number; // unit id (for backend)
   unitPrefix?: string;
   unitSuffix?: string;
   source?: string;
@@ -34,6 +35,7 @@ export interface IndicatorFormData {
   name: string;
   description?: string;
   unit?: string;
+  unitId?: number;
   unitPrefix?: string;
   unitSuffix?: string;
   source?: string;
@@ -135,6 +137,7 @@ export const convertManagedToFormData = (indicator: ManagedIndicator): Indicator
   name: indicator.name,
   description: indicator.description,
   unit: indicator.unit,
+  unitId: indicator.unitId,
   unitPrefix: indicator.unitPrefix,
   unitSuffix: indicator.unitSuffix,
   source: indicator.source,

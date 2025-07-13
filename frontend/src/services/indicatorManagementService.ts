@@ -21,6 +21,7 @@ export const indicatorManagementService = {
       description: item.description,
       code: item.code,
       unit: item.unit || '',
+      unitId: item.unitId || null,
       unitPrefix: item.unitPrefix || '',
       unitSuffix: item.unitSuffix || '',
       source: item.source || '',
@@ -58,7 +59,7 @@ export const indicatorManagementService = {
       name: indicator.name,
       description: indicator.description,
       isComposite: false,
-      unit: indicator.unit || null,
+      unitId: indicator.unitId || null,
       unitPrefix: indicator.unitPrefix || null,
       unitSuffix: indicator.unitSuffix || null,
       dataType: indicator.dataType || null,
@@ -80,13 +81,13 @@ export const indicatorManagementService = {
     return response.json();
   },
 
-  // Update indicator - now supports unit, unitPrefix, and unitSuffix
+  // Update indicator - now supports unitId, unitPrefix, and unitSuffix
   updateIndicator: async (id: string, updates: Partial<ManagedIndicator>): Promise<ManagedIndicator> => {
     const backendUpdate = {
       name: updates.name,
       description: updates.description,
       isComposite: false,
-      unit: updates.unit || null,
+      unitId: updates.unitId || null,
       unitPrefix: updates.unitPrefix || null,
       unitSuffix: updates.unitSuffix || null,
       dataType: updates.dataType || null,

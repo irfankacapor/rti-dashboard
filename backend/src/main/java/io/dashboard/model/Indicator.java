@@ -47,8 +47,9 @@ public class Indicator {
     @Column(name = "unit_prefix", length = 100)
     private String unitPrefix;
 
-    @Column(name = "unit", length = 50)
-    private String unit;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unit_id")
+    private Unit unit;
 
     @Column(name = "unit_suffix", length = 100)
     private String unitSuffix;

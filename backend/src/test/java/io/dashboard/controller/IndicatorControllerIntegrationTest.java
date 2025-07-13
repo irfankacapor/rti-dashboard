@@ -54,8 +54,10 @@ class IndicatorControllerIntegrationTest {
     private ObjectMapper objectMapper;
     @Autowired
     private IndicatorRepository indicatorRepository;
+
     @Autowired
     private UnitRepository unitRepository;
+
     @Autowired
     private DataTypeRepository dataTypeRepository;
     @Autowired
@@ -72,6 +74,7 @@ class IndicatorControllerIntegrationTest {
     private DimLocationRepository dimLocationRepository;
     @Autowired
     private DimGenericRepository dimGenericRepository;
+
 
     private Unit unit;
     private DataType dataType;
@@ -93,6 +96,7 @@ class IndicatorControllerIntegrationTest {
         subareaRepository.deleteAll();
         areaRepository.deleteAll();
         unitRepository.deleteAll();
+
         dataTypeRepository.deleteAll();
         dimTimeRepository.deleteAll();
         dimLocationRepository.deleteAll();
@@ -154,7 +158,7 @@ class IndicatorControllerIntegrationTest {
         req.setCode("IND" + counter);
         req.setName("Indicator " + counter);
         req.setIsComposite(false);
-        req.setUnit("EUR");
+        req.setUnitId(unit.getId());
         req.setUnitPrefix("€");
         req.setUnitSuffix("M");
         req.setDataTypeId(dataType.getId());
@@ -194,18 +198,22 @@ class IndicatorControllerIntegrationTest {
 
     @Test
     @WithMockAdmin
-    void createIndicator_shouldFail_invalidUnit() throws Exception {
+    void createIndicator_shouldSucceed_withCustomUnit() throws Exception {
         long counter = testCounter.getAndIncrement();
         IndicatorCreateRequest req = new IndicatorCreateRequest();
         req.setCode("IND" + counter);
         req.setName("Indicator " + counter);
-        req.setUnit("INVALID");
+        req.setUnitId(unit.getId());
+        req.setUnitPrefix("$");
+        req.setUnitSuffix("M");
         
         mockMvc.perform(post("/api/v1/indicators")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.unit").value("CUSTOM_UNIT"))
+                .andExpect(jsonPath("$.unitPrefix").value("$"))
+                .andExpect(jsonPath("$.unitSuffix").value("M"));
     }
 
     @Test
@@ -284,7 +292,7 @@ class IndicatorControllerIntegrationTest {
         IndicatorUpdateRequest req = new IndicatorUpdateRequest();
         req.setName("Updated");
         req.setIsComposite(true);
-        req.setUnit("USD");
+        req.setUnitId(unit.getId());
         req.setUnitPrefix("$");
         req.setUnitSuffix("K");
         

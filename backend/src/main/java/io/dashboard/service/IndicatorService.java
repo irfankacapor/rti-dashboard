@@ -18,10 +18,11 @@ import io.dashboard.model.Unit;
 import io.dashboard.repository.DataTypeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ import java.util.Optional;
 @Slf4j
 public class IndicatorService {
     private final IndicatorRepository indicatorRepository;
+    private final UnitRepository unitRepository;
     private final DataTypeRepository dataTypeRepository;
     private final SubareaRepository subareaRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
@@ -65,16 +67,19 @@ public class IndicatorService {
     private final DimTimeRepository dimTimeRepository;
     private final io.dashboard.repository.DimLocationRepository dimLocationRepository;
 
+    @Transactional(readOnly = true)
     public List<IndicatorResponse> findAll() {
         return indicatorRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public IndicatorResponse findById(Long id) {
         Indicator indicator = indicatorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", id));
         return toResponse(indicator);
     }
 
+    @Transactional(readOnly = true)
     public List<IndicatorResponse> findBySubareaId(Long subareaId) {
         return indicatorRepository.findBySubareaId(subareaId).stream()
             .map(indicator -> toResponse(indicator, subareaId))
@@ -92,9 +97,14 @@ public class IndicatorService {
         indicator.setName(request.getName());
         indicator.setDescription(request.getDescription());
         indicator.setIsComposite(request.getIsComposite());
-        indicator.setUnit(request.getUnit());
         indicator.setUnitPrefix(request.getUnitPrefix());
         indicator.setUnitSuffix(request.getUnitSuffix());
+        
+        if (request.getUnitId() != null) {
+            Unit unit = unitRepository.findById(request.getUnitId())
+                    .orElseThrow(() -> new BadRequestException("Unit does not exist"));
+            indicator.setUnit(unit);
+        }
         
         if (request.getDataTypeId() != null) {
             DataType dataType = dataTypeRepository.findById(request.getDataTypeId())
@@ -114,9 +124,16 @@ public class IndicatorService {
         indicator.setName(request.getName());
         indicator.setDescription(request.getDescription());
         indicator.setIsComposite(request.getIsComposite());
-        indicator.setUnit(request.getUnit());
         indicator.setUnitPrefix(request.getUnitPrefix());
         indicator.setUnitSuffix(request.getUnitSuffix());
+        
+        if (request.getUnitId() != null) {
+            Unit unit = unitRepository.findById(request.getUnitId())
+                    .orElseThrow(() -> new BadRequestException("Unit does not exist"));
+            indicator.setUnit(unit);
+        } else {
+            indicator.setUnit(null);
+        }
         
         if (request.getDataTypeId() != null) {
             DataType dataType = dataTypeRepository.findById(request.getDataTypeId())
@@ -247,7 +264,8 @@ public class IndicatorService {
         resp.setDescription(indicator.getDescription());
         resp.setIsComposite(indicator.getIsComposite());
         resp.setCreatedAt(indicator.getCreatedAt());
-        resp.setUnit(indicator.getUnit());
+        resp.setUnit(indicator.getUnit() != null ? indicator.getUnit().getCode() : null);
+        resp.setUnitId(indicator.getUnit() != null ? indicator.getUnit().getId() : null);
         resp.setUnitPrefix(indicator.getUnitPrefix());
         resp.setUnitSuffix(indicator.getUnitSuffix());
         
@@ -291,7 +309,8 @@ public class IndicatorService {
         resp.setDescription(indicator.getDescription());
         resp.setIsComposite(indicator.getIsComposite());
         resp.setCreatedAt(indicator.getCreatedAt());
-        resp.setUnit(indicator.getUnit());
+        resp.setUnit(indicator.getUnit() != null ? indicator.getUnit().getCode() : null);
+        resp.setUnitId(indicator.getUnit() != null ? indicator.getUnit().getId() : null);
         resp.setUnitPrefix(indicator.getUnitPrefix());
         resp.setUnitSuffix(indicator.getUnitSuffix());
         
@@ -547,11 +566,9 @@ public class IndicatorService {
     }
 
     public HistoricalDataResponse getHistoricalData(Long indicatorId, int months, String dimension) {
-        log.debug("Fetching historical data for indicator ID: {} for {} months, dimension: {}", indicatorId, months, dimension);
         LocalDateTime endDate = LocalDateTime.now();
         LocalDateTime startDate = endDate.minusMonths(months);
         if (!indicatorRepository.existsById(indicatorId)) {
-            log.warn("Indicator with ID {} not found", indicatorId);
             HistoricalDataResponse response = new HistoricalDataResponse();
             response.setIndicatorId(indicatorId);
             response.setDataPoints(new ArrayList<>());
@@ -645,7 +662,6 @@ public class IndicatorService {
     }
 
     public DataValidationResponse getDataValidation(Long indicatorId) {
-        log.debug("Validating data for indicator ID: {}", indicatorId);
         indicatorRepository.findById(indicatorId)
                 .orElseThrow(() -> new RuntimeException("Indicator not found"));
         List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorId(indicatorId);

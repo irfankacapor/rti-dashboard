@@ -65,6 +65,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
     name: indicator.name,
     description: indicator.description || '',
     unit: indicator.unit || '',
+    unitId: indicator.unitId || undefined,
     unitPrefix: indicator.unitPrefix || '',
     unitSuffix: indicator.unitSuffix || '',
     source: indicator.source || '',
@@ -80,6 +81,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         name: indicator.name,
         description: indicator.description || '',
         unit: indicator.unit || '',
+        unitId: indicator.unitId || undefined,
         unitPrefix: indicator.unitPrefix || '',
         unitSuffix: indicator.unitSuffix || '',
         source: indicator.source || '',
@@ -90,6 +92,17 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
       });
     }
   }, [isEditing, indicator]);
+
+  // Update formData when indicator changes (for unit picker updates)
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      unit: indicator.unit || '',
+      unitId: indicator.unitId || undefined,
+      unitPrefix: indicator.unitPrefix || '',
+      unitSuffix: indicator.unitSuffix || '',
+    }));
+  }, [indicator.unit, indicator.unitId, indicator.unitPrefix, indicator.unitSuffix]);
 
   const handleSave = () => {
     onSave(formData);

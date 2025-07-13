@@ -8,14 +8,14 @@ interface UnitPickerModalProps {
   initialUnit?: string;
   initialPrefix?: string;
   initialSuffix?: string;
-  onSave: (unit: string, prefix: string, suffix: string) => void;
+  onSave: (unitId: number | null, unitCode: string, prefix: string, suffix: string) => void;
   onClose: () => void;
 }
 
 export const UnitPickerModal: React.FC<UnitPickerModalProps> = ({ open, initialUnit, initialPrefix, initialSuffix, onSave, onClose }) => {
   const [groupedUnits, setGroupedUnits] = useState<Record<string, UnitResponse[]>>({});
   const [loading, setLoading] = useState(false);
-  const [unit, setUnit] = useState<string>(initialUnit || '');
+  const [selectedUnit, setSelectedUnit] = useState<UnitResponse | null>(null);
   const [prefix, setPrefix] = useState<string>(initialPrefix || '');
   const [suffix, setSuffix] = useState<string>(initialSuffix || '');
   const [unitOptions, setUnitOptions] = useState<UnitResponse[]>([]);
@@ -33,14 +33,22 @@ export const UnitPickerModal: React.FC<UnitPickerModalProps> = ({ open, initialU
   }, [open]);
 
   useEffect(() => {
-    setUnit(initialUnit || '');
+    // Find the unit by code if initialUnit is provided
+    if (initialUnit && unitOptions.length > 0) {
+      const foundUnit = unitOptions.find(u => u.code === initialUnit);
+      setSelectedUnit(foundUnit || null);
+    } else {
+      setSelectedUnit(null);
+    }
     setPrefix(initialPrefix || '');
     setSuffix(initialSuffix || '');
-  }, [initialUnit, initialPrefix, initialSuffix, open]);
+  }, [initialUnit, initialPrefix, initialSuffix, open, unitOptions]);
 
   const handleSave = () => {
-    if (unit) {
-      onSave(unit, prefix, suffix);
+    if (selectedUnit) {
+      onSave(selectedUnit.id, selectedUnit.code, prefix, suffix);
+    } else {
+      onSave(null, '', prefix, suffix);
     }
   };
 
@@ -66,11 +74,11 @@ export const UnitPickerModal: React.FC<UnitPickerModalProps> = ({ open, initialU
                 options={unitOptions}
                 groupBy={option => option.group ? option.group : 'Other'}
                 getOptionLabel={option => `${option.code} - ${option.description || ''}`}
-                value={unitOptions.find(u => u.code === unit) || null}
-                onChange={(_, value) => setUnit(value ? value.code : '')}
+                value={selectedUnit}
+                onChange={(_, value) => setSelectedUnit(value)}
                 renderInput={(params) => <TextField {...params} label="Unit" size="small" required />} 
                 sx={{ flex: 2 }}
-                isOptionEqualToValue={(option, value) => option.code === value.code}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
               />
               <TextField
                 label="Suffix"
@@ -81,14 +89,14 @@ export const UnitPickerModal: React.FC<UnitPickerModalProps> = ({ open, initialU
               />
             </Box>
             <Typography variant="caption" color="text.secondary">
-              Example: {prefix ? prefix + ' ' : ''}{unit}{suffix ? ' ' + suffix : ''}
+              Example: {prefix ? prefix + ' ' : ''}{selectedUnit?.code || ''}{suffix ? ' ' + suffix : ''}
             </Typography>
           </>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" disabled={!unit}>Save</Button>
+        <Button onClick={handleSave} variant="contained" disabled={!selectedUnit}>Save</Button>
       </DialogActions>
     </Dialog>
   );

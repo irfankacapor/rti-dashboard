@@ -21,7 +21,7 @@ public class IndicatorCreateRequest {
     @NotNull
     private Boolean isComposite = false;
 
-    private String unit;
+    private Long unitId;
     private String unitPrefix;
     private String unitSuffix;
 

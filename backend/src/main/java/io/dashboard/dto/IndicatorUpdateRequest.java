@@ -17,7 +17,7 @@ public class IndicatorUpdateRequest {
     @NotNull
     private Boolean isComposite;
 
-    private String unit;
+    private Long unitId;
     private String unitPrefix;
     private String unitSuffix;
 

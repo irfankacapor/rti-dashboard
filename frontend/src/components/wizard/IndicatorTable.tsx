@@ -97,9 +97,14 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
     setUnitPickerModalOpen(null);
   };
 
-  const handleSaveUnit = (unit: string, prefix: string, suffix: string) => {
+  const handleSaveUnit = (unitId: number | null, unitCode: string, prefix: string, suffix: string) => {
     if (unitPickerModalOpen) {
-      onIndicatorUpdate(unitPickerModalOpen, { unit, unitPrefix: prefix, unitSuffix: suffix });
+      onIndicatorUpdate(unitPickerModalOpen, { 
+        unitId: unitId || undefined, 
+        unit: unitCode, 
+        unitPrefix: prefix, 
+        unitSuffix: suffix 
+      });
       setUnitPickerModalOpen(null);
     }
   };

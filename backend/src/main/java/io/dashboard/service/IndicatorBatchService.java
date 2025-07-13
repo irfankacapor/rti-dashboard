@@ -12,7 +12,9 @@ import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;
 import io.dashboard.model.SubareaIndicator;
+import io.dashboard.model.Unit;
 import io.dashboard.repository.DimGenericRepository;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.repository.DimLocationRepository;
 import io.dashboard.repository.DimTimeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
@@ -42,6 +44,7 @@ public class IndicatorBatchService {
     private final FactIndicatorValueRepository factRepository;
     private final SubareaIndicatorRepository subareaIndicatorRepository;
     private final SubareaRepository subareaRepository;
+    private final UnitRepository unitRepository;
     
     public IndicatorBatchResponse createFromCsvData(IndicatorBatchRequest request) {
         List<IndicatorResponse> createdIndicators = new ArrayList<>();
@@ -95,7 +98,17 @@ public class IndicatorBatchService {
         indicator.setName(csvIndicator.getName());
         indicator.setDescription(csvIndicator.getDescription());
         indicator.setIsComposite(false);
-        indicator.setUnit(csvIndicator.getUnit());
+        // Handle unit - find by code or create new
+        if (csvIndicator.getUnit() != null && !csvIndicator.getUnit().trim().isEmpty()) {
+            Unit unit = unitRepository.findByCode(csvIndicator.getUnit())
+                .orElseGet(() -> {
+                    Unit newUnit = new Unit();
+                    newUnit.setCode(csvIndicator.getUnit());
+                    newUnit.setDescription("Auto-generated from CSV import");
+                    return unitRepository.save(newUnit);
+                });
+            indicator.setUnit(unit);
+        }
         indicator.setUnitPrefix(csvIndicator.getUnitPrefix());
         indicator.setUnitSuffix(csvIndicator.getUnitSuffix());
             
@@ -253,7 +266,8 @@ public class IndicatorBatchService {
         response.setDescription(indicator.getDescription());
         response.setIsComposite(indicator.getIsComposite());
         response.setCreatedAt(indicator.getCreatedAt());
-        response.setUnit(indicator.getUnit());
+        response.setUnit(indicator.getUnit() != null ? indicator.getUnit().getCode() : null);
+        response.setUnitId(indicator.getUnit() != null ? indicator.getUnit().getId() : null);
         response.setUnitPrefix(indicator.getUnitPrefix());
         response.setUnitSuffix(indicator.getUnitSuffix());
         return response;

@@ -14,6 +14,7 @@ import io.dashboard.model.SubareaIndicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.DataTypeRepository;
 import io.dashboard.repository.IndicatorRepository;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 
@@ -36,6 +37,8 @@ import static org.mockito.Mockito.*;
 class IndicatorServiceTest {
     @Mock
     private IndicatorRepository indicatorRepository;
+    @Mock
+    private UnitRepository unitRepository;
     @Mock
     private DataTypeRepository dataTypeRepository;
     @Mock
@@ -127,10 +130,14 @@ class IndicatorServiceTest {
         IndicatorCreateRequest req = new IndicatorCreateRequest();
         req.setCode("IND1");
         req.setName("Indicator 1");
-        req.setUnit("EUR");
+        req.setUnitId(1L);
         req.setUnitPrefix("€");
         req.setUnitSuffix("M");
         when(indicatorRepository.existsByCode("IND1")).thenReturn(false);
+        Unit unit = new Unit();
+        unit.setId(1L);
+        unit.setCode("EUR");
+        when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
         when(indicatorRepository.save(any(Indicator.class))).thenAnswer(inv -> {
             Indicator i = inv.getArgument(0);
             i.setId(11L);

@@ -725,6 +725,7 @@ export const useWizardStore = create<WizardState>()(
                 name: indicator.name,
                 description: indicator.description,
                 unit: indicator.unit,
+                unitId: indicator.unitId,
                 unitPrefix: indicator.unitPrefix,
                 unitSuffix: indicator.unitSuffix,
                 dataType: indicator.dataType,
