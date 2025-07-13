@@ -2,10 +2,11 @@ import React, { useMemo } from 'react';
 import { Box, Typography, Alert } from '@mui/material';
 import TimeSeriesChart from './TimeSeriesChart';
 import { IndicatorTimeSeriesDataPoint, TimeSeriesDataPoint } from '@/types/subareas';
+import { Indicator } from '@/types/indicators';
 
 interface SubareaTimeSeriesChartProps {
   timeSeriesData: TimeSeriesDataPoint[];
-  indicators: any[];
+  indicators: Indicator[];
   indicatorTimeSeriesData: Record<string, IndicatorTimeSeriesDataPoint[]>;
 }
 

@@ -43,6 +43,7 @@ export interface Indicator {
   id: string;
   code: string;
   name: string;
+  description: string;
   isComposite: boolean;
   createdAt: Date;
   unit: string;

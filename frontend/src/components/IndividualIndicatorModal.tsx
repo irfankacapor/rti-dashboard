@@ -11,16 +11,17 @@ import {
   cleanTimeLabel,
   AggregationType
 } from '../utils/chartDataProcessor';
-import { IndicatorChartData } from '../types/indicators';
+import { Indicator, IndicatorChartData } from '@/types/indicators';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { SubareaData } from '@/types/subareas';
+import { IndicatorValue } from '@/types/csvProcessing';
 
 interface IndividualIndicatorModalProps {
   open: boolean;
   onClose: () => void;
   indicatorId: string;
-  indicatorData: any;
+  indicatorData: Indicator;
   subareaId?: string;
   subareaData?: SubareaData;
 }
@@ -54,7 +55,7 @@ const AGGREGATION_OPTIONS: { label: string; value: AggregationType }[] = [
 ];
 
 // Helper to group raw data by dimension value
-function groupRawDataByDimension(indicatorValues: any[], selectedDimension: string): Record<string, number[]> {
+function groupRawDataByDimension(indicatorValues: IndicatorValue[], selectedDimension: string): Record<string, number[]> {
   const groups: Record<string, number[]> = {};
   indicatorValues.forEach((item: any) => {
     let dimValue = '';

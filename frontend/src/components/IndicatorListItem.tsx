@@ -4,9 +4,10 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import IndividualIndicatorModal from './IndividualIndicatorModal';
 import { SubareaData } from '@/types/subareas';
+import { Indicator } from '@/types/indicators';
 
 interface IndicatorListItemProps {
-  indicator: any;
+  indicator: Indicator;
   isAggregated?: boolean;
   highlightedDimensionValue?: string | null;
   selectedDimension?: string;
@@ -30,7 +31,7 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
 
   const normalizedDirection = (indicator.direction || '').toLowerCase();
 
-  const formatUnitDisplay = (indicator: any) => {
+  const formatUnitDisplay = (indicator: Indicator) => {
     const parts = [];
     if (indicator.unitPrefix) parts.push(indicator.unitPrefix);
     if (indicator.unit) parts.push(indicator.unit);

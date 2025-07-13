@@ -1,3 +1,5 @@
+import { Indicator } from "@/types/indicators";
+
 export interface IndicatorValue {
   value: number;
   timeValue?: string; // e.g., "2023"
@@ -14,6 +16,8 @@ export interface ProcessedIndicator {
   dimensions: string[]; // e.g., ['time', 'locations']
   valueCount: number; // number of data points
   unit?: string;
+  unitPrefix?: string;
+  unitSuffix?: string;
   source?: string;
   subareaId?: string; // user assignment
   direction?: 'input' | 'output'; // user selection
@@ -21,7 +25,7 @@ export interface ProcessedIndicator {
 }
 
 export interface IndicatorBatchResponse {
-  createdIndicators: any[];
+  createdIndicators: Indicator[];
   totalFactRecords: number;
   message: string;
   warnings: string[];

@@ -7,7 +7,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const csvProcessingService = {
   // Submit processed indicators to the new simplified endpoint
-  submitProcessedIndicators: async (indicators: any[]): Promise<IndicatorBatchResponse> => {
+  submitProcessedIndicators: async (indicators: ProcessedIndicator[]): Promise<IndicatorBatchResponse> => {
     // If the objects already have a 'values' field, assume they're CsvIndicatorData and send as-is
     const request = {
       indicators: indicators.map(indicator => {

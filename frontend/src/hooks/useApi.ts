@@ -1,30 +1,34 @@
+import { Indicator } from '@/types/indicators';
+import { Subarea } from '@/types/subareas';
 import { useState, useEffect } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
-function mapIndicatorApiToFrontend(apiIndicator: any) {
+function mapIndicatorApiToFrontend(apiIndicator: Indicator): Indicator {
   return {
     id: String(apiIndicator.id),
     name: apiIndicator.name,
-    description: apiIndicator.description,
+    description: apiIndicator.description || '',
     unit: apiIndicator.unit || '',
+    unitId: String(apiIndicator.unitId || ''),
     unitPrefix: apiIndicator.unitPrefix || '',
     unitSuffix: apiIndicator.unitSuffix || '',
     direction: apiIndicator.direction,
-    valueCount: apiIndicator.valueCount,
+    valueCount: apiIndicator.valueCount || 0,
     dimensions: apiIndicator.dimensions || [],
-    subareaId: String(apiIndicator.subareaId),
-    subareaName: apiIndicator.subareaName,
-    dataType: apiIndicator.dataType?.code || '',
+    subareaId: String(apiIndicator.subareaId || ''),
+    subareaName: apiIndicator.subareaName || '',
+    dataType: apiIndicator.dataType || { id: 0, code: '', name: '' },
     isComposite: apiIndicator.isComposite || false,
-    createdAt: apiIndicator.createdAt,
-    code: apiIndicator.code || ''
+    createdAt: new Date(apiIndicator.createdAt),
+    code: apiIndicator.code || '',
+    subareaIndicators: apiIndicator.subareaIndicators || []
   };
 }
 
 export function useSubareaData(subareaId: string) {
-  const [indicators, setIndicators] = useState<any[]>([]);
-  const [subarea, setSubarea] = useState<any>(null);
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [subarea, setSubarea] = useState<Subarea | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
