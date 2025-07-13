@@ -82,7 +82,7 @@ export interface ManualIndicatorData extends IndicatorFormData {
   // For manually added indicators without CSV data
   estimatedValues?: number; // Expected number of data points
   type?: string; // 'input', 'output', etc. (new field for manual modal)
-  dimensions?: string[]; // List of dimension keys (new field for manual modal)
+  dimensions?: Dimension[]; // Properly typed dimensions
   dataRows?: any[]; // Data input rows (optional, for manual modal)
 }
 
@@ -111,32 +111,6 @@ export interface IndicatorChartData {
   label: string;
   value: number;
   name?: string;
-}
-
-export interface IndicatorDataResponse {
-  timeSeries?: IndicatorChartData[];
-  originalDataPoints?: IndicatorDataPoint[];
-  chartData?: IndicatorChartData[];
-  dimensions?: string[];
-  startDate?: string;
-  endDate?: string;
-  [key: string]: any; // For backward compatibility
-}
-
-export interface IndicatorDimensionValuesResponse {
-  dimensionColumns: string[];
-  rows?: Array<{
-    dimensions: Record<string, string>;
-    value?: number;
-    isEmpty: boolean;
-  }>;
-}
-
-export interface IndicatorAggregatedData {
-  data: Record<string, number>;
-  aggregatedValue?: number;
-  dimension?: string;
-  availableDimensions?: string[];
 }
 
 export interface UnitResponse {
