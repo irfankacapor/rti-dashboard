@@ -1,19 +1,10 @@
 import { create } from 'zustand';
 
-interface SubareaComprehensiveData {
-  subarea: any;
-  indicators: any[];
-  aggregatedData: Record<string, Record<string, number>>;
-  totalAggregatedValue: number;
-  dimensionMetadata: Record<string, any>;
-  timeSeriesData: any[];
-  indicatorTimeSeriesData: Record<string, any[]>;
-  errors: Record<string, string>;
-}
+import { SubareaData } from "../types/subareas";
 
 interface SubareaCacheStore {
   // Cache by subareaId
-  cache: Record<string, SubareaComprehensiveData>;
+  cache: Record<string, SubareaData>;
   
   // Loading states by subareaId
   loading: Record<string, boolean>;
@@ -22,11 +13,11 @@ interface SubareaCacheStore {
   errors: Record<string, string | null>;
   
   // Actions
-  setSubareaData: (subareaId: string, data: SubareaComprehensiveData) => void;
+  setSubareaData: (subareaId: string, data: SubareaData) => void;
   setLoading: (subareaId: string, loading: boolean) => void;
   setError: (subareaId: string, error: string | null) => void;
   clearCache: (subareaId?: string) => void;
-  getSubareaData: (subareaId: string) => SubareaComprehensiveData | null;
+  getSubareaData: (subareaId: string) => SubareaData | null;
   isCached: (subareaId: string) => boolean;
 }
 
@@ -35,7 +26,7 @@ export const useSubareaCache = create<SubareaCacheStore>((set, get) => ({
   loading: {},
   errors: {},
   
-  setSubareaData: (subareaId: string, data: SubareaComprehensiveData) => {
+  setSubareaData: (subareaId: string, data: SubareaData) => {
     set((state) => ({
       cache: {
         ...state.cache,

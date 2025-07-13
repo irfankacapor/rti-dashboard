@@ -1,4 +1,12 @@
 import { ProcessedIndicator } from './csvProcessing';
+import { DataType } from './dataType';
+import { Dimension } from './dimensions';
+import { SubareaIndicator } from './subareas';
+
+export enum IndicatorDirection {
+  INPUT = 'input',
+  OUTPUT = 'output',
+}
 
 export interface ManagedIndicator {
   id: string;
@@ -15,7 +23,7 @@ export interface ManagedIndicator {
   // Relationships
   subareaId?: string;
   subareaName?: string; // For display
-  direction?: 'input' | 'output';
+  direction?: IndicatorDirection;
   aggregationWeight?: number;
   
   // Data context
@@ -31,6 +39,30 @@ export interface ManagedIndicator {
   lastModified?: Date;
 }
 
+export interface Indicator {
+  id: string;
+  code: string;
+  name: string;
+  isComposite: boolean;
+  createdAt: Date;
+  unit: string;
+  unitId: string;
+  dataType: DataType;
+  subareaIndicators: SubareaIndicator[];
+  valueCount: number;
+  dimensions: string[];
+  subareaId: string;
+  subareaName: string;
+  direction: IndicatorDirection;
+  unitPrefix: string;
+  unitSuffix: string;
+}
+
+export interface IndicatorDimensions {
+  indicatorId: string;
+  availableDimensions: Dimension[];
+}
+
 export interface IndicatorFormData {
   name: string;
   description?: string;
@@ -41,7 +73,7 @@ export interface IndicatorFormData {
   source?: string;
   dataType?: string;
   subareaId?: string;
-  direction?: 'input' | 'output';
+  direction?: IndicatorDirection;
   aggregationWeight?: number;
 }
 
@@ -122,7 +154,7 @@ export const convertProcessedToManaged = (processed: ProcessedIndicator): Manage
   unit: processed.unit,
   source: processed.source,
   subareaId: processed.subareaId,
-  direction: processed.direction,
+  direction: processed.direction as IndicatorDirection,
   aggregationWeight: 1.0,
   valueCount: processed.valueCount,
   dimensions: processed.dimensions,
