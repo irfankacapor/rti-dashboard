@@ -47,7 +47,78 @@ export const generateDataTuples = (
 };
 
 // Find dimension value for a specific value cell based on mapping
+// 
+// This function handles both full and partial row/column selections:
+// 
+// 1. FULL SELECTIONS: When user selects entire rows/columns
+//    - Row mapping: selection spans entire row (e.g., row 2, cols 1-8)
+//    - Column mapping: selection spans entire column (e.g., col 1, rows 1-5)
+// 
+// 2. PARTIAL SELECTIONS: When user selects only part of rows/columns
+//    - Row mapping: selection spans partial row (e.g., row 2, cols 3-6 only)
+//    - Column mapping: selection spans partial column (e.g., col 1, rows 2-4 only)
+// 
+// For partial selections, values outside the selected range use the closest selected cell:
+// - If value column < selection start: use first selected column
+// - If value column > selection end: use last selected column
+// - If value row < selection start: use first selected row  
+// - If value row > selection end: use last selected row
+//
+// Examples:
+// - Gender mapped to row 2, cols 3-6: value in col 2 gets gender from col 3
+// - Indicator names mapped to col 1, rows 2-4: value in row 5 gets indicator from row 4
 const findDimensionValueForCell = (
+  valueRow: number,
+  valueCol: number,
+  dimensionMapping: DimensionMapping,
+  csvData: string[][]
+): string => {
+  const { selection, dimensionType, mappingDirection } = dimensionMapping;
+
+  // Handle special case: single cell mapping
+  if (selection.startRow === selection.endRow && selection.startCol === selection.endCol) {
+    return csvData[selection.startRow][selection.startCol];
+  }
+
+  // Clear direction-based logic
+  if (mappingDirection === 'row') {
+    // Dimension is mapped to a row (e.g., gender in row 2, year in row 3)
+    // Check if the value cell's column falls within the selected column range
+    if (selection.startCol <= valueCol && valueCol <= selection.endCol) {
+      // Value cell's column is within the selected range, look in the mapped row
+      return csvData[selection.startRow][valueCol];
+    } else {
+      // Value cell's column is outside the selected range
+      // Find the closest column within the selected range
+      if (valueCol < selection.startCol) {
+        return csvData[selection.startRow][selection.startCol];
+      } else {
+        return csvData[selection.startRow][selection.endCol];
+      }
+    }
+  } else if (mappingDirection === 'column') {
+    // Dimension is mapped to a column (e.g., indicator names in column 0)
+    // Check if the value cell's row falls within the selected row range
+    if (selection.startRow <= valueRow && valueRow <= selection.endRow) {
+      // Value cell's row is within the selected range, look in the mapped column
+      return csvData[valueRow][selection.startCol];
+    } else {
+      // Value cell's row is outside the selected range
+      // Find the closest row within the selected range
+      if (valueRow < selection.startRow) {
+        return csvData[selection.startRow][selection.startCol];
+      } else {
+        return csvData[selection.endRow][selection.startCol];
+      }
+    }
+  }
+
+  // Fallback for legacy mappings without direction (should not happen with new UI)
+  return findLegacyDimensionValue(valueRow, valueCol, dimensionMapping, csvData);
+};
+
+// Legacy fallback function for backward compatibility
+const findLegacyDimensionValue = (
   valueRow: number,
   valueCol: number,
   dimensionMapping: DimensionMapping,
@@ -70,7 +141,6 @@ const findDimensionValueForCell = (
     if (selection.startCol === selection.endCol) {
       return csvData[valueRow][selection.startCol];
     }
-    // If it's a rectangle, fall through to default logic below
   }
 
   // Special handling for additional_dimension: always return value from mapped column(s) in the same row
@@ -82,30 +152,6 @@ const findDimensionValueForCell = (
     }
     return '';
   }
-  
-  // If dimension is in same row (e.g., year, state for each row)
-  if (selection.startRow <= valueRow && valueRow <= selection.endRow) {
-    // Find the column that intersects with the dimension mapping
-    for (let col = selection.startCol; col <= selection.endCol; col++) {
-      if (col === valueCol) {
-        return csvData[valueRow][col];
-      }
-    }
-  }
-  
-  // If dimension is in same column (e.g., indicator names in header row)
-  if (selection.startCol <= valueCol && valueCol <= selection.endCol) {
-    // Find the row that intersects with the dimension mapping
-    for (let row = selection.startRow; row <= selection.endRow; row++) {
-      if (row === valueRow) {
-        return csvData[row][valueCol];
-      }
-    }
-  }
-  
-  // Handle cross-referencing: find the dimension value based on row/column position
-  // For example, if we have year in column 0 and state in column 1, 
-  // and values start from column 2, we need to find the corresponding year and state
   
   // Check if this is a row-based dimension (like year, state)
   if (selection.startRow === selection.endRow) {
@@ -119,29 +165,7 @@ const findDimensionValueForCell = (
     return csvData[valueRow][selection.startCol];
   }
   
-  // For additional dimensions or other mappings that span multiple rows/columns,
-  // find the value in the same row as the value cell
-  if (selection.startRow <= valueRow && valueRow <= selection.endRow) {
-    // Find the first column in the dimension mapping for this row
-    for (let col = selection.startCol; col <= selection.endCol; col++) {
-      if (csvData[valueRow] && csvData[valueRow][col] !== undefined) {
-        return csvData[valueRow][col];
-      }
-    }
-  }
-  
-  // For more complex mappings, we need to determine the relationship
-  // This handles cases where dimensions are in different positions
-  
-  // If the dimension mapping spans multiple rows and columns,
-  // we need to find the intersection point
-  if (selection.startRow <= valueRow && valueRow <= selection.endRow &&
-      selection.startCol <= valueCol && valueCol <= selection.endCol) {
-    return csvData[valueRow][valueCol];
-  }
-  
   // Default case: try to find the closest match
-  // This is a fallback for complex mappings
   return findClosestDimensionValue(valueRow, valueCol, dimensionMapping, csvData);
 };
 

@@ -76,6 +76,7 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
   const [dimensionType, setDimensionType] = useState<string>('');
   const [subType, setSubType] = useState<string>('');
   const [customDimensionName, setCustomDimensionName] = useState<string>('');
+  const [mappingDirection, setMappingDirection] = useState<'row' | 'column'>('row');
   const [uniqueValues, setUniqueValues] = useState<string[]>([]);
   const [error, setError] = useState<string>('');
 
@@ -86,11 +87,33 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
     return availableColor || MAPPING_COLORS[existingMappings.length % MAPPING_COLORS.length];
   };
 
+  // Auto-detect mapping direction based on selection shape
+  const detectMappingDirection = (selection: CellSelection): 'row' | 'column' => {
+    const rowSpan = selection.endRow - selection.startRow + 1;
+    const colSpan = selection.endCol - selection.startCol + 1;
+    
+    // If it spans more columns than rows, it's likely a row mapping
+    if (colSpan > rowSpan) {
+      return 'row';
+    }
+    // If it spans more rows than columns, it's likely a column mapping
+    else if (rowSpan > colSpan) {
+      return 'column';
+    }
+    // For square selections, default to row (more common for headers)
+    else {
+      return 'row';
+    }
+  };
+
   useEffect(() => {
     if (selection) {
       // Extract unique values from the selection
       const values = extractUniqueValues(selection, []);
       setUniqueValues(values);
+      
+      // Auto-detect mapping direction
+      setMappingDirection(detectMappingDirection(selection));
       
       // Reset form
       setDimensionType('');
@@ -157,7 +180,8 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
       subType: subType || undefined,
       customDimensionName: customDimensionName || undefined,
       uniqueValues,
-      color: getAvailableColor()
+      color: getAvailableColor(),
+      mappingDirection: mappingDirection
     };
 
     onConfirm(mapping);
@@ -167,6 +191,7 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
     setDimensionType('');
     setSubType('');
     setCustomDimensionName('');
+    setMappingDirection('row');
     setError('');
     onCancel();
   };
@@ -198,6 +223,11 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Selected {selection.selectedCells.length} cells from row {selection.startRow} to {selection.endRow}, 
           column {selection.startCol} to {selection.endCol}
+          {selection.startRow !== selection.endRow && selection.startCol !== selection.endCol && (
+            <span style={{ display: 'block', marginTop: '4px', fontStyle: 'italic' }}>
+              Note: You can select partial rows or columns. Values outside the selection will use the closest selected cell.
+            </span>
+          )}
         </Typography>
 
         {error && (
@@ -222,6 +252,18 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
                 {type.label}
               </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Mapping Direction</InputLabel>
+          <Select
+            value={mappingDirection}
+            label="Mapping Direction"
+            onChange={(e) => setMappingDirection(e.target.value as 'row' | 'column')}
+          >
+            <MenuItem value="row">Row (e.g., Gender in row 2, Year in row 3)</MenuItem>
+            <MenuItem value="column">Column (e.g., Indicator names in column 0)</MenuItem>
           </Select>
         </FormControl>
 
@@ -287,35 +329,35 @@ export const DimensionMappingPopup: React.FC<DimensionMappingPopupProps> = ({
                   variant="outlined"
                 />
               ))}
-              {uniqueValues.length > 10 && (
-                <Chip
-                  label={`+${uniqueValues.length - 10} more`}
-                  size="small"
-                  variant="outlined"
-                  color="default"
-                />
-              )}
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              No unique values found
-            </Typography>
-          )}
-        </Box>
+                              {uniqueValues.length > 10 && (
+                  <Chip
+                    label={`+${uniqueValues.length - 10} more`}
+                    size="small"
+                    variant="outlined"
+                    color="default"
+                  />
+                )}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No unique values found
+              </Typography>
+            )}
+          </Box>
 
-        <Box display="flex" gap={1} justifyContent="flex-end">
-          <Button onClick={handleCancel} variant="outlined">
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleConfirm} 
-            variant="contained"
-            disabled={!dimensionType}
-          >
-            Confirm Mapping
-          </Button>
+          <Box display="flex" gap={1} justifyContent="flex-end">
+            <Button onClick={handleCancel} variant="outlined">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirm} 
+              variant="contained"
+              disabled={!dimensionType}
+            >
+              Confirm Mapping
+            </Button>
+          </Box>
         </Box>
-      </Box>
-    </Popover>
-  );
-}; 
+      </Popover>
+    );
+  };

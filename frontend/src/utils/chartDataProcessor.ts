@@ -1,6 +1,6 @@
 import { IndicatorDataPoint, IndicatorChartData } from '@/types/indicators';
 
-export type AggregationType = 'sum' | 'average' | 'min' | 'max' | 'median' | 'count';
+export type AggregationType = 'sum' | 'average' | 'min' | 'max' | 'median' | 'count' | 'none';
 
 export interface ChartDataProcessorOptions {
   selectedDimension: string;
@@ -51,7 +51,53 @@ function aggregateByDimension(
   dimension: string,
   aggregationType: AggregationType
 ): IndicatorChartData[] {
-  // Group values by dimension value
+  // For no aggregation, return all individual data points
+  if (aggregationType === 'none') {
+    return indicatorValues.map((item, index) => {
+      let dimValue = '';
+      if (
+        ['time', 'year', 'month', 'day', 'timestamp'].includes(dimension) &&
+        (item.year || item.month || item.day || item.timeValue || item.timestamp)
+      ) {
+        dimValue = item.year || item.month || item.day || item.timeValue || item.timestamp;
+      } else if (dimension === 'location' && item.locationValue) {
+        dimValue = item.locationValue;
+      } else if (item[dimension] !== undefined) {
+        dimValue = item[dimension];
+      } else if (item.customDimensions && item.customDimensions[dimension]) {
+        dimValue = item.customDimensions[dimension];
+      }
+
+      // Extract additional dimensions for tooltip
+      const additionalDimensions: Record<string, string> = {};
+      Object.keys(item).forEach(key => {
+        if (key !== dimension && key !== 'value' && key !== 'year' && key !== 'month' && 
+            key !== 'day' && key !== 'timeValue' && key !== 'timestamp' && key !== 'locationValue') {
+          if (item[key] !== undefined && item[key] !== null) {
+            additionalDimensions[key] = String(item[key]);
+          }
+        }
+      });
+
+      // Add custom dimensions
+      if (item.customDimensions) {
+        Object.keys(item.customDimensions).forEach(key => {
+          if (key !== dimension && item.customDimensions[key]) {
+            additionalDimensions[key] = item.customDimensions[key];
+          }
+        });
+      }
+
+      return {
+        label: dimValue || 'Unknown',
+        value: item.value,
+        additionalDimensions,
+        dataPointId: `${dimValue}_${index}`
+      };
+    });
+  }
+
+  // Group values by dimension value for aggregation
   const grouped: Record<string, number[]> = {};
   indicatorValues.forEach((item) => {
     let dimValue = '';

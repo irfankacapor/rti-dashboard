@@ -47,6 +47,7 @@ const chartTypes = [
 ];
 
 const AGGREGATION_OPTIONS: { label: string; value: AggregationType }[] = [
+  { label: 'No Aggregation', value: 'none' },
   { label: 'Sum', value: 'sum' },
   { label: 'Average', value: 'average' },
   { label: 'Min', value: 'min' },
@@ -80,6 +81,9 @@ function groupRawDataByDimension(indicatorValues: IndicatorValue[], selectedDime
 function aggregateValues(values: number[], aggregationType: string): number | null {
   if (!values || values.length === 0) return null;
   switch (aggregationType) {
+    case 'none':
+      // For no aggregation, return the first value (or null if multiple values)
+      return values.length === 1 ? values[0] : null;
     case 'sum':
       return values.reduce((a, b) => a + b, 0);
     case 'average':
@@ -200,31 +204,15 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
     return [];
   }, [indicatorDataPoints, useSubareaData, comprehensiveData, indicatorId]);
 
-  // Determine if any dimension value has multiple indicator values
-  const hasMultiplePerDimension = React.useMemo(() => {
-    if (!indicatorValues || !selectedDimension) return false;
-    const grouped: Record<string, number> = {};
-    indicatorValues.forEach((item: any) => {
-      let dimValue = '';
-      if (selectedDimension === 'time' && (item.timeValue || item.timestamp || item.year)) {
-        dimValue = item.timeValue || item.timestamp || item.year;
-      } else if (selectedDimension === 'location' && item.locationValue) {
-        dimValue = item.locationValue;
-      } else if (item[selectedDimension] !== undefined) {
-        dimValue = item[selectedDimension];
-      } else if (item.customDimensions && item.customDimensions[selectedDimension]) {
-        dimValue = item.customDimensions[selectedDimension];
-      }
-      if (!dimValue) return;
-      grouped[dimValue] = (grouped[dimValue] || 0) + 1;
-    });
-    return Object.values(grouped).some(count => count > 1);
-  }, [indicatorValues, selectedDimension]);
+  // Show aggregation dropdown if there are multiple data points
+  const hasMultipleDataPoints = React.useMemo(() => {
+    return indicatorValues && indicatorValues.length > 1;
+  }, [indicatorValues]);
 
   // Animate aggregation dropdown in/out
   useEffect(() => {
-    setShowAggregation(hasMultiplePerDimension);
-  }, [hasMultiplePerDimension]);
+    setShowAggregation(hasMultipleDataPoints);
+  }, [hasMultipleDataPoints]);
 
   // Persist aggregation type per dimension
   useEffect(() => {
@@ -237,6 +225,9 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
       setAggregationType(aggregationTypePerDimension.current[selectedDimension]);
     } else if (!showAggregation) {
       setAggregationType('sum');
+    } else if (showAggregation && !aggregationTypePerDimension.current[selectedDimension]) {
+      // Default to 'none' for new dimensions with multiple data points
+      setAggregationType('none');
     }
   }, [selectedDimension, showAggregation]);
 

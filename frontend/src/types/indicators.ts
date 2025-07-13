@@ -111,6 +111,10 @@ export interface IndicatorChartData {
   label: string;
   value: number;
   name?: string;
+  // For no aggregation mode - additional dimension values for tooltip
+  additionalDimensions?: Record<string, string>;
+  // For no aggregation mode - unique identifier for the data point
+  dataPointId?: string;
 }
 
 export interface UnitResponse {

@@ -63,6 +63,7 @@ export interface DimensionMapping {
   id: string;
   selection: CellSelection;
   dimensionType: 'indicator_names' | 'indicator_values' | 'time' | 'locations' | 'unit' | 'source' | 'additional_dimension';
+  mappingDirection: 'row' | 'column'; // NEW: Explicitly track mapping direction
   subType?: string; // e.g., 'year', 'month', 'state', 'city'
   customDimensionName?: string;
   uniqueValues?: string[];

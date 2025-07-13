@@ -164,9 +164,11 @@ const mockCellSelection = {
 
 const mockDimensionMapping = {
   id: 'mapping-1',
-  dimension: 'indicator_values',
+  dimensionType: 'indicator_values',
   selection: mockCellSelection,
-  coordinates: { indicator_values: '100' }
+  mappingDirection: 'row' as const,
+  color: '#2196f3',
+  uniqueValues: ['100']
 };
 
 const austrianCsvData = [
