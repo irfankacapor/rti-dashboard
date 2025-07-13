@@ -1,14 +1,22 @@
 import { IndicatorDataPoint, IndicatorChartData } from '@/types/indicators';
 
+export type AggregationType = 'sum' | 'average' | 'min' | 'max' | 'median' | 'count';
+
 export interface ChartDataProcessorOptions {
   selectedDimension: string;
   defaultDimension: string;
   data: any;
+  aggregationType?: AggregationType;
+  indicatorValues?: Array<{ value: number; [key: string]: any }>; // For direct aggregation
 }
 
 export function processChartData(options: ChartDataProcessorOptions): IndicatorChartData[] {
-  const { selectedDimension, defaultDimension, data } = options;
+  const { selectedDimension, defaultDimension, data, aggregationType = 'sum', indicatorValues } = options;
   
+  if (indicatorValues && selectedDimension) {
+    return aggregateByDimension(indicatorValues, selectedDimension, aggregationType);
+  }
+
   if (!data) return [];
 
   // If we have pre-processed chart data, use it
@@ -36,6 +44,79 @@ export function processChartData(options: ChartDataProcessorOptions): IndicatorC
   }
 
   return [];
+}
+
+function aggregateByDimension(
+  indicatorValues: Array<{ value: number; [key: string]: any }>,
+  dimension: string,
+  aggregationType: AggregationType
+): IndicatorChartData[] {
+  // Group values by dimension value
+  const grouped: Record<string, number[]> = {};
+  indicatorValues.forEach((item) => {
+    let dimValue = '';
+    if (dimension === 'time' && (item.timeValue || item.timestamp)) {
+      dimValue = item.timeValue || item.timestamp;
+    } else if (dimension === 'location' && item.locationValue) {
+      dimValue = item.locationValue;
+    } else if (item[dimension] !== undefined) {
+      dimValue = item[dimension];
+    } else if (item.customDimensions && item.customDimensions[dimension]) {
+      dimValue = item.customDimensions[dimension];
+    }
+    if (!dimValue) return; // Omit if no value
+    if (!grouped[dimValue]) grouped[dimValue] = [];
+    grouped[dimValue].push(item.value);
+  });
+
+  // Helper for median
+  const median = (arr: number[]) => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
+
+  // Aggregate per dimension value
+  let result = Object.entries(grouped).map(([label, values]) => {
+    let value: number;
+    switch (aggregationType) {
+      case 'sum':
+        value = values.reduce((a, b) => a + b, 0);
+        break;
+      case 'average':
+        value = values.reduce((a, b) => a + b, 0) / values.length;
+        break;
+      case 'min':
+        value = Math.min(...values);
+        break;
+      case 'max':
+        value = Math.max(...values);
+        break;
+      case 'median':
+        value = median(values);
+        break;
+      case 'count':
+        value = values.length;
+        break;
+      default:
+        value = values.reduce((a, b) => a + b, 0);
+    }
+    return { label, value };
+  });
+
+  // Sort time labels ascending if dimension is time and labels are years
+  if (dimension === 'time') {
+    result = result.sort((a, b) => {
+      const aNum = parseInt(a.label, 10);
+      const bNum = parseInt(b.label, 10);
+      if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+      return a.label.localeCompare(b.label);
+    });
+  }
+
+  return result;
 }
 
 function aggregateDataPointsByTimestamp(dataPoints: IndicatorDataPoint[]): IndicatorChartData[] {
