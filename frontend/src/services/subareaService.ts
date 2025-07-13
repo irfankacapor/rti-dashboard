@@ -3,15 +3,15 @@ import { slugify } from '@/utils/slugify';
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/subareas`;
 
-function mapSubareaFromApi(api: any): Subarea {
+function mapSubareaFromApi(subarea: Subarea): Subarea {
   return {
-    id: String(api.id),
-    code: api.code,
-    name: api.name,
-    description: api.description,
-    areaId: String(api.areaId),
-    areaName: api.areaName,
-    createdAt: new Date(api.createdAt),
+    id: String(subarea.id),
+    code: subarea.code,
+    name: subarea.name,
+    description: subarea.description,
+    areaId: String(subarea.areaId),
+    areaName: subarea.areaName,
+    createdAt: new Date(subarea.createdAt),
   };
 }
 

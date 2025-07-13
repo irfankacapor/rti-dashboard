@@ -18,7 +18,7 @@ import { UnitPickerModal } from './UnitPickerModal';
 
 interface IndicatorTableProps {
   indicators: ManagedIndicator[];
-  subareas: any[];
+  subareas: Subarea[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onIndicatorUpdate: (id: string, updates: Partial<ManagedIndicator>) => void;

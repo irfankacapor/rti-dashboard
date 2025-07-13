@@ -3,6 +3,7 @@ import { Box, Typography, Tooltip } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import IndividualIndicatorModal from './IndividualIndicatorModal';
+import { SubareaData } from '@/types/subareas';
 
 interface IndicatorListItemProps {
   indicator: any;
@@ -11,7 +12,7 @@ interface IndicatorListItemProps {
   selectedDimension?: string;
   hasHighlightedDimensionValue?: boolean;
   subareaId?: string;
-  comprehensiveData?: any; // NEW: Pass subarea data to avoid API calls
+  subareaData?: SubareaData;
 }
 
 const IndicatorListItem: React.FC<IndicatorListItemProps> = ({ 
@@ -21,7 +22,7 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
   selectedDimension, 
   hasHighlightedDimensionValue = false,
   subareaId,
-  comprehensiveData 
+  subareaData: comprehensiveData 
 }) => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
@@ -77,7 +78,7 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
         indicatorId={indicator.id}
         indicatorData={indicator}
         subareaId={subareaId}
-        comprehensiveData={comprehensiveData}
+        subareaData={comprehensiveData}
       />
     </>
   );

@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { Box, Typography, Alert } from '@mui/material';
 import TimeSeriesChart from './TimeSeriesChart';
+import { IndicatorTimeSeriesDataPoint, TimeSeriesDataPoint } from '@/types/subareas';
 
 interface SubareaTimeSeriesChartProps {
-  timeSeriesData: any[];
+  timeSeriesData: TimeSeriesDataPoint[];
   indicators: any[];
-  indicatorTimeSeriesData?: { [indicatorId: string]: Array<{ year: string; value: number }> };
+  indicatorTimeSeriesData: Record<string, IndicatorTimeSeriesDataPoint[]>;
 }
 
 function toSafeKey(name: string) {

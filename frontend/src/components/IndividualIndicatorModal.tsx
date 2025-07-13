@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Box, Typography, IconButton, ToggleButton, ToggleButtonGroup, MenuItem, Select, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Paper, FormControl, Stack, Grid, useMediaQuery, useTheme, Fade, Collapse } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import IndividualIndicatorChart from './charts/IndividualIndicatorChart';
+import IndividualIndicatorChart from '@/components/charts/IndividualIndicatorChart';
 import { useIndicatorData, useIndicatorDimensionValues } from '../hooks/useApi';
 import { 
   processChartData, 
@@ -14,6 +14,7 @@ import {
 import { IndicatorChartData } from '../types/indicators';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import { SubareaData } from '@/types/subareas';
 
 interface IndividualIndicatorModalProps {
   open: boolean;
@@ -21,7 +22,7 @@ interface IndividualIndicatorModalProps {
   indicatorId: string;
   indicatorData: any;
   subareaId?: string;
-  comprehensiveData?: any; // NEW: Pass comprehensive data to avoid API calls
+  subareaData?: SubareaData;
 }
 
 const style = {
@@ -103,7 +104,7 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
   indicatorId, 
   indicatorData, 
   subareaId,
-  comprehensiveData 
+  subareaData: comprehensiveData 
 }) => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));

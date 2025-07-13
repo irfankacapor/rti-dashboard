@@ -178,7 +178,7 @@ export default function SubareaDetailPage() {
                 <IndicatorListItem
                   indicator={indicator}
                   selectedDimension={selectedDimension}
-                  comprehensiveData={{
+                  subareaData={{
                     dimensionMetadata,
                     aggregatedData,
                     indicatorTimeSeriesData
