@@ -10,6 +10,7 @@ import { GoalsSidebar } from '@/components/dashboard';
 import IndicatorListItem from '@/components/IndicatorListItem';
 import IndividualIndicatorModal from '@/components/IndividualIndicatorModal';
 import SubareaTimeSeriesChart from '@/components/charts/SubareaTimeSeriesChart';
+import { Indicator } from '@/types/indicators';
 
 export default function SubareaDetailPage() {
   const params = useParams();
@@ -34,7 +35,7 @@ export default function SubareaDetailPage() {
   // Get all unique dimensions from indicators
   const availableDimensions = useMemo(() => {
     const dimSet = new Set<string>();
-    indicators.forEach((indicator: any) => {
+    indicators.forEach((indicator: Indicator) => {
       (indicator.dimensions || []).forEach((dim: string) => dimSet.add(dim));
     });
     return Array.from(dimSet);
@@ -173,15 +174,20 @@ export default function SubareaDetailPage() {
             Indicators ({indicators.length})
           </Typography>
           <Box>
-            {indicators.map((indicator: any) => (
+            {indicators.map((indicator: Indicator) => (
               <Box key={indicator.id} sx={{ mb: 2 }}>
                 <IndicatorListItem
                   indicator={indicator}
                   selectedDimension={selectedDimension}
                   subareaData={{
-                    dimensionMetadata,
+                    subarea,
+                    indicators,
                     aggregatedData,
-                    indicatorTimeSeriesData
+                    totalAggregatedValue,
+                    dimensionMetadata,
+                    timeSeriesData,
+                    indicatorTimeSeriesData,
+                    errors: {}
                   }}
                 />
               </Box>

@@ -30,7 +30,7 @@ export interface IndicatorTimeSeriesDataPoint {
 }
 
 export interface SubareaData {
-  subarea: Subarea;
+  subarea?: Subarea;
   indicators: Indicator[];
   aggregatedData: Record<string, Record<string, number>>;
   totalAggregatedValue: number;

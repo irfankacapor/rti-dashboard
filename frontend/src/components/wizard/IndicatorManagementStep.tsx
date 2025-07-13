@@ -16,7 +16,7 @@ import {
 } from '@mui/icons-material';
 import { useWizardStore } from '@/store/wizardStore';
 import { useWizardStore as useMainWizardStore } from '@/lib/store/useWizardStore';
-import { ManagedIndicator } from '@/types/indicators';
+import { ManagedIndicator, ManualIndicatorData } from '@/types/indicators';
 import { IndicatorTable } from './IndicatorTable';
 import { AddIndicatorForm } from './AddIndicatorForm';
 import { BulkIndicatorActions } from './BulkIndicatorActions';
@@ -172,7 +172,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     onNavigateToStep(3);
   };
 
-  const handleManualAdd = (indicatorData: any) => {
+  const handleManualAdd = (indicatorData: ManualIndicatorData) => {
     try {
       // Only add to local state - backend saving happens when clicking Next
       addManualIndicator(indicatorData);
