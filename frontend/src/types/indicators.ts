@@ -28,7 +28,7 @@ export interface ManagedIndicator {
   
   // Data context
   valueCount: number; // Number of data points
-  dimensions: string[]; // ['time', 'location', 'custom_dimension']
+  dimensions: Dimension[]; // Properly typed dimensions
   sampleValues?: string[]; // Preview of actual values
   
   // Metadata
@@ -51,7 +51,7 @@ export interface Indicator {
   dataType: DataType;
   subareaIndicators: SubareaIndicator[];
   valueCount: number;
-  dimensions: string[];
+  dimensions: Dimension[];
   subareaId: string;
   subareaName: string;
   direction: IndicatorDirection;
@@ -158,7 +158,7 @@ export const convertProcessedToManaged = (processed: ProcessedIndicator): Manage
   direction: processed.direction as IndicatorDirection,
   aggregationWeight: 1.0,
   valueCount: processed.valueCount,
-  dimensions: processed.dimensions,
+  dimensions: processed.dimensions, // Now both are Dimension[]
   dataType: 'decimal', // Default data type
   isFromCsv: true,
   isManual: false,

@@ -14,10 +14,11 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { IndicatorValueRow, IndicatorValueEdit, NewIndicatorValueRow } from '@/types/indicatorValues';
+import { Dimension } from '@/types/dimensions';
 
 interface EditableValuesTableProps {
   data: IndicatorValueRow[];
-  dimensions: string[];
+  dimensions: Dimension[];
   indicatorName: string;
   onValueChange: (factId: string, newValue: string) => void;
   onNewRowChange: (tempId: string, field: string, value: string) => void;
@@ -46,7 +47,7 @@ const EditableValuesTable: React.FC<EditableValuesTableProps> = ({
         <TableHead>
           <TableRow>
             {dimensions.map(dim => (
-              <TableCell key={dim}>{dim}</TableCell>
+              <TableCell key={dim.type}>{dim.displayName}</TableCell>
             ))}
             <TableCell>{indicatorName}</TableCell>
             <TableCell width={50}>
@@ -72,7 +73,7 @@ const EditableValuesTable: React.FC<EditableValuesTableProps> = ({
             return (
               <TableRow key={row.factId}>
                 {dimensions.map(dim => (
-                  <TableCell key={dim}>{row.dimensions[dim] || ''}</TableCell>
+                  <TableCell key={dim.type}>{row.dimensions[dim.type] || ''}</TableCell>
                 ))}
                 <TableCell>
                   <TextField
@@ -104,12 +105,12 @@ const EditableValuesTable: React.FC<EditableValuesTableProps> = ({
             return (
               <TableRow key={newRow.tempId} sx={{ backgroundColor: 'rgba(0,255,0,0.05)' }}>
                 {dimensions.map(dim => (
-                  <TableCell key={dim}>
+                  <TableCell key={dim.type}>
                     <TextField
-                      value={newRow.dimensions[dim] || ''}
-                      onChange={e => onNewRowChange(newRow.tempId, dim, e.target.value)}
+                      value={newRow.dimensions[dim.type] || ''}
+                      onChange={e => onNewRowChange(newRow.tempId, dim.type, e.target.value)}
                       size="small"
-                      placeholder={`Enter ${dim}`}
+                      placeholder={`Enter ${dim.displayName}`}
                       sx={{ minWidth: 120 }}
                     />
                   </TableCell>

@@ -1,4 +1,5 @@
 import { Indicator } from "@/types/indicators";
+import { Dimension } from "@/types/dimensions";
 
 export interface IndicatorValue {
   value: number;
@@ -13,7 +14,7 @@ export interface ProcessedIndicator {
   id: string;
   name: string; // e.g., "KMU mit zumindest grundlegender Digitalisierungsintensität"
   description?: string;
-  dimensions: string[]; // e.g., ['time', 'locations']
+  dimensions: Dimension[]; // Properly typed dimensions
   valueCount: number; // number of data points
   unit?: string;
   unitPrefix?: string;

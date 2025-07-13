@@ -36,7 +36,7 @@ export default function SubareaDetailPage() {
   const availableDimensions = useMemo(() => {
     const dimSet = new Set<string>();
     indicators.forEach((indicator: Indicator) => {
-      (indicator.dimensions || []).forEach((dim: string) => dimSet.add(dim));
+      (indicator.dimensions || []).forEach((dim) => dimSet.add(dim.type));
     });
     return Array.from(dimSet);
   }, [indicators]);
