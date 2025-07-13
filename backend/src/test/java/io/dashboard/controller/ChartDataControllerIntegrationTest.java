@@ -1,6 +1,7 @@
 package io.dashboard.controller;
 
 import io.dashboard.dto.*;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.service.ChartDataService;
 import io.dashboard.test.security.WithMockAdmin;
 import io.dashboard.util.JwtUtil;
@@ -25,11 +26,11 @@ class ChartDataControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-
     @MockBean
     private JwtUtil jwtUtil;
 
-
+    @MockBean
+    private UnitRepository unitRepository;
 
     @MockBean
     private ChartDataService chartDataService;

@@ -8,12 +8,10 @@ import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Area;
 import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Subarea;
-import io.dashboard.model.SubareaIndicator;
 import io.dashboard.repository.AreaRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
-import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,24 +38,26 @@ public class SubareaService {
     private final SubareaRepository subareaRepository;
     private final AreaRepository areaRepository;
     private final FactIndicatorValueRepository factIndicatorValueRepository;
-    private final SubareaIndicatorRepository subareaIndicatorRepository;
     private final AggregationService aggregationService;
     private final IndicatorService indicatorService;
 
+    @Transactional(readOnly = true)
     public List<SubareaResponse> findAll() {
         try {
-            return subareaRepository.findAllWithAreaAndIndicators().stream().map(this::toResponse).collect(Collectors.toList());
+            return subareaRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch subareas: " + e.getMessage(), e);
         }
     }
 
+    @Transactional(readOnly = true)
     public List<SubareaResponse> findByAreaId(Long areaId) {
         return subareaRepository.findByAreaId(areaId).stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public SubareaResponse findById(Long id) {
-        Subarea subarea = subareaRepository.findByIdWithArea(id)
+        Subarea subarea = subareaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", id));
         return toResponse(subarea);
     }
@@ -99,9 +99,13 @@ public class SubareaService {
     public void delete(Long id) {
         Subarea subarea = subareaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", id));
-        if (subarea.getSubareaIndicators() != null && !subarea.getSubareaIndicators().isEmpty()) {
-            throw new BadRequestException("Cannot delete subarea with indicators");
+        
+        // Check if subarea has associated fact values
+        List<FactIndicatorValue> factValues = factIndicatorValueRepository.findBySubareaId(id);
+        if (!factValues.isEmpty()) {
+            throw new BadRequestException("Cannot delete subarea that has associated data");
         }
+        
         subareaRepository.delete(subarea);
     }
 
@@ -109,24 +113,12 @@ public class SubareaService {
     public void deleteWithData(Long id) {
         Subarea subarea = subareaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subarea", "id", id));
-        
-        // Get all indicators associated with this subarea
-        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findBySubareaId(id);
-        
-        // For each indicator, delete its associated fact values
-        for (SubareaIndicator subareaIndicator : subareaIndicators) {
-            Long indicatorId = subareaIndicator.getId().getIndicatorId();
-            List<FactIndicatorValue> factValues = factIndicatorValueRepository.findByIndicatorId(indicatorId);
-            factIndicatorValueRepository.deleteAll(factValues);
-        }
-        
-        // Remove all SubareaIndicator relationships
-        subareaIndicatorRepository.deleteAll(subareaIndicators);
-        
+        // Delete all fact values for this subarea
+        List<FactIndicatorValue> factValues = factIndicatorValueRepository.findBySubareaId(id);
+        factIndicatorValueRepository.deleteAll(factValues);
         // Finally delete the subarea
         subareaRepository.delete(subarea);
-        
-        log.info("Deleted subarea {} with {} associated indicators and their data", id, subareaIndicators.size());
+        log.info("Deleted subarea {} and all associated fact values", id);
     }
 
     private SubareaResponse toResponse(Subarea subarea) {
@@ -138,7 +130,6 @@ public class SubareaService {
         resp.setCreatedAt(subarea.getCreatedAt());
         resp.setAreaId(subarea.getArea() != null ? subarea.getArea().getId() : null);
         resp.setAreaName(subarea.getArea() != null ? subarea.getArea().getName() : null);
-        resp.setIndicatorCount(subarea.getSubareaIndicators() != null ? subarea.getSubareaIndicators().size() : 0);
         return resp;
     }
 
@@ -155,6 +146,9 @@ public class SubareaService {
             // Return 0 for now as requested
             log.debug("Returning 0 for aggregated value as requested");
             return 0.0;
+        } catch (ResourceNotFoundException e) {
+            // Re-throw ResourceNotFoundException as-is
+            throw e;
         } catch (Exception e) {
             log.error("Error calculating aggregated value for subarea ID {}: {}", subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to calculate aggregated value for subarea: " + e.getMessage(), e);
@@ -171,6 +165,9 @@ public class SubareaService {
             }
             
             return aggregationService.getSubareaAggregatedByTime(subareaId);
+        } catch (ResourceNotFoundException e) {
+            // Re-throw ResourceNotFoundException as-is
+            throw e;
         } catch (Exception e) {
             log.error("Error getting aggregated data by time for subarea ID {}: {}", subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to get aggregated data by time for subarea: " + e.getMessage(), e);
@@ -187,6 +184,9 @@ public class SubareaService {
             }
             
             return aggregationService.getSubareaAggregatedByLocation(subareaId);
+        } catch (ResourceNotFoundException e) {
+            // Re-throw ResourceNotFoundException as-is
+            throw e;
         } catch (Exception e) {
             log.error("Error getting aggregated data by location for subarea ID {}: {}", subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to get aggregated data by location for subarea: " + e.getMessage(), e);
@@ -203,6 +203,9 @@ public class SubareaService {
             }
 
             return aggregationService.getSubareaAggregatedByDimension(subareaId, dimension);
+        } catch (ResourceNotFoundException e) {
+            // Re-throw ResourceNotFoundException as-is
+            throw e;
         } catch (Exception e) {
             log.error("Error getting aggregated data by {} for subarea ID {}: {}", dimension, subareaId, e.getMessage(), e);
             throw new RuntimeException("Failed to get aggregated data by " + dimension + " for subarea: " + e.getMessage(), e);
@@ -296,22 +299,18 @@ public class SubareaService {
      * Get comprehensive subarea data including all indicators, aggregated data, and dimension metadata
      * Returns partial data if some parts fail
      */
+    @Transactional(readOnly = true)
     public SubareaDataResponse getSubareaData(Long subareaId) {
         SubareaDataResponse.SubareaDataResponseBuilder builder = SubareaDataResponse.builder();
         Map<String, String> errors = new HashMap<>();
         
-        try {
-            // Get subarea info
-            SubareaResponse subarea = findById(subareaId);
-            builder.subarea(subarea);
-        } catch (Exception e) {
-            log.error("Error fetching subarea info for subarea {}: {}", subareaId, e.getMessage());
-            errors.put("subarea", e.getMessage());
-        }
+        // First check if subarea exists - this will throw ResourceNotFoundException if not found
+        SubareaResponse subarea = findById(subareaId);
+        builder.subarea(subarea);
         
         try {
             // Get indicators list
-            List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+            List<IndicatorResponse> indicators = indicatorService.findByFactSubareaId(subareaId);
             builder.indicators(indicators);
         } catch (Exception e) {
             log.error("Error fetching indicators for subarea {}: {}", subareaId, e.getMessage());
@@ -349,7 +348,7 @@ public class SubareaService {
         try {
             // Get dimension metadata for all indicators
             Map<String, IndicatorDimensionsResponse> dimensionMetadata = new HashMap<>();
-            List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+            List<IndicatorResponse> indicators = indicatorService.findByFactSubareaId(subareaId);
             
             for (IndicatorResponse indicator : indicators) {
                 try {
@@ -368,7 +367,7 @@ public class SubareaService {
         
         try {
             // Get time series data for all indicators
-            List<Map<String, Object>> timeSeriesData = getSubareaTimeSeriesData(subareaId);
+            List<Map<String, Object>> timeSeriesData = getSubareaTimeSeriesData(subareaId, true);
             builder.timeSeriesData(timeSeriesData);
         } catch (Exception e) {
             log.error("Error fetching time series data for subarea {}: {}", subareaId, e.getMessage());
@@ -377,7 +376,7 @@ public class SubareaService {
         
         try {
             // Get individual indicator time series data
-            Map<String, List<Map<String, Object>>> indicatorTimeSeriesData = getIndividualIndicatorTimeSeriesData(subareaId);
+            Map<String, List<Map<String, Object>>> indicatorTimeSeriesData = getIndividualIndicatorTimeSeriesData(subareaId, true);
             builder.indicatorTimeSeriesData(indicatorTimeSeriesData);
         } catch (Exception e) {
             log.error("Error fetching individual indicator time series data for subarea {}: {}", subareaId, e.getMessage());
@@ -386,7 +385,7 @@ public class SubareaService {
         
         try {
             // Get individual indicator dimension data for all dimensions
-            Map<String, Map<String, List<Map<String, Object>>>> indicatorDimensionData = getIndividualIndicatorDimensionData(subareaId);
+            Map<String, Map<String, List<Map<String, Object>>>> indicatorDimensionData = getIndividualIndicatorDimensionData(subareaId, true);
             builder.indicatorDimensionData(indicatorDimensionData);
         } catch (Exception e) {
             log.error("Error fetching individual indicator dimension data for subarea {}: {}", subareaId, e.getMessage());
@@ -401,14 +400,14 @@ public class SubareaService {
      * Get time series data for all indicators in a subarea
      * Returns data in format: [{ year: string, indicators: { [indicatorName]: value } }]
      */
-    private List<Map<String, Object>> getSubareaTimeSeriesData(Long subareaId) {
-        List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+    private List<Map<String, Object>> getSubareaTimeSeriesData(Long subareaId, boolean includeTime) {
+        List<IndicatorResponse> indicators = indicatorService.findByFactSubareaId(subareaId);
         Map<String, Map<String, Double>> indicatorTimeData = new HashMap<>();
         Set<String> allYears = new HashSet<>();
         
         // Collect time data for each indicator
         for (IndicatorResponse indicator : indicators) {
-            if (indicator.getDimensions() != null && indicator.getDimensions().contains("time")) {
+            if (includeTime && indicator.getDimensions() != null && indicator.getDimensions().contains("time")) {
                 List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
                 Map<String, Double> timeData = new HashMap<>();
                 
@@ -459,12 +458,12 @@ public class SubareaService {
      * Get individual time series data for each indicator in a subarea
      * Returns data in format: { [indicatorId]: [{ year: string, value: number }] }
      */
-    private Map<String, List<Map<String, Object>>> getIndividualIndicatorTimeSeriesData(Long subareaId) {
-        List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+    private Map<String, List<Map<String, Object>>> getIndividualIndicatorTimeSeriesData(Long subareaId, boolean includeTime) {
+        List<IndicatorResponse> indicators = indicatorService.findByFactSubareaId(subareaId);
         Map<String, List<Map<String, Object>>> result = new HashMap<>();
         
         for (IndicatorResponse indicator : indicators) {
-            if (indicator.getDimensions() != null && indicator.getDimensions().contains("time")) {
+            if (includeTime && indicator.getDimensions() != null && indicator.getDimensions().contains("time")) {
                 List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
                 List<Map<String, Object>> timeSeries = new ArrayList<>();
                 
@@ -495,8 +494,8 @@ public class SubareaService {
      * Get individual dimension data for each indicator in a subarea
      * Returns data in format: { [indicatorId]: { [dimension]: [{ dimensionValue: string, allDimensions: {...}, value: number }] } }
      */
-    private Map<String, Map<String, List<Map<String, Object>>>> getIndividualIndicatorDimensionData(Long subareaId) {
-        List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+    private Map<String, Map<String, List<Map<String, Object>>>> getIndividualIndicatorDimensionData(Long subareaId, boolean includeTime) {
+        List<IndicatorResponse> indicators = indicatorService.findByFactSubareaId(subareaId);
         Map<String, Map<String, List<Map<String, Object>>>> result = new HashMap<>();
         
         for (IndicatorResponse indicator : indicators) {

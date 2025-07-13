@@ -23,6 +23,12 @@ public class UnitController {
 
     @GetMapping("/units")
     @PermitAll
+    public List<UnitResponse> getAllUnits() {
+        return unitService.findAll();
+    }
+
+    @GetMapping("/units/grouped")
+    @PermitAll
     public Map<String, List<UnitResponse>> getAllUnitsGrouped() {
         return unitService.findAllGrouped();
     }

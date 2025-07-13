@@ -87,7 +87,8 @@ class UnitControllerIntegrationTest {
         
         mockMvc.perform(get("/api/v1/units"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("UNIT1"));
+                .andExpect(jsonPath("$[0].code").value("UNIT1"))
+                .andExpect(jsonPath("$[0].description").value("Test Unit"));
     }
 
     @Test

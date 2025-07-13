@@ -1,6 +1,7 @@
 package io.dashboard;
 
 import io.dashboard.controller.HealthController;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.test.security.WithMockAdmin;
 import io.dashboard.util.JwtUtil;
 
@@ -19,6 +20,9 @@ class HealthControllerTest {
 
     @MockBean
     private JwtUtil jwtUtil;
+
+    @MockBean
+    private UnitRepository unitRepository;
 
     @Autowired
     private MockMvc mockMvc;

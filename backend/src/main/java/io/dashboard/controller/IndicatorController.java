@@ -3,7 +3,6 @@ package io.dashboard.controller;
 import io.dashboard.dto.IndicatorCreateRequest;
 import io.dashboard.dto.IndicatorResponse;
 import io.dashboard.dto.IndicatorUpdateRequest;
-import io.dashboard.dto.SubareaIndicatorRequest;
 import io.dashboard.dto.IndicatorValuesResponse;
 import io.dashboard.dto.IndicatorValueUpdate;
 import io.dashboard.dto.IndicatorValueCreate;
@@ -44,7 +43,7 @@ public class IndicatorController {
     @GetMapping("/subareas/{subareaId}/indicators")
     @PermitAll
     public List<IndicatorResponse> getIndicatorsBySubarea(@PathVariable Long subareaId) {
-        return indicatorService.findBySubareaId(subareaId);
+        return indicatorService.findByFactSubareaId(subareaId);
     }
 
     @PostMapping("/indicators")
@@ -71,25 +70,6 @@ public class IndicatorController {
     @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> deleteIndicatorWithData(@PathVariable Long id) {
         indicatorService.deleteWithData(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/indicators/{indicatorId}/subareas/{subareaId}")
-    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
-    public ResponseEntity<Void> assignIndicatorToSubarea(
-            @PathVariable Long indicatorId,
-            @PathVariable Long subareaId,
-            @Valid @RequestBody SubareaIndicatorRequest request) {
-        indicatorService.assignToSubarea(indicatorId, subareaId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
-    @DeleteMapping("/indicators/{indicatorId}/subareas/{subareaId}")
-    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
-    public ResponseEntity<Void> removeIndicatorFromSubarea(
-            @PathVariable Long indicatorId,
-            @PathVariable Long subareaId) {
-        indicatorService.removeFromSubarea(indicatorId, subareaId);
         return ResponseEntity.noContent().build();
     }
 

@@ -7,7 +7,7 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.UnitRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,10 +20,12 @@ import java.util.stream.Collectors;
 public class UnitService {
     private final UnitRepository unitRepository;
 
+    @Transactional(readOnly = true)
     public List<UnitResponse> findAll() {
         return unitRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Map<String, List<UnitResponse>> findAllGrouped() {
         return unitRepository.findAll().stream()
             .collect(Collectors.groupingBy(
@@ -32,6 +34,7 @@ public class UnitService {
             ));
     }
 
+    @Transactional(readOnly = true)
     public UnitResponse findById(Long id) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Unit", "id", id));

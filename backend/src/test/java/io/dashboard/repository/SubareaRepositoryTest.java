@@ -2,7 +2,6 @@ package io.dashboard.repository;
 
 import io.dashboard.model.Area;
 import io.dashboard.model.Subarea;
-import io.dashboard.model.SubareaIndicator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -139,8 +138,8 @@ class SubareaRepositoryTest {
     }
 
     @Test
-    void findAllWithAreaAndIndicators_shouldReturnAllSubareasWithRelationships() {
-        List<Subarea> result = subareaRepository.findAllWithAreaAndIndicators();
+    void findAll_shouldReturnAllSubareasWithAreaRelationships() {
+        List<Subarea> result = subareaRepository.findAll();
         
         assertThat(result).hasSize(3);
         assertThat(result).allMatch(subarea -> subarea.getArea() != null);
@@ -148,20 +147,13 @@ class SubareaRepositoryTest {
     }
 
     @Test
-    void findByIdWithArea_shouldReturnSubareaWithRelationships_whenExists() {
-        Optional<Subarea> result = subareaRepository.findByIdWithArea(subarea1.getId());
+    void findById_shouldReturnSubareaWithAreaRelationship_whenExists() {
+        Optional<Subarea> result = subareaRepository.findById(subarea1.getId());
         
         assertThat(result).isPresent();
         assertThat(result.get().getCode()).isEqualTo("SUB1");
         assertThat(result.get().getArea()).isNotNull();
         assertThat(result.get().getArea().getId()).isEqualTo(area1.getId());
-    }
-
-    @Test
-    void findByIdWithArea_shouldReturnEmpty_whenNotExists() {
-        Optional<Subarea> result = subareaRepository.findByIdWithArea(999L);
-        
-        assertThat(result).isEmpty();
     }
 
     @Test

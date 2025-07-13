@@ -7,7 +7,7 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Area;
 import io.dashboard.repository.AreaRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +19,12 @@ import java.util.stream.Collectors;
 public class AreaService {
     private final AreaRepository areaRepository;
 
+    @Transactional(readOnly = true)
     public List<AreaResponse> findAll() {
         return areaRepository.findAllWithSubareas().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public AreaResponse findById(Long id) {
         Area area = areaRepository.findByIdWithSubareas(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Area", "id", id));

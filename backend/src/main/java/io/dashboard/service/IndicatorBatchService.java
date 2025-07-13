@@ -11,7 +11,6 @@ import io.dashboard.model.DimTime;
 import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;
-import io.dashboard.model.SubareaIndicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.DimGenericRepository;
 import io.dashboard.repository.UnitRepository;
@@ -19,7 +18,6 @@ import io.dashboard.repository.DimLocationRepository;
 import io.dashboard.repository.DimTimeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
-import io.dashboard.repository.SubareaIndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +40,8 @@ public class IndicatorBatchService {
     private final DimLocationRepository dimLocationRepository;
     private final DimGenericRepository dimGenericRepository;
     private final FactIndicatorValueRepository factRepository;
-    private final SubareaIndicatorRepository subareaIndicatorRepository;
-    private final SubareaRepository subareaRepository;
     private final UnitRepository unitRepository;
+    private final SubareaRepository subareaRepository;
     
     public IndicatorBatchResponse createFromCsvData(IndicatorBatchRequest request) {
         List<IndicatorResponse> createdIndicators = new ArrayList<>();
@@ -56,10 +53,7 @@ public class IndicatorBatchService {
                 // 1. Create or find indicator
                 Indicator indicator = createOrFindIndicator(csvIndicator);
                 
-                // 2. Create subarea relationship
-                createSubareaRelationship(indicator, csvIndicator);
-                
-                // 3. Process all values and create fact records
+                // 2. Process all values and create fact records
                 int factCount = processIndicatorValues(indicator, csvIndicator.getValues(), csvIndicator.getSubareaId());
                 totalFactRecords += factCount;
                 
@@ -115,36 +109,16 @@ public class IndicatorBatchService {
         return indicatorRepository.save(indicator);
     }
     
-    private void createSubareaRelationship(Indicator indicator, CsvIndicatorData csvIndicator) {
-        // Check if relationship already exists
-        boolean exists = subareaIndicatorRepository.existsBySubareaIdAndIndicatorId(
-            csvIndicator.getSubareaId(), indicator.getId());
-            
-        if (!exists) {
-            SubareaIndicator relationship = new SubareaIndicator();
-            SubareaIndicator.SubareaIndicatorId id = new SubareaIndicator.SubareaIndicatorId();
-            id.setSubareaId(csvIndicator.getSubareaId());
-            id.setIndicatorId(indicator.getId());
-            relationship.setId(id);
-            relationship.setDirection(csvIndicator.getDirection());
-            relationship.setAggregationWeight(csvIndicator.getAggregationWeight());
-            
-            // Set the relationships properly - these are required for @MapsId to work
-            relationship.setIndicator(indicator);
-            // We need to fetch the subarea to set the relationship
-            // For now, we'll create a proxy or fetch it properly
-            // Since we're in a transaction, we can create a simple reference
-            Subarea subarea = new Subarea();
-            subarea.setId(csvIndicator.getSubareaId());
-            relationship.setSubarea(subarea);
-                
-            subareaIndicatorRepository.save(relationship);
-        }
-    }
-    
     private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values, Long subareaId) {
         int count = 0;
-        Subarea subarea = subareaRepository.findById(subareaId).orElse(null);
+        Subarea subarea = null;
+        
+        // Fetch subarea if subareaId is provided
+        if (subareaId != null) {
+            subarea = subareaRepository.findById(subareaId)
+                .orElseThrow(() -> new RuntimeException("Subarea with ID " + subareaId + " not found"));
+        }
+        
         for (IndicatorValue value : values) {
             try {
                 // Create dimension records

@@ -19,7 +19,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     List<FactIndicatorValue> findByIndicatorIdWithTime(@Param("indicatorId") Long indicatorId);
     
     // Find by subarea ID
-    @Query("SELECT f FROM FactIndicatorValue f JOIN f.indicator i JOIN i.subareaIndicators si WHERE si.subarea.id = :subareaId")
+    @Query("SELECT f FROM FactIndicatorValue f WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaId(@Param("subareaId") Long subareaId);
     
     // Find by indicator with eager loading of time dimension for latest value calculation
@@ -105,8 +105,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "JOIN FETCH f.indicator i " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "JOIN i.subareaIndicators si " +
-           "WHERE si.subarea.id = :subareaId")
+           "WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoading(@Param("subareaId") Long subareaId);
     
     // Find by indicator with eager loading of all required relationships
@@ -130,8 +129,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
            "LEFT JOIN FETCH f.generics " +
-           "JOIN i.subareaIndicators si " +
-           "WHERE si.subarea.id = :subareaId")
+           "WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoadingGenerics(@Param("subareaId") Long subareaId);
 
     @Query("SELECT f FROM FactIndicatorValue f LEFT JOIN FETCH f.time LEFT JOIN FETCH f.location LEFT JOIN FETCH f.generics WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
@@ -156,4 +154,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
         "GROUP BY g.dimension_name",
         nativeQuery = true)
     List<String> findDimensionsByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
+
+    @Query("SELECT f FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId AND f.subarea IS NOT NULL")
+    List<FactIndicatorValue> findByIndicatorIdWithSubarea(@Param("indicatorId") Long indicatorId);
 } 
