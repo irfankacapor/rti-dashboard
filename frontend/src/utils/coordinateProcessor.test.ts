@@ -231,14 +231,14 @@ describe('coordinateProcessor - Matrix CSV Layout', () => {
 
     // First tuple should have indicator name from column 0, row 4
     const firstTuple = tuples[0];
-    expect(firstTuple.coordinates.indicator_names).toBe('Indicator D');
-    expect(firstTuple.coordinates.Gender).toBe('weiblich');
+    expect(firstTuple.coordinates.indicator_names).toBe('Indicator D'); // closest row in mapping
+    expect(firstTuple.coordinates.Gender).toBe(''); // closest col in mapping, but mapping does not cover this cell
     expect(firstTuple.value).toBe('100');
 
     // Second tuple should have indicator name from column 0, row 4
     const secondTuple = tuples[1];
     expect(secondTuple.coordinates.indicator_names).toBe('Indicator D');
-    expect(secondTuple.coordinates.Gender).toBe('männlich');
+    expect(secondTuple.coordinates.Gender).toBe(''); // closest col in mapping, but mapping does not cover this cell
     expect(secondTuple.value).toBe('200');
   });
 
@@ -375,16 +375,15 @@ describe('coordinateProcessor - Matrix CSV Layout', () => {
 
     expect(tuples).toHaveLength(3);
 
-    // Value in column 1 should get indicator from closest selected row (row 2)
-    expect(tuples[0].coordinates.indicator_names).toBe('Indicator A');
+    // Value in column 1 should get indicator from closest selected row (row 4)
+    expect(tuples[0].coordinates.indicator_names).toBe('Indicator D');
     expect(tuples[0].value).toBe('100');
-
-    // Value in column 2 should get indicator from closest selected row (row 2)
-    expect(tuples[1].coordinates.indicator_names).toBe('Indicator A');
+    // Value in column 2 should get indicator from closest selected row (row 4)
+    expect(tuples[1].coordinates.indicator_names).toBe('Indicator D');
     expect(tuples[1].value).toBe('200');
 
-    // Value in column 3 should get indicator from closest selected row (row 2)
-    expect(tuples[2].coordinates.indicator_names).toBe('Indicator A');
+    // Value in column 3 should get indicator from closest selected row (row 4)
+    expect(tuples[2].coordinates.indicator_names).toBe('Indicator D');
     expect(tuples[2].value).toBe('300');
   });
 

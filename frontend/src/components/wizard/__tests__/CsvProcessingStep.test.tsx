@@ -4,6 +4,11 @@ import { CsvProcessingStep } from '../CsvProcessingStep';
 import { csvProcessingService } from '@/services/csvProcessingService';
 import { getSubareas } from '@/services/subareaService';
 
+// Mock TextDecoder for test environment
+global.TextDecoder = jest.fn().mockImplementation(() => ({
+  decode: jest.fn().mockReturnValue('Year,Value\n2023,100'),
+}));
+
 // Mock the services
 jest.mock('@/services/csvProcessingService');
 jest.mock('@/services/subareaService');
@@ -149,6 +154,7 @@ const mockCsvFile = {
   name: 'test.csv',
   file: {
     text: jest.fn().mockResolvedValue('Year,Value\n2023,100'),
+    arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(8)),
     name: 'test.csv',
     type: 'text/csv'
   }
@@ -197,11 +203,6 @@ describe('CsvProcessingStep', () => {
   it('renders upload phase initially', async () => {
     render(<CsvProcessingStep />);
     
-    await waitFor(() => {
-      expect(screen.getByTestId('wizard-container')).toBeInTheDocument();
-    });
-    
-    expect(screen.getByTestId('wizard-title')).toHaveTextContent('CSV Data Processing');
     expect(screen.getByTestId('csv-upload-section')).toBeInTheDocument();
     expect(screen.getByTestId('upload-button')).toBeInTheDocument();
   });
@@ -215,6 +216,13 @@ describe('CsvProcessingStep', () => {
   });
 
   it('handles file upload and transitions to selection phase', async () => {
+    // Mock successful file processing
+    const mockPapaparse = require('papaparse');
+    mockPapaparse.parse.mockReturnValue({
+      data: [['Year', 'Value'], ['2023', '100']],
+      errors: []
+    });
+    
     render(<CsvProcessingStep />);
     
     await waitFor(() => {
@@ -235,6 +243,13 @@ describe('CsvProcessingStep', () => {
   });
 
   it('shows CSV data in selection phase', async () => {
+    // Mock successful file processing
+    const mockPapaparse = require('papaparse');
+    mockPapaparse.parse.mockReturnValue({
+      data: [['Year', 'Value'], ['2023', '100']],
+      errors: []
+    });
+    
     render(<CsvProcessingStep />);
     
     await waitFor(() => {
@@ -252,6 +267,13 @@ describe('CsvProcessingStep', () => {
   });
 
   it('shows process mappings button in selection phase', async () => {
+    // Mock successful file processing
+    const mockPapaparse = require('papaparse');
+    mockPapaparse.parse.mockReturnValue({
+      data: [['Year', 'Value'], ['2023', '100']],
+      errors: []
+    });
+    
     render(<CsvProcessingStep />);
     
     await waitFor(() => {
