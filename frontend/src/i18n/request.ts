@@ -9,8 +9,6 @@ export default getRequestConfig(async ({requestLocale}) => {
   // `requestLocale` is a Promise and needs to be awaited
   const locale = await requestLocale;
   
-  console.log('locale:', locale, 'locales:', locales);
-  
   // Handle the case where locale is undefined (e.g., for routes outside [locale] segment)
   if (!locale) {
     // Return a default locale for undefined cases

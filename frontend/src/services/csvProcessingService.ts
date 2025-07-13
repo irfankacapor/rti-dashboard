@@ -34,17 +34,11 @@ export const csvProcessingService = {
       })
     };
 
-    console.log('Submitting indicators to backend:', request);
-    console.log('API_BASE:', API_BASE);
-
     const response = await fetch(`${API_BASE}/indicators/create-from-csv`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request)
     });
-
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
@@ -53,7 +47,6 @@ export const csvProcessingService = {
     }
 
     const result = await response.json();
-    console.log('Backend response:', result);
     return result;
   }
 }; 

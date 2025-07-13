@@ -71,13 +71,6 @@ export default function SubareaDetailPage() {
     }))
     .filter(group => group.goals.length > 0);
 
-  // Debug: log subarea object
-  React.useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('Subarea object:', subarea);
-    console.log('Subarea data:', { subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata, timeSeriesData, indicatorTimeSeriesData });
-  }, [subarea, indicators, aggregatedData, totalAggregatedValue, dimensionMetadata, timeSeriesData, indicatorTimeSeriesData]);
-
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   if (loading) {

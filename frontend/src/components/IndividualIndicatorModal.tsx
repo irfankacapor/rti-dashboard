@@ -304,10 +304,6 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
     return `Data available for ${uniqueValues.length} ${selectedDimension}${uniqueValues.length !== 1 ? 's' : ''} ${range}`;
   }, [indicatorValues, selectedDimension]);
 
-  // After chartData is computed
-  console.log('indicatorValues', indicatorValues);
-  console.log('chartData', chartData);
-
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="indicator-modal-title" aria-modal="true" role="dialog">
       <Box sx={{
@@ -453,12 +449,6 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
           <>
             {viewMode === 'chart' && (
               (() => {
-                console.log('IndividualIndicatorChart props', {
-                  data: chartData,
-                  chartType,
-                  xAxisFormatter: cleanTimeLabel,
-                  aggregationType
-                });
                 return (
                   <Box>
                     <IndividualIndicatorChart

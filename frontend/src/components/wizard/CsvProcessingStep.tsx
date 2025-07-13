@@ -92,7 +92,6 @@ export const CsvProcessingStep: React.FC = () => {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         let rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
-        console.log('Excel data before merged cell fill:', JSON.parse(JSON.stringify(rawData)));
         // Fill merged cells for Excel: copy the value from the top-left cell to all other cells in the merged region if they are empty
         if (worksheet['!merges'] && Array.isArray(worksheet['!merges'])) {
           worksheet['!merges'].forEach((mergeRegion: any) => {
@@ -114,7 +113,6 @@ export const CsvProcessingStep: React.FC = () => {
             }
           });
         }
-        console.log('Excel data after merged cell fill:', JSON.parse(JSON.stringify(rawData)));
         csvData = rawData;
       } else {
         // Parse CSV data
@@ -278,7 +276,6 @@ export const CsvProcessingStep: React.FC = () => {
       // Show success message if fixes were applied
       if (appliedFixesCount > 0) {
         // Add success notification here
-        console.log(`Applied ${appliedFixesCount} encoding fixes successfully`);
       }
     } catch (error) {
       setState(prev => ({
@@ -306,8 +303,6 @@ export const CsvProcessingStep: React.FC = () => {
   };
 
   const handleSubmitIndicators = async () => {
-    console.log('Starting submit indicators...');
-    console.log('Processed indicators:', state.processedIndicators);
     
     setState(prev => ({ ...prev, isLoading: true, error: undefined }));
 
@@ -315,19 +310,12 @@ export const CsvProcessingStep: React.FC = () => {
       // Submit to backend
       const response = await csvProcessingService.submitProcessedIndicators(state.processedIndicators);
       
-      // Mark step as completed
-      console.log('Indicators submitted successfully:', response);
-      
       // Set loading to false and show success
       setState(prev => ({
         ...prev,
         isLoading: false,
         error: undefined
       }));
-      
-      // You could also show a success message here
-      // For now, we'll just log it
-      console.log(`Successfully created ${response.createdIndicators.length} indicators with ${response.totalFactRecords} fact records`);
       
       setShowConfirmation(true);
     } catch (error) {

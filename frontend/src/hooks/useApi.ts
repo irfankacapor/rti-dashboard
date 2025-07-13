@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 function mapIndicatorApiToFrontend(apiIndicator: any) {
-  console.log("mapIndicatorApiToFrontend Input: ", apiIndicator);
   return {
     id: String(apiIndicator.id),
     name: apiIndicator.name,

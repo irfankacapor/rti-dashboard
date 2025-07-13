@@ -27,22 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchUser = async () => {
-    console.log('Fetching user...');
     setIsLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/me`, { credentials: "include" });
-      console.log('Response status:', res.status);
       if (res.ok) {
         const data = await res.json();
-        console.log('User data:', data);
         setUser(data);
       } else {
-        console.log('Failed to fetch user, status:', res.status);
         setUser(null);
       }
     } catch (err) {
-      console.log('Error fetching user:', err);
       setUser(null);
       setError("Failed to fetch user");
     } finally {

@@ -37,9 +37,6 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
     )
   );
 
-  console.log("chartData", chartData);
-  console.log("allIndicatorNames", allIndicatorNames);
-
   return (
     <ResponsiveContainer width="100%" height={250}>
       {chartType === 'bar' ? (

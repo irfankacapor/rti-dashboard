@@ -75,8 +75,6 @@ const SubareaTimeSeriesChart: React.FC<SubareaTimeSeriesChartProps> = ({
     return scaleRatio > 1000; // Show warning if scale ratio exceeds 1000x
   }, [transformedTimeSeriesData]);
 
-  console.log("transformedTimeSeriesData", transformedTimeSeriesData);
-
   if (!hasTimeData) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
