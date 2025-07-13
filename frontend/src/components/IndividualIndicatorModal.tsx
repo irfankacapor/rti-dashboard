@@ -56,6 +56,15 @@ const AGGREGATION_OPTIONS: { label: string; value: AggregationType }[] = [
   { label: 'Count', value: 'count' },
 ];
 
+// Helper function to format unit display
+const formatUnitDisplay = (indicator: Indicator) => {
+  const parts = [];
+  if (indicator.unitPrefix) parts.push(indicator.unitPrefix);
+  if (indicator.unit) parts.push(indicator.unit);
+  if (indicator.unitSuffix) parts.push(indicator.unitSuffix);
+  return parts.length > 0 ? parts.join(' ') : '';
+};
+
 // Helper to group raw data by dimension value
 function groupRawDataByDimension(indicatorValues: IndicatorValue[], selectedDimension: string): Record<string, number[]> {
   const groups: Record<string, number[]> = {};
@@ -191,18 +200,54 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
       value: point.value
     })) : [];
 
+  // Debug: log the comprehensiveData and indicatorId
+  console.log('comprehensiveData:', comprehensiveData);
+  console.log('indicatorId:', indicatorId);
+  console.log('indicatorDimensionData keys:', comprehensiveData?.indicatorDimensionData ? Object.keys(comprehensiveData.indicatorDimensionData) : []);
+
+  // Always use string for indicatorId key
+  const indicatorKey = String(indicatorId);
+  // Get dimension-specific data for this indicator
+  const dimensionData = useSubareaData && comprehensiveData?.indicatorDimensionData && comprehensiveData.indicatorDimensionData[indicatorKey]
+    ? comprehensiveData.indicatorDimensionData[indicatorKey]
+    : {};
+
   // Gather indicator values for the selected dimension
   const indicatorValues = React.useMemo(() => {
+    console.log('indicatorValues useMemo', { selectedDimension, dimensionData, indicatorDataPoints });
+    // Log available dimension keys and selected dimension
+    console.log('Available dimensionData keys:', Object.keys(dimensionData));
+    console.log('Selected dimension:', selectedDimension);
+
+    // Normalize keys for lookup
+    const normalizedDimensionData = Object.fromEntries(
+      Object.entries(dimensionData).map(([k, v]) => [k.toLowerCase(), v])
+    );
+    const normalizedSelectedDimension = selectedDimension.toLowerCase();
+
     // Prefer originalDataPoints if available
     if (indicatorDataPoints?.originalDataPoints && Array.isArray(indicatorDataPoints.originalDataPoints)) {
       return indicatorDataPoints.originalDataPoints;
     }
-    // Try timeSeriesData for subarea
+    
+    // Try dimension-specific data from subarea (case-insensitive)
+    if (useSubareaData && normalizedDimensionData[normalizedSelectedDimension]) {
+      console.log(`Using dimension data for ${normalizedSelectedDimension}:`, normalizedDimensionData[normalizedSelectedDimension]);
+      return normalizedDimensionData[normalizedSelectedDimension].map((point: { dimensionValue: string; allDimensions: Record<string, string>; value: number }) => ({
+        [selectedDimension]: point.dimensionValue,
+        allDimensions: point.allDimensions,
+        value: point.value
+      }));
+    }
+    
+    // Try timeSeriesData for subarea (fallback for time dimension)
     if (useSubareaData && comprehensiveData?.indicatorTimeSeriesData && comprehensiveData.indicatorTimeSeriesData[indicatorId]) {
       return comprehensiveData.indicatorTimeSeriesData[indicatorId];
     }
+    
+    console.log(`No data found for dimension ${selectedDimension}. Available dimensions:`, Object.keys(dimensionData));
     return [];
-  }, [indicatorDataPoints, useSubareaData, comprehensiveData, indicatorId]);
+  }, [indicatorDataPoints, useSubareaData, comprehensiveData, indicatorId, dimensionData, selectedDimension]);
 
   // Show aggregation dropdown if there are multiple data points
   const hasMultipleDataPoints = React.useMemo(() => {
@@ -292,6 +337,8 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
         dimValue = item[selectedDimension];
       } else if (item.customDimensions && item.customDimensions[selectedDimension]) {
         dimValue = item.customDimensions[selectedDimension];
+      } else if (item.allDimensions && item.allDimensions[selectedDimension]) {
+        dimValue = item.allDimensions[selectedDimension];
       }
       return dimValue;
     }).filter(Boolean)));
@@ -455,6 +502,7 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
                       chartType={chartType}
                       xAxisFormatter={cleanTimeLabel}
                       aggregationType={aggregationType}
+                      unit={formatUnitDisplay(indicatorData)}
                     />
                   </Box>
                 );

@@ -26,6 +26,7 @@ export default function SubareaDetailPage() {
     dimensionMetadata, 
     timeSeriesData,
     indicatorTimeSeriesData,
+    indicatorDimensionData,
     loading, 
     error 
   } = useSubareaData(subareaId);
@@ -187,6 +188,7 @@ export default function SubareaDetailPage() {
                     dimensionMetadata,
                     timeSeriesData,
                     indicatorTimeSeriesData,
+                    indicatorDimensionData,
                     errors: {}
                   }}
                 />

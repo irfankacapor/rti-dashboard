@@ -37,6 +37,10 @@ public class SubareaDataResponse {
     // Structure: { [indicatorId]: { year: string, value: number }[] }
     private Map<String, List<Map<String, Object>>> indicatorTimeSeriesData;
     
+    // Individual indicator dimension data for all dimensions
+    // Structure: { [indicatorId]: { [dimension]: [{ dimensionValue: string, value: number }] } }
+    private Map<String, Map<String, List<Map<String, Object>>>> indicatorDimensionData;
+    
     // Error tracking for partial failures
     private Map<String, String> errors;
 } 

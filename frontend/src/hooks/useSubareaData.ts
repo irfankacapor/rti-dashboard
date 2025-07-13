@@ -35,6 +35,9 @@ export function useSubareaData(subareaId: string) {
         return res.json();
       })
       .then(data => {
+        // Log the raw JSON response data
+        console.log(`Subarea data response for subareaId ${subareaId}:`, JSON.stringify(data, null, 2));
+        
         // Transform the data to match our cache structure
         const transformedData = {
           subarea: data.subarea,
@@ -44,6 +47,7 @@ export function useSubareaData(subareaId: string) {
           dimensionMetadata: data.dimensionMetadata || {},
           timeSeriesData: data.timeSeriesData || [],
           indicatorTimeSeriesData: data.indicatorTimeSeriesData || {},
+          indicatorDimensionData: data.indicatorDimensionData || {},
           errors: data.errors || {}
         };
         
@@ -71,6 +75,7 @@ export function useSubareaData(subareaId: string) {
     dimensionMetadata: data?.dimensionMetadata || {},
     timeSeriesData: data?.timeSeriesData || [],
     indicatorTimeSeriesData: data?.indicatorTimeSeriesData || {},
+    indicatorDimensionData: data?.indicatorDimensionData || {},
     errors: data?.errors || {}
   };
 } 

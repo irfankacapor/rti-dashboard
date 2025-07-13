@@ -9,6 +9,7 @@ interface IndividualIndicatorChartProps {
   chartType?: 'bar' | 'line';
   xAxisFormatter?: (label: string) => string;
   aggregationType?: string; // For legend/tooltip
+  unit?: string; // Unit for the indicator (e.g., "m²", "km²", "%")
   height?: number;
 }
 
@@ -34,7 +35,7 @@ const CustomTooltip = ({ active, payload, label, xAxisFormatter, aggregationType
         <Typography variant="body2">
           {aggregationType && aggregationType !== 'sum' 
             ? `${aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1)}: ${formatNumber(value)}`
-            : `Value: ${formatNumber(value)}`
+            : `${formatNumber(value)}`
           }
         </Typography>
         
@@ -62,6 +63,7 @@ const IndividualIndicatorChart: React.FC<IndividualIndicatorChartProps> = ({
   chartType = 'bar', 
   xAxisFormatter,
   aggregationType,
+  unit,
   height = 260
 }) => {
   if (!data || data.length === 0) {
@@ -72,10 +74,10 @@ const IndividualIndicatorChart: React.FC<IndividualIndicatorChartProps> = ({
     );
   }
 
-  // Legend label
+  // Legend label with unit
   const legendLabel = aggregationType && aggregationType !== 'sum'
-    ? `Value (${aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1)})`
-    : 'Value';
+    ? `${unit ? `${unit} (${aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1)})` : `Value (${aggregationType.charAt(0).toUpperCase() + aggregationType.slice(1)})`}`
+    : unit || 'Value';
 
   return (
     <ResponsiveContainer width="100%" height={height}>

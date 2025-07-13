@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import io.dashboard.dto.IndicatorValuesResponse;
 import io.dashboard.dto.SubareaDataResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ import io.dashboard.dto.SubareaDataResponse;
 @Slf4j
 public class SubareaController {
     private final SubareaService subareaService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/subareas")
     @PermitAll
@@ -206,7 +208,19 @@ public class SubareaController {
     @PermitAll
     @GetMapping("/subareas/{subareaId}/data")
     public ResponseEntity<SubareaDataResponse> getSubareaData(@PathVariable Long subareaId) {
-        SubareaDataResponse response = subareaService.getSubareaData(subareaId);
-        return ResponseEntity.ok(response);
+        try {
+            SubareaDataResponse response = subareaService.getSubareaData(subareaId);
+            
+            // Log the JSON response data
+            String jsonResponse = objectMapper.writeValueAsString(response);
+            log.info("Subarea data response for subareaId {}: {}", subareaId, jsonResponse);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error serializing subarea data response for subareaId {}: {}", subareaId, e.getMessage(), e);
+            // Still return the response even if logging fails
+            SubareaDataResponse response = subareaService.getSubareaData(subareaId);
+            return ResponseEntity.ok(response);
+        }
     }
 } 

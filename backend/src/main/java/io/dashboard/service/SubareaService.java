@@ -384,6 +384,15 @@ public class SubareaService {
             errors.put("indicatorTimeSeriesData", e.getMessage());
         }
         
+        try {
+            // Get individual indicator dimension data for all dimensions
+            Map<String, Map<String, List<Map<String, Object>>>> indicatorDimensionData = getIndividualIndicatorDimensionData(subareaId);
+            builder.indicatorDimensionData(indicatorDimensionData);
+        } catch (Exception e) {
+            log.error("Error fetching individual indicator dimension data for subarea {}: {}", subareaId, e.getMessage());
+            errors.put("indicatorDimensionData", e.getMessage());
+        }
+        
         builder.errors(errors);
         return builder.build();
     }
@@ -480,6 +489,94 @@ public class SubareaService {
         }
         
         return result;
+    }
+
+    /**
+     * Get individual dimension data for each indicator in a subarea
+     * Returns data in format: { [indicatorId]: { [dimension]: [{ dimensionValue: string, allDimensions: {...}, value: number }] } }
+     */
+    private Map<String, Map<String, List<Map<String, Object>>>> getIndividualIndicatorDimensionData(Long subareaId) {
+        List<IndicatorResponse> indicators = indicatorService.findBySubareaId(subareaId);
+        Map<String, Map<String, List<Map<String, Object>>>> result = new HashMap<>();
+        
+        for (IndicatorResponse indicator : indicators) {
+            if (indicator.getDimensions() != null && !indicator.getDimensions().isEmpty()) {
+                List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
+                Map<String, List<Map<String, Object>>> dimensionData = new HashMap<>();
+                
+                // Process each dimension
+                for (String dimension : indicator.getDimensions()) {
+                    List<Map<String, Object>> dimensionSeries = new ArrayList<>();
+                    
+                    for (FactIndicatorValue value : values) {
+                        String dimensionValue = getDimensionValue(value, dimension);
+                        if (dimensionValue != null) {
+                            Map<String, Object> dataPoint = new HashMap<>();
+                            dataPoint.put("dimensionValue", dimensionValue);
+                            dataPoint.put("value", value.getValue().doubleValue());
+                            
+                            // Add all dimension values for this data point
+                            Map<String, String> allDimensions = new HashMap<>();
+                            for (String dim : indicator.getDimensions()) {
+                                String dimValue = getDimensionValue(value, dim);
+                                if (dimValue != null) {
+                                    allDimensions.put(dim, dimValue);
+                                }
+                            }
+                            dataPoint.put("allDimensions", allDimensions);
+                            
+                            dimensionSeries.add(dataPoint);
+                        }
+                    }
+                    
+                    // Sort dimension values
+                    dimensionSeries.sort((a, b) -> {
+                        String valueA = (String) a.get("dimensionValue");
+                        String valueB = (String) b.get("dimensionValue");
+                        // Try numeric sorting first, then string
+                        try {
+                            Double numA = Double.parseDouble(valueA);
+                            Double numB = Double.parseDouble(valueB);
+                            return numA.compareTo(numB);
+                        } catch (NumberFormatException e) {
+                            return valueA.compareTo(valueB);
+                        }
+                    });
+                    
+                    if (!dimensionSeries.isEmpty()) {
+                        dimensionData.put(dimension, dimensionSeries);
+                    }
+                }
+                
+                if (!dimensionData.isEmpty()) {
+                    result.put(indicator.getId().toString(), dimensionData);
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Extract dimension value from a fact indicator value
+     */
+    private String getDimensionValue(FactIndicatorValue value, String dimension) {
+        switch (dimension.toLowerCase()) {
+            case "time":
+                return value.getTime() != null ? value.getTime().getValue() : null;
+            case "location":
+                return value.getLocation() != null ? value.getLocation().getName() : null;
+            default:
+                // For custom dimensions, look in generics
+                if (value.getGenerics() != null) {
+                    return value.getGenerics().stream()
+                        .filter(g -> dimension.equals(g.getDimensionName()))
+                        .map(DimGeneric::getValue)
+                        .findFirst()
+                        .orElse(null);
+                }
+                return null;
+        }
     }
     
     /**

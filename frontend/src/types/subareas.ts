@@ -29,6 +29,13 @@ export interface IndicatorTimeSeriesDataPoint {
   value: number;
 }
 
+// Individual indicator dimension data point
+export interface IndicatorDimensionDataPoint {
+  dimensionValue: string;
+  allDimensions: Record<string, string>;
+  value: number;
+}
+
 export interface SubareaData {
   subarea?: Subarea;
   indicators: Indicator[];
@@ -37,6 +44,7 @@ export interface SubareaData {
   dimensionMetadata: Record<string, IndicatorDimensions>;
   timeSeriesData: TimeSeriesDataPoint[];
   indicatorTimeSeriesData: Record<string, IndicatorTimeSeriesDataPoint[]>;
+  indicatorDimensionData: Record<string, Record<string, IndicatorDimensionDataPoint[]>>;
   errors: Record<string, string>;
 }
 
