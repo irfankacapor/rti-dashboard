@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Box, Typography, IconButton, ToggleButton, ToggleButtonGroup, MenuItem, Select, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Paper, FormControl } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Modal, Box, Typography, IconButton, ToggleButton, ToggleButtonGroup, MenuItem, Select, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Paper, FormControl, Stack, Grid, useMediaQuery, useTheme, Fade } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import TimeSeriesChart from './charts/TimeSeriesChart';
+import IndividualIndicatorChart from './charts/IndividualIndicatorChart';
 import { useIndicatorData, useIndicatorDimensionValues } from '../hooks/useApi';
 import { 
   processChartData, 
   determineTimeGranularity, 
   buildTimeRangeOptions, 
   generateDisplayLabel, 
-  cleanTimeLabel 
+  cleanTimeLabel,
+  AggregationType
 } from '../utils/chartDataProcessor';
 import { IndicatorChartData } from '../types/indicators';
 
@@ -40,6 +41,15 @@ const chartTypes = [
   { label: 'Line', value: 'line' },
 ];
 
+const AGGREGATION_OPTIONS: { label: string; value: AggregationType }[] = [
+  { label: 'Sum', value: 'sum' },
+  { label: 'Average', value: 'average' },
+  { label: 'Min', value: 'min' },
+  { label: 'Max', value: 'max' },
+  { label: 'Median', value: 'median' },
+  { label: 'Count', value: 'count' },
+];
+
 const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({ 
   open, 
   onClose, 
@@ -48,14 +58,19 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
   subareaId,
   comprehensiveData 
 }) => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
   const [timeRange, setTimeRange] = useState('1Y');
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [aggregationType, setAggregationType] = useState<AggregationType>('sum');
+  const [showAggregation, setShowAggregation] = useState(false);
+  const aggregationTypePerDimension = useRef<{ [dim: string]: AggregationType }>({});
   
   // Use subarea data if available, otherwise fall back to API calls
   const useSubareaData = comprehensiveData && comprehensiveData.dimensionMetadata && comprehensiveData.dimensionMetadata[indicatorId];
-  
+
   // Only make API calls if subarea data is not available
   const { data: dimensionMeta, loading: dimensionMetaLoading } = useIndicatorDimensionValues(
     useSubareaData ? '' : indicatorId, 
@@ -91,9 +106,9 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
 
   // Use subarea data for aggregated data if available
   const aggregatedData = useSubareaData ? comprehensiveData.aggregatedData : {};
-  
+
   // Fetch indicator data (raw or aggregated depending on selected dimension)
-  const { data, loading, error } = useIndicatorData(
+  const { data: indicatorDataPoints, loading, error } = useIndicatorData(
     useSubareaData ? '' : indicatorId, // Don't make API call if we have subarea data
     timeRange,
     selectedDimension,
@@ -116,25 +131,86 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
       value: point.value
     })) : [];
 
-  // Process chart data using utility function
+  // Gather indicator values for the selected dimension
+  const indicatorValues = React.useMemo(() => {
+    // Prefer originalDataPoints if available
+    if (indicatorDataPoints?.originalDataPoints && Array.isArray(indicatorDataPoints.originalDataPoints)) {
+      return indicatorDataPoints.originalDataPoints;
+    }
+    // Try timeSeriesData for subarea
+    if (useSubareaData && comprehensiveData?.indicatorTimeSeriesData && comprehensiveData.indicatorTimeSeriesData[indicatorId]) {
+      return comprehensiveData.indicatorTimeSeriesData[indicatorId];
+    }
+    return [];
+  }, [indicatorDataPoints, useSubareaData, comprehensiveData, indicatorId]);
+
+  // Determine if any dimension value has multiple indicator values
+  const hasMultiplePerDimension = React.useMemo(() => {
+    if (!indicatorValues || !selectedDimension) return false;
+    const grouped: Record<string, number> = {};
+    indicatorValues.forEach((item: any) => {
+      let dimValue = '';
+      if (selectedDimension === 'time' && (item.timeValue || item.timestamp || item.year)) {
+        dimValue = item.timeValue || item.timestamp || item.year;
+      } else if (selectedDimension === 'location' && item.locationValue) {
+        dimValue = item.locationValue;
+      } else if (item[selectedDimension] !== undefined) {
+        dimValue = item[selectedDimension];
+      } else if (item.customDimensions && item.customDimensions[selectedDimension]) {
+        dimValue = item.customDimensions[selectedDimension];
+      }
+      if (!dimValue) return;
+      grouped[dimValue] = (grouped[dimValue] || 0) + 1;
+    });
+    return Object.values(grouped).some(count => count > 1);
+  }, [indicatorValues, selectedDimension]);
+
+  // Animate aggregation dropdown in/out
+  useEffect(() => {
+    setShowAggregation(hasMultiplePerDimension);
+  }, [hasMultiplePerDimension]);
+
+  // Persist aggregation type per dimension
+  useEffect(() => {
+    if (showAggregation) {
+      aggregationTypePerDimension.current[selectedDimension] = aggregationType;
+    }
+  }, [aggregationType, selectedDimension, showAggregation]);
+  useEffect(() => {
+    if (showAggregation && aggregationTypePerDimension.current[selectedDimension]) {
+      setAggregationType(aggregationTypePerDimension.current[selectedDimension]);
+    } else if (!showAggregation) {
+      setAggregationType('sum');
+    }
+  }, [selectedDimension, showAggregation]);
+
+  // Use aggregation logic if needed
   const chartData: IndicatorChartData[] = React.useMemo(() => {
-    // If we have time series data and the selected dimension is 'time', use it
+    if (indicatorValues && selectedDimension) {
+      return processChartData({
+        selectedDimension,
+        defaultDimension,
+        data: indicatorDataPoints,
+        aggregationType,
+        indicatorValues,
+      });
+    }
+    // fallback to old logic
     if (useSubareaData && selectedDimension === 'time' && timeSeriesData.length > 0) {
       return timeSeriesData.map((point: { year: string; value: number }) => ({
         label: point.year,
         value: point.value
       }));
     }
-    
     if (useSubareaData && chartDataFromSubarea.length > 0) {
       return chartDataFromSubarea;
     }
     return processChartData({
       selectedDimension,
       defaultDimension,
-      data
+      data: indicatorDataPoints
     });
-  }, [useSubareaData, timeSeriesData, selectedDimension, chartDataFromSubarea, defaultDimension, data]);
+  }, [indicatorValues, selectedDimension, defaultDimension, indicatorDataPoints, aggregationType, useSubareaData, timeSeriesData, chartDataFromSubarea]);
 
   // Determine time granularity and build time range options
   const timeGranularity = React.useMemo(() => 
@@ -154,98 +230,169 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
   const showError = error && !loading && !chartData.length;
 
   // Prepare table data from original dataPoints
-  const tableData = data?.originalDataPoints || [];
+  const tableData = indicatorDataPoints?.originalDataPoints || [];
+
+  // Meta info string
+  const metaInfo = React.useMemo(() => {
+    if (!indicatorValues || indicatorValues.length === 0) return '';
+    const uniqueValues = Array.from(new Set(indicatorValues.map((item: any) => {
+      let dimValue = '';
+      if (selectedDimension === 'time' && (item.timeValue || item.timestamp || item.year)) {
+        dimValue = item.timeValue || item.timestamp || item.year;
+      } else if (selectedDimension === 'location' && item.locationValue) {
+        dimValue = item.locationValue;
+      } else if (item[selectedDimension] !== undefined) {
+        dimValue = item[selectedDimension];
+      } else if (item.customDimensions && item.customDimensions[selectedDimension]) {
+        dimValue = item.customDimensions[selectedDimension];
+      }
+      return dimValue;
+    }).filter(Boolean)));
+    let range = '';
+    if (selectedDimension === 'time' && uniqueValues.length > 1) {
+      const sorted = uniqueValues.map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
+      if (sorted.length > 1) range = `(${sorted[0]} - ${sorted[sorted.length - 1]})`;
+    }
+    return `Data available for ${uniqueValues.length} ${selectedDimension}${uniqueValues.length !== 1 ? 's' : ''} ${range}`;
+  }, [indicatorValues, selectedDimension]);
+
+  // After chartData is computed
+  console.log('indicatorValues', indicatorValues);
+  console.log('chartData', chartData);
 
   return (
-    <Modal open={open} onClose={onClose} aria-labelledby="indicator-modal-title">
-      <Box sx={style}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography id="indicator-modal-title" variant="h6">
-            {indicatorData?.name || 'Indicator'}
+    <Modal open={open} onClose={onClose} aria-labelledby="indicator-modal-title" aria-modal="true" role="dialog">
+      <Box sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: isSmallScreen ? '98vw' : 800,
+        bgcolor: 'background.paper',
+        boxShadow: 24,
+        p: isSmallScreen ? 2 : 4,
+        borderRadius: 2,
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        minWidth: isSmallScreen ? 'unset' : 350,
+      }}>
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+          <Box>
+            <Typography id="indicator-modal-title" variant="h6" component="h2">
+              {indicatorData?.name || 'Indicator'}
+            </Typography>
+            {indicatorData?.unit && (
+              <Typography variant="body2" color="text.secondary">
+                Unit: {indicatorData.unit}
+              </Typography>
+            )}
+            {indicatorData?.description && (
+              <Typography variant="body2" color="text.secondary">
+                {indicatorData.description}
+              </Typography>
+            )}
+          </Box>
+          <IconButton aria-label="Close" onClick={onClose}><CloseIcon /></IconButton>
+        </Stack>
+
+        {/* Meta info */}
+        {metaInfo && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+            {metaInfo}
           </Typography>
-          <IconButton onClick={onClose}><CloseIcon /></IconButton>
-        </Box>
-        
-        {/* Indicator metadata */}
-        <Box sx={{ mt: 1, mb: 2 }}>
-          {indicatorData?.unit && (
-            <Typography variant="body2" color="text.secondary">
-              Unit: {indicatorData.unit}
-            </Typography>
-          )}
-          {indicatorData?.description && (
-            <Typography variant="body2" color="text.secondary">
-              {indicatorData.description}
-            </Typography>
-          )}
-          {timeSeriesData.length > 0 && (
-            <Typography variant="body2" color="text.secondary">
-              Data available for {timeSeriesData.length} years ({timeSeriesData[0]?.year} - {timeSeriesData[timeSeriesData.length - 1]?.year})
-            </Typography>
-          )}
-        </Box>
-        
-        <Box display="flex" alignItems="center" sx={{ mt: 2, mb: 2 }}>
+        )}
+
+        {/* Controls Row */}
+        <Stack
+          direction={isSmallScreen ? 'column' : 'row'}
+          spacing={2}
+          alignItems={isSmallScreen ? 'stretch' : 'center'}
+          sx={{ mt: 2, mb: 2 }}
+        >
+          {/* View toggle */}
           <ToggleButtonGroup
             value={viewMode}
             exclusive
             onChange={(_, v) => v && setViewMode(v)}
             size="small"
-            sx={{ mr: 2 }}
+            aria-label="View mode"
           >
-            <ToggleButton value="chart">Chart</ToggleButton>
-            <ToggleButton value="table">Table</ToggleButton>
+            <ToggleButton value="chart" aria-label="Chart view">Chart</ToggleButton>
+            <ToggleButton value="table" aria-label="Table view">Table</ToggleButton>
           </ToggleButtonGroup>
-          
-          {viewMode === 'chart' && (
-            <>
-              <ToggleButtonGroup
-                value={chartType}
-                exclusive
-                onChange={(_, v) => v && setChartType(v)}
-                size="small"
-                sx={{ mr: 2 }}
-              >
-                {chartTypes.map((type) => (
-                  <ToggleButton key={type.value} value={type.value}>{type.label}</ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-              
-              {availableDimensions.length > 0 && (
-                <FormControl size="small" sx={{ minWidth: 120, mr: 2 }}>
-                  <Select
-                    value={selectedDimension}
-                    onChange={e => setSelectedDimension(e.target.value)}
-                    displayEmpty
-                  >
-                    {availableDimensions.map((dim) => (
-                      <MenuItem key={dim} value={dim}>
-                        {dim.charAt(0).toUpperCase() + dim.slice(1)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-              
-              {timeRanges.length > 0 && (
-                <FormControl size="small" sx={{ minWidth: 80 }}>
-                  <Select
-                    value={timeRange}
-                    onChange={e => setTimeRange(e.target.value)}
-                    displayEmpty
-                  >
-                    {timeRanges.map((range) => (
-                      <MenuItem key={range.value} value={range.value}>
-                        {range.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            </>
-          )}
-        </Box>
 
+          {/* Chart type toggle (only in chart view) */}
+          {viewMode === 'chart' && (
+            <ToggleButtonGroup
+              value={chartType}
+              exclusive
+              onChange={(_, v) => v && setChartType(v)}
+              size="small"
+              aria-label="Chart type"
+            >
+              {chartTypes.map((type) => (
+                <ToggleButton key={type.value} value={type.value} aria-label={type.label}>{type.label}</ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          )}
+
+          {/* Dimension selector */}
+          {availableDimensions.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Select
+                value={selectedDimension}
+                onChange={e => setSelectedDimension(e.target.value)}
+                displayEmpty
+                inputProps={{ 'aria-label': 'Select dimension' }}
+              >
+                {availableDimensions.map((dim) => (
+                  <MenuItem key={dim} value={dim} aria-label={dim}>
+                    {dim.charAt(0).toUpperCase() + dim.slice(1)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {/* Aggregation selector (animated) */}
+          <Fade in={showAggregation} unmountOnExit>
+            <Box>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <Select
+                  value={aggregationType}
+                  onChange={e => setAggregationType(e.target.value as AggregationType)}
+                  displayEmpty
+                  inputProps={{ 'aria-label': 'Select aggregation' }}
+                >
+                  {AGGREGATION_OPTIONS.map(opt => (
+                    <MenuItem key={opt.value} value={opt.value} aria-label={opt.label}>{opt.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Fade>
+
+          {/* Time range selector (only for time dimension) */}
+          {selectedDimension === 'time' && timeRanges.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <Select
+                value={timeRange}
+                onChange={e => setTimeRange(e.target.value)}
+                displayEmpty
+                inputProps={{ 'aria-label': 'Select time range' }}
+              >
+                {timeRanges.map((range) => (
+                  <MenuItem key={range.value} value={range.value} aria-label={range.label}>
+                    {range.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Stack>
+
+        {/* Chart/Table area will be refactored next */}
         {loading ? (
           <Box display="flex" justifyContent="center" p={4}>
             <CircularProgress />
@@ -257,27 +404,27 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
         ) : (
           <>
             {viewMode === 'chart' && (
-              <Box>
-                {chartData.length >= 1 ? (
-                  <TimeSeriesChart 
-                    data={chartData} 
-                    chartType={chartType} 
-                    xAxisFormatter={cleanTimeLabel}
-                  />
-                ) : selectedDimension === 'time' && timeSeriesData.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-                    No time series data available for this indicator in this subarea
-                  </Typography>
-                ) : (
-                  <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-                    No data available for this indicator.
-                  </Typography>
-                )}
-              </Box>
+              (() => {
+                console.log('IndividualIndicatorChart props', {
+                  data: chartData,
+                  chartType,
+                  xAxisFormatter: cleanTimeLabel,
+                  aggregationType
+                });
+                return (
+                  <Box>
+                    <IndividualIndicatorChart
+                      data={chartData}
+                      chartType={chartType}
+                      xAxisFormatter={cleanTimeLabel}
+                      aggregationType={aggregationType}
+                    />
+                  </Box>
+                );
+              })()
             )}
-
             {viewMode === 'table' && (
-              data?.originalDataPoints && data.originalDataPoints.length > 0 ? (
+              indicatorDataPoints?.originalDataPoints && indicatorDataPoints.originalDataPoints.length > 0 ? (
                 <Paper sx={{ mt: 2, maxHeight: 400, overflow: 'auto' }}>
                   <Table size="small">
                     <TableHead>
@@ -290,7 +437,7 @@ const IndividualIndicatorModal: React.FC<IndividualIndicatorModalProps> = ({
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {data.originalDataPoints.map((row: any, index: number) => (
+                      {indicatorDataPoints.originalDataPoints.map((row: any, index: number) => (
                         <TableRow key={index}>
                           <TableCell>{row.timestamp || 'N/A'}</TableCell>
                           <TableCell>{row.value?.toFixed(2) || 'N/A'}</TableCell>

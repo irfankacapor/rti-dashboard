@@ -55,8 +55,8 @@ function aggregateByDimension(
   const grouped: Record<string, number[]> = {};
   indicatorValues.forEach((item) => {
     let dimValue = '';
-    if (dimension === 'time' && (item.timeValue || item.timestamp)) {
-      dimValue = item.timeValue || item.timestamp;
+    if ((dimension === 'time' || dimension === 'year') && (item.year || item.timeValue || item.timestamp)) {
+      dimValue = item.year || item.timeValue || item.timestamp;
     } else if (dimension === 'location' && item.locationValue) {
       dimValue = item.locationValue;
     } else if (item[dimension] !== undefined) {
@@ -106,8 +106,8 @@ function aggregateByDimension(
     return { label, value };
   });
 
-  // Sort time labels ascending if dimension is time and labels are years
-  if (dimension === 'time') {
+  // Sort time/year labels ascending if dimension is time or year and labels are years
+  if (dimension === 'time' || dimension === 'year') {
     result = result.sort((a, b) => {
       const aNum = parseInt(a.label, 10);
       const bNum = parseInt(b.label, 10);
