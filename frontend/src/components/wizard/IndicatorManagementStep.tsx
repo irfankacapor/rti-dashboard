@@ -200,8 +200,8 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     manual: dirtyIndicators.filter(i => i.isManual).length,
     input: dirtyIndicators.filter(i => i.direction === 'input').length,
     output: dirtyIndicators.filter(i => i.direction === 'output').length,
-    assigned: dirtyIndicators.filter(i => i.subareaId).length,
-    unassigned: dirtyIndicators.filter(i => !i.subareaId).length,
+    assigned: dirtyIndicators.filter(i => i.subareaIds && i.subareaIds.length > 0).length,
+    unassigned: dirtyIndicators.filter(i => !i.subareaIds || i.subareaIds.length === 0).length,
     missingUnits: dirtyIndicators.filter(i => !i.unitId).length,
   };
 
