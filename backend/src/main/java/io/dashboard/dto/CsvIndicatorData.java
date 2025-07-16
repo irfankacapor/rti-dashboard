@@ -24,6 +24,7 @@ public class CsvIndicatorData {
     private String unitPrefix;
     private String unitSuffix;
     private String source;
+    private String dataType; // NEW: data type (e.g., 'decimal', 'integer', etc.)
     
     @NotNull(message = "Subarea ID is required")
     private Long subareaId;

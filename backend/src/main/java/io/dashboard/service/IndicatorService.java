@@ -192,6 +192,7 @@ public class IndicatorService {
         if (indicator.getDataType() != null) {
             DataTypeResponse dataTypeResp = new DataTypeResponse();
             dataTypeResp.setId(indicator.getDataType().getId());
+            dataTypeResp.setCode(indicator.getDataType().getName()); // Add this line to set the code
             dataTypeResp.setName(indicator.getDataType().getName());
             resp.setDataType(dataTypeResp);
         }
@@ -234,6 +235,7 @@ public class IndicatorService {
         if (indicator.getDataType() != null) {
             DataTypeResponse dataTypeResp = new DataTypeResponse();
             dataTypeResp.setId(indicator.getDataType().getId());
+            dataTypeResp.setCode(indicator.getDataType().getName()); // Add this line to set the code
             dataTypeResp.setName(indicator.getDataType().getName());
             resp.setDataType(dataTypeResp);
         }

@@ -486,11 +486,13 @@ export const useWizardStore = create<WizardState>()(
             managedIndicator.unit !== dirtyIndicator.unit ||
             managedIndicator.source !== dirtyIndicator.source ||
             managedIndicator.subareaId !== dirtyIndicator.subareaId ||
-            managedIndicator.direction !== dirtyIndicator.direction
+            managedIndicator.direction !== dirtyIndicator.direction ||
+            managedIndicator.dataType !== dirtyIndicator.dataType // Add dataType comparison
           );
         });
         
-        return areasChanged || subareasChanged || indicatorsChanged;
+        const result = areasChanged || subareasChanged || indicatorsChanged;
+        return result;
       },
 
       setManagedIndicators: (indicators) => set({ managedIndicators: indicators, dirtyIndicators: indicators }),
@@ -715,81 +717,62 @@ export const useWizardStore = create<WizardState>()(
           const existingIndicatorsToUpdate = dirtyIndicators.filter(i => {
             // Find if this indicator exists in managedIndicators (backend)
             const existsInBackend = managedIndicators.some(mi => mi.id === i.id);
-            // Only include if it exists in backend and has been modified
             return existsInBackend && i.isModified;
           });
-          const otherIndicators = dirtyIndicators.filter(i => 
-            !i.isManual || !(Array.isArray((i as any).dataRows) && (i as any).dataRows.length > 0)
-          );
+          const newIndicatorsToCreate = dirtyIndicators.filter(i => {
+            // Find if this indicator exists in managedIndicators (backend)
+            const existsInBackend = managedIndicators.some(mi => mi.id === i.id);
+            return !existsInBackend && !i.isManual; // Only CSV indicators that don't exist in backend
+          });
 
-          // 1. Update existing indicators that have been modified
+          // Update existing indicators
           for (const indicator of existingIndicatorsToUpdate) {
-            try {
-              await indicatorManagementService.updateIndicator(indicator.id, {
+            await indicatorManagementService.updateIndicator(indicator.id, {
+              name: indicator.name,
+              description: indicator.description,
+              unit: indicator.unit,
+              unitId: indicator.unitId,
+              unitPrefix: indicator.unitPrefix,
+              unitSuffix: indicator.unitSuffix,
+              source: indicator.source,
+              subareaId: indicator.subareaId,
+              direction: indicator.direction,
+              aggregationWeight: indicator.aggregationWeight,
+              dataType: indicator.dataType,
+            });
+          }
+
+          // Create new indicators from CSV
+          if (newIndicatorsToCreate.length > 0) {
+            const { csvProcessingService } = await import('@/services/csvProcessingService');
+            await csvProcessingService.submitProcessedIndicators(newIndicatorsToCreate as any);
+          }
+
+          // Create new manual indicators
+          if (manualIndicatorsWithValues.length > 0) {
+            for (const indicator of manualIndicatorsWithValues) {
+              await indicatorManagementService.createIndicator({
                 name: indicator.name,
                 description: indicator.description,
                 unit: indicator.unit,
                 unitId: indicator.unitId,
                 unitPrefix: indicator.unitPrefix,
                 unitSuffix: indicator.unitSuffix,
-                dataType: indicator.dataType,
+                source: indicator.source,
                 subareaId: indicator.subareaId,
                 direction: indicator.direction,
                 aggregationWeight: indicator.aggregationWeight,
+                dataType: indicator.dataType,
+                dataRows: (indicator as any).dataRows,
+                dimensions: indicator.dimensions,
               });
-            } catch (error) {
-              throw new Error(`Failed to update indicator "${indicator.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
           }
 
-          // 2. Create manual indicators with values via /indicators/create-from-csv
-          if (manualIndicatorsWithValues.length > 0) {
-            const csvIndicators = manualIndicatorsWithValues.map(i => {
-              // Map each dataRow to backend IndicatorValue format
-              const values = (i as any).dataRows.map((row: any) => {
-                const value = parseFloat(row.value);
-                const indicatorValue: any = { value: isNaN(value) ? null : value };
-                Object.keys(row).forEach(key => {
-                  if (key === 'value') return;
-                  // Map common dimension keys to backend fields
-                  if (key === 'time' || key === 'timeValue') indicatorValue.timeValue = row[key];
-                  else if (key === 'timeType') indicatorValue.timeType = row[key];
-                  else if (key === 'location' || key === 'locations' || key === 'locationValue') indicatorValue.locationValue = row[key];
-                  else if (key === 'locationType') indicatorValue.locationType = row[key];
-                  else {
-                    // All other keys are treated as custom dimensions
-                    if (!indicatorValue.customDimensions) indicatorValue.customDimensions = {};
-                    indicatorValue.customDimensions[key === 'locations' ? 'location' : key] = row[key];
-                  }
-                });
-                return indicatorValue;
-              });
-              return {
-                name: i.name,
-                description: i.description,
-                unit: i.unit,
-                unitPrefix: i.unitPrefix,
-                unitSuffix: i.unitSuffix,
-                subareaId: i.subareaId ? parseInt(i.subareaId) : null,
-                direction: (i.direction || 'input').toUpperCase(),
-                aggregationWeight: 1.0,
-                values,
-              };
-            });
-            // Submit to backend
-            const { csvProcessingService } = await import('@/services/csvProcessingService');
-            try {
-              const response = await csvProcessingService.submitProcessedIndicators(csvIndicators);
-              // Optionally handle response
-            } catch (err) {
-              throw err;
-            }
-          }
-
-          // Refresh from backend
-          const freshIndicators = await indicatorManagementService.getIndicators();
-          set({ managedIndicators: freshIndicators, dirtyIndicators: freshIndicators });
+          // Refresh indicators from backend
+          await get().fetchManagedIndicators();
         } catch (error) {
+          console.error('Failed to save indicators:', error);
           throw error;
         } finally {
           set({ isSaving: false });

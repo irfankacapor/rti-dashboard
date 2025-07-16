@@ -16,6 +16,7 @@ export const csvProcessingService = {
             ...indicator,
             unitPrefix: indicator.unitPrefix || null,
             unitSuffix: indicator.unitSuffix || null,
+            dataType: indicator.dataType || null, // Pass dataType if present
           };
         }
         // Fallback: map ProcessedIndicator to backend DTO
@@ -29,6 +30,7 @@ export const csvProcessingService = {
           subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
           direction: indicator.direction?.toUpperCase(),
           aggregationWeight: 1.0,
+          dataType: indicator.dataType || null, // Pass dataType if present
           values: indicator.dataPoints || []
         };
       })

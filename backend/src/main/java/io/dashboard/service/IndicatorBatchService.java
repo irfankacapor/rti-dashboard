@@ -19,6 +19,9 @@ import io.dashboard.repository.DimTimeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
+import io.dashboard.repository.DataTypeRepository;
+import io.dashboard.model.DataType;
+import io.dashboard.exception.BadRequestException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +45,7 @@ public class IndicatorBatchService {
     private final FactIndicatorValueRepository factRepository;
     private final UnitRepository unitRepository;
     private final SubareaRepository subareaRepository;
+    private final DataTypeRepository dataTypeRepository;
     
     public IndicatorBatchResponse createFromCsvData(IndicatorBatchRequest request) {
         List<IndicatorResponse> createdIndicators = new ArrayList<>();
@@ -106,6 +110,14 @@ public class IndicatorBatchService {
         indicator.setUnitPrefix(csvIndicator.getUnitPrefix());
         indicator.setUnitSuffix(csvIndicator.getUnitSuffix());
             
+        // Handle data type
+        if (csvIndicator.getDataType() != null && !csvIndicator.getDataType().isBlank()) {
+            DataType dataType = dataTypeRepository.findAll().stream()
+                .filter(dt -> dt.getName().equalsIgnoreCase(csvIndicator.getDataType()))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Unknown data type: " + csvIndicator.getDataType()));
+            indicator.setDataType(dataType);
+        }
         return indicatorRepository.save(indicator);
     }
     

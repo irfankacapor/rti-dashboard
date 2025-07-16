@@ -1,5 +1,7 @@
 import { Indicator } from "@/types/indicators";
-import { Dimension } from "@/types/dimensions";
+import { Dimension } from "./dimensions";
+
+export type { Dimension };
 
 export interface IndicatorValue {
   value: number;
@@ -23,6 +25,7 @@ export interface ProcessedIndicator {
   subareaId?: string; // user assignment
   direction?: 'input' | 'output'; // user selection
   dataPoints?: IndicatorValue[]; // The dimensional data from frontend processing
+  dataType?: string; // NEW: data type (e.g., 'decimal', 'integer', etc.)
 }
 
 export interface IndicatorBatchResponse {

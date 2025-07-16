@@ -4,6 +4,7 @@ import {
   BulkIndicatorUpdate,
   IndicatorValidationResult 
 } from '@/types/indicators';
+import { dataTypeService } from './dataTypeService';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -83,6 +84,12 @@ export const indicatorManagementService = {
     // Generate a code from the name
     const code = indicator.name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 50);
     
+    // Convert dataType string to dataTypeId number if present
+    let dataTypeId: number | null = null;
+    if (indicator.dataType) {
+      dataTypeId = await dataTypeService.getCachedDataTypeIdByName(indicator.dataType);
+    }
+    
     const backendRequest = {
       code: code,
       name: indicator.name,
@@ -91,9 +98,8 @@ export const indicatorManagementService = {
       unitId: indicator.unitId || null,
       unitPrefix: indicator.unitPrefix || null,
       unitSuffix: indicator.unitSuffix || null,
-      dataType: indicator.dataType || null,
+      dataTypeId: dataTypeId, // Use the converted ID instead of string
       source: indicator.source || null,
-      subareaId: indicator.subareaId ? parseInt(indicator.subareaId) : null,
       direction: indicator.direction ? indicator.direction.toUpperCase() : 'INPUT',
       aggregationWeight: indicator.aggregationWeight || 1.0,
     };
@@ -112,6 +118,12 @@ export const indicatorManagementService = {
 
   // Update indicator - now supports unitId, unitPrefix, and unitSuffix
   updateIndicator: async (id: string, updates: Partial<ManagedIndicator>): Promise<ManagedIndicator> => {
+    // Convert dataType string to dataTypeId number if present
+    let dataTypeId: number | null = null;
+    if (updates.dataType) {
+      dataTypeId = await dataTypeService.getCachedDataTypeIdByName(updates.dataType);
+    }
+
     const backendUpdate = {
       name: updates.name,
       description: updates.description,
@@ -119,9 +131,9 @@ export const indicatorManagementService = {
       unitId: updates.unitId || null,
       unitPrefix: updates.unitPrefix || null,
       unitSuffix: updates.unitSuffix || null,
-      dataType: updates.dataType || null,
+      dataTypeId: dataTypeId, // Use the converted ID instead of string
       subareaId: updates.subareaId ? parseInt(updates.subareaId) : null,
-      direction: updates.direction ? updates.direction.toUpperCase() : 'INPUT',
+      direction: updates.direction?.toUpperCase(),
       aggregationWeight: updates.aggregationWeight || 1.0,
     };
 

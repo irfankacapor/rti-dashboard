@@ -22,7 +22,8 @@ import {
   CellSelection, 
   DimensionMapping, 
   ProcessedIndicator,
-  CsvProcessingState 
+  CsvProcessingState,
+  Dimension
 } from '@/types/csvProcessing';
 import { Subarea } from '@/types/subareas';
 import { csvProcessingService } from '@/services/csvProcessingService';
@@ -233,16 +234,20 @@ export const CsvProcessingStep: React.FC = () => {
       tuples.forEach(tuple => {
         const indicatorName = tuple.coordinates.indicator_names || 'Unknown Indicator';
         if (!indicatorMap.has(indicatorName)) {
+          // Fix: ensure dimensions is Dimension[]
+          const dimensionKeys = Object.keys(tuple.coordinates).filter(key =>
+            !['indicator_names', 'time', 'locations', 'unit', 'source'].includes(key)
+          );
+          const dimensions: Dimension[] = dimensionKeys.map(key => ({ name: key }));
           indicatorMap.set(indicatorName, {
             id: uuidv4(),
             name: indicatorName,
-            dimensions: Object.keys(tuple.coordinates).filter(key =>
-              !['indicator_names', 'time', 'locations', 'unit', 'source'].includes(key)
-            ),
+            dimensions,
             valueCount: 0,
             unit: tuple.coordinates.unit,
             source: tuple.coordinates.source,
-            dataPoints: []
+            dataPoints: [],
+            // dataType will be set after collecting all dataPoints
           });
         }
         const indicator = indicatorMap.get(indicatorName)!;
@@ -265,6 +270,19 @@ export const CsvProcessingStep: React.FC = () => {
             .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
         };
         indicator.dataPoints!.push(dataPoint);
+      });
+      // Infer dataType for each indicator
+      indicatorMap.forEach(indicator => {
+        const values = indicator.dataPoints!.map(dp => dp.value);
+        const allIntegers = values.every(v => Number.isInteger(v));
+        const allPercent = values.length > 0 && values.every(v => v > 0 && v < 1);
+        if (allIntegers) {
+          indicator.dataType = 'integer';
+        } else if (allPercent) {
+          indicator.dataType = 'percentage';
+        } else {
+          indicator.dataType = 'decimal';
+        }
       });
       const processedIndicators = Array.from(indicatorMap.values());
       setState(prev => ({
