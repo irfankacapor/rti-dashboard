@@ -58,7 +58,7 @@ public class IndicatorBatchService {
                 Indicator indicator = createOrFindIndicator(csvIndicator);
                 
                 // 2. Process all values and create fact records
-                int factCount = processIndicatorValues(indicator, csvIndicator.getValues(), csvIndicator.getSubareaId());
+                int factCount = processIndicatorValues(indicator, csvIndicator.getValues(), csvIndicator.getSubareaId(), csvIndicator.getDirection());
                 totalFactRecords += factCount;
                 
                 // 4. Add to response only if not already added (for duplicates)
@@ -121,7 +121,7 @@ public class IndicatorBatchService {
         return indicatorRepository.save(indicator);
     }
     
-    private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values, Long subareaId) {
+    private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values, Long subareaId, io.dashboard.model.Direction direction) {
         int count = 0;
         Subarea subarea = null;
         
@@ -152,6 +152,7 @@ public class IndicatorBatchService {
                     .location(locationId)
                     .generics(generics)
                     .subarea(subarea)
+                    .direction(direction != null ? direction.name().toLowerCase() : null)
                     .sourceRowHash(generateHash(value))
                     .build();
                 factRepository.save(fact);

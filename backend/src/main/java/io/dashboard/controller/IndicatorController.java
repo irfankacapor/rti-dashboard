@@ -8,6 +8,8 @@ import io.dashboard.dto.IndicatorValueUpdate;
 import io.dashboard.dto.IndicatorValueCreate;
 import io.dashboard.dto.IndicatorChartResponse;
 import io.dashboard.dto.IndicatorDimensionsResponse;
+import io.dashboard.dto.IndicatorSubareaDirectionResponse;
+import io.dashboard.dto.IndicatorDirectionUpdateRequest;
 import io.dashboard.dto.HistoricalDataResponse;
 import io.dashboard.dto.DataValidationResponse;
 import io.dashboard.service.IndicatorService;
@@ -116,6 +118,25 @@ public class IndicatorController {
         IndicatorDimensionsResponse response = indicatorService.getIndicatorDimensions(id);
         return ResponseEntity.ok(response);
     }
+    
+    @GetMapping("/indicators/{id}/subarea-directions")
+    @PermitAll
+    public ResponseEntity<List<IndicatorSubareaDirectionResponse>> getIndicatorSubareaDirections(@PathVariable Long id) {
+        List<IndicatorSubareaDirectionResponse> response = indicatorService.getIndicatorSubareaDirections(id);
+        return ResponseEntity.ok(response);
+    }
+    
+    @PutMapping("/indicators/{indicatorId}/subareas/{subareaId}/direction")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
+    public ResponseEntity<Void> updateIndicatorDirectionForSubarea(
+            @PathVariable Long indicatorId,
+            @PathVariable Long subareaId,
+            @RequestBody @Valid IndicatorDirectionUpdateRequest request) {
+        indicatorService.updateIndicatorDirectionForSubarea(indicatorId, subareaId, request.getDirection());
+        return ResponseEntity.noContent().build();
+    }
+    
+
 
     @GetMapping("/indicators/{id}/historical")
     @PermitAll

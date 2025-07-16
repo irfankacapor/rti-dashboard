@@ -132,7 +132,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoadingGenerics(@Param("subareaId") Long subareaId);
 
-    @Query("SELECT f FROM FactIndicatorValue f LEFT JOIN FETCH f.time LEFT JOIN FETCH f.location LEFT JOIN FETCH f.generics WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
+    @Query("SELECT f FROM FactIndicatorValue f LEFT JOIN FETCH f.time LEFT JOIN FETCH f.location LEFT JOIN FETCH f.generics JOIN FETCH f.subarea WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
     List<FactIndicatorValue> findByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
 
     // Count by indicator and subarea
@@ -155,6 +155,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
         nativeQuery = true)
     List<String> findDimensionsByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
 
-    @Query("SELECT f FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId AND f.subarea IS NOT NULL")
+    @Query("SELECT f FROM FactIndicatorValue f JOIN FETCH f.subarea WHERE f.indicator.id = :indicatorId AND f.subarea IS NOT NULL")
     List<FactIndicatorValue> findByIndicatorIdWithSubarea(@Param("indicatorId") Long indicatorId);
 } 

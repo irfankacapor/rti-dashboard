@@ -44,6 +44,8 @@ import java.util.HashMap;
 import java.util.Map;
 import io.dashboard.dto.IndicatorChartResponse;
 import io.dashboard.dto.IndicatorDimensionsResponse;
+import io.dashboard.dto.IndicatorSubareaDirectionResponse;
+import io.dashboard.dto.IndicatorDirectionUpdateRequest;
 import java.math.BigDecimal;
 import io.dashboard.dto.IndicatorValueCreate;
 import io.dashboard.model.DimensionType;
@@ -214,6 +216,21 @@ public class IndicatorService {
         }
         resp.setSubareaIds(new java.util.ArrayList<>(subareaIdSet));
         resp.setSubareaNames(new java.util.ArrayList<>(subareaNameSet));
+        
+        // Set direction - get the most common direction from fact values
+        if (!facts.isEmpty()) {
+            java.util.Map<String, Long> directionCounts = facts.stream()
+                .filter(f -> f.getDirection() != null)
+                .collect(Collectors.groupingBy(FactIndicatorValue::getDirection, Collectors.counting()));
+            
+            if (!directionCounts.isEmpty()) {
+                String mostCommonDirection = directionCounts.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse(null);
+                resp.setDirection(mostCommonDirection);
+            }
+        }
         // --- END NEW ---
         return resp;
     }
@@ -249,12 +266,44 @@ public class IndicatorService {
             // Discover dimensions only from facts for this indicator in this subarea
             List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
             resp.setDimensions(dimensions);
+            
+            // Set direction for this specific subarea
+            List<FactIndicatorValue> subareaFacts = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicator.getId(), subareaId);
+            if (!subareaFacts.isEmpty()) {
+                java.util.Map<String, Long> directionCounts = subareaFacts.stream()
+                    .filter(f -> f.getDirection() != null)
+                    .collect(Collectors.groupingBy(FactIndicatorValue::getDirection, Collectors.counting()));
+                
+                if (!directionCounts.isEmpty()) {
+                    String mostCommonDirection = directionCounts.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse(null);
+                    resp.setDirection(mostCommonDirection);
+                }
+            }
         } else {
             // Original behavior for non-subarea context
             long valueCount = factIndicatorValueRepository.countByIndicatorId(indicator.getId());
             resp.setValueCount(valueCount);
             List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorId(indicator.getId());
             resp.setDimensions(dimensions);
+            
+            // Set direction - get the most common direction from all fact values
+            List<FactIndicatorValue> allFacts = factIndicatorValueRepository.findByIndicatorId(indicator.getId());
+            if (!allFacts.isEmpty()) {
+                java.util.Map<String, Long> directionCounts = allFacts.stream()
+                    .filter(f -> f.getDirection() != null)
+                    .collect(Collectors.groupingBy(FactIndicatorValue::getDirection, Collectors.counting()));
+                
+                if (!directionCounts.isEmpty()) {
+                    String mostCommonDirection = directionCounts.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse(null);
+                    resp.setDirection(mostCommonDirection);
+                }
+            }
         }
         
         return resp;
@@ -737,5 +786,61 @@ public class IndicatorService {
                 .indicatorId(String.valueOf(indicatorId))
                 .availableDimensions(dimensionInfos)
                 .build();
+    }
+    
+    @Transactional(readOnly = true)
+    public List<IndicatorSubareaDirectionResponse> getIndicatorSubareaDirections(Long indicatorId) {
+        Indicator indicator = indicatorRepository.findById(indicatorId)
+            .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", indicatorId));
+        
+        List<FactIndicatorValue> facts = factIndicatorValueRepository.findByIndicatorIdWithSubarea(indicatorId);
+        
+        // Group by subarea and get direction and value count
+        Map<Long, IndicatorSubareaDirectionResponse> subareaMap = new HashMap<>();
+        
+        for (FactIndicatorValue fact : facts) {
+            if (fact.getSubarea() != null) {
+                Long subareaId = fact.getSubarea().getId();
+                String subareaName = fact.getSubarea().getName();
+                String direction = fact.getDirection();
+                
+                if (!subareaMap.containsKey(subareaId)) {
+                    subareaMap.put(subareaId, IndicatorSubareaDirectionResponse.builder()
+                        .subareaId(subareaId)
+                        .subareaName(subareaName)
+                        .direction(direction)
+                        .valueCount(0L)
+                        .build());
+                }
+                
+                // Increment value count
+                IndicatorSubareaDirectionResponse response = subareaMap.get(subareaId);
+                response.setValueCount(response.getValueCount() + 1);
+            }
+        }
+        
+        return new ArrayList<>(subareaMap.values());
+    }
+    
+    @Transactional
+    public void updateIndicatorDirectionForSubarea(Long indicatorId, Long subareaId, String direction) {
+        // Validate indicator exists
+        Indicator indicator = indicatorRepository.findById(indicatorId)
+            .orElseThrow(() -> new ResourceNotFoundException("Indicator", "id", indicatorId));
+        
+        // Update all fact values for this indicator in this subarea
+        List<FactIndicatorValue> facts = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
+        
+        if (facts.isEmpty()) {
+            throw new BadRequestException("No data found for indicator " + indicatorId + " in subarea " + subareaId);
+        }
+        
+        for (FactIndicatorValue fact : facts) {
+            fact.setDirection(direction);
+        }
+        
+        factIndicatorValueRepository.saveAll(facts);
+        log.info("Updated direction to '{}' for indicator {} in subarea {} ({} fact values)", 
+                direction, indicatorId, subareaId, facts.size());
     }
 } 

@@ -22,6 +22,7 @@ import { AddIndicatorForm } from './AddIndicatorForm';
 import { BulkIndicatorActions } from './BulkIndicatorActions';
 import { AddMoreCsvSection } from './AddMoreCsvSection';
 import IndicatorValuesEditModal from './IndicatorValuesEditModal';
+import { IndicatorDirectionModal } from './IndicatorDirectionModal';
 
 interface IndicatorManagementStepProps {
   onNavigateToStep: (stepIndex: number) => void;
@@ -55,6 +56,8 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
   const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [editingValuesIndicatorId, setEditingValuesIndicatorId] = useState<string | null>(null);
+  const [directionModalOpen, setDirectionModalOpen] = useState(false);
+  const [selectedIndicatorForDirection, setSelectedIndicatorForDirection] = useState<ManagedIndicator | null>(null);
 
   // Fetch indicators on component mount
   useEffect(() => {
@@ -188,6 +191,16 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
 
   const handleEditValues = (indicatorId: string) => {
     setEditingValuesIndicatorId(indicatorId);
+  };
+
+  const handleOpenDirectionModal = (indicator: ManagedIndicator) => {
+    setSelectedIndicatorForDirection(indicator);
+    setDirectionModalOpen(true);
+  };
+
+  const handleCloseDirectionModal = () => {
+    setDirectionModalOpen(false);
+    setSelectedIndicatorForDirection(null);
   };
 
   const selectedIndicators = dirtyIndicators.filter(indicator => 
@@ -352,6 +365,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           onBulkUpdate={handleBulkUpdate}
           isSaving={isSaving}
           onEditValues={handleEditValues}
+          onOpenDirectionModal={handleOpenDirectionModal}
         />
       </Paper>
 
@@ -394,6 +408,12 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
         onClose={() => setEditingValuesIndicatorId(null)}
         indicatorId={editingValuesIndicatorId || ''}
         indicatorName={dirtyIndicators.find(i => i.id === editingValuesIndicatorId)?.name || ''}
+      />
+      
+      <IndicatorDirectionModal
+        open={directionModalOpen}
+        onClose={handleCloseDirectionModal}
+        indicator={selectedIndicatorForDirection}
       />
     </Box>
   );

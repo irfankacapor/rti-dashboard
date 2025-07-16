@@ -72,6 +72,9 @@ public class FactIndicatorValue {
     @Column(name = "is_aggregated")
     private Boolean isAggregated;
     
+    @Column(name = "direction", length = 20)
+    private String direction;
+    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

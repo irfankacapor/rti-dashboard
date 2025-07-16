@@ -43,6 +43,7 @@ interface IndicatorTableRowProps {
   isSaving: boolean;
   onEditValues?: (indicatorId: string) => void;
   onOpenUnitPicker: () => void;
+  onOpenDirectionModal: () => void;
 }
 
 export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
@@ -59,6 +60,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
   isSaving,
   onEditValues,
   onOpenUnitPicker,
+  onOpenDirectionModal,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState<IndicatorFormData>({
@@ -71,7 +73,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
     source: indicator.source || '',
     dataType: indicator.dataType || 'decimal',
     subareaId: indicator.subareaId || '',
-    direction: indicator.direction || 'input',
+    direction: indicator.direction,
     aggregationWeight: indicator.aggregationWeight || 1.0,
   });
 
@@ -87,7 +89,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         source: indicator.source || '',
         dataType: indicator.dataType || 'decimal',
         subareaId: indicator.subareaId || '',
-        direction: indicator.direction || 'input',
+        direction: indicator.direction,
         aggregationWeight: indicator.aggregationWeight || 1.0,
       });
     }
@@ -232,17 +234,9 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         </FormControl>
       </TableCell>
       <TableCell>
-        <FormControl size="small" fullWidth sx={{ height: 40 }}>
-          <Select
-            value={formData.direction}
-            onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
-            sx={{ height: 40 }}
-          >
-            <MenuItem value="input">Input</MenuItem>
-            <MenuItem value="output">Output</MenuItem>
-            {/* Add more types here as needed */}
-          </Select>
-        </FormControl>
+        <Typography variant="body2" color="text.secondary">
+          Direction can be managed per subarea
+        </Typography>
       </TableCell>
       <TableCell>
         <Typography variant="body2" color="text.secondary">
@@ -254,7 +248,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           {indicator.dimensions?.map((dimension, index) => (
             <Chip
               key={index}
-              label={dimension}
+              label={typeof dimension === 'string' ? dimension : dimension.displayName}
               size="small"
               variant="outlined"
             />
@@ -397,11 +391,14 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         )}
       </TableCell>
       <TableCell>
-        <Chip
-          label={(indicator.direction || 'input').toUpperCase()}
+        <Button
+          variant="outlined"
           size="small"
-          color={getDirectionColor(indicator.direction || 'input')}
-        />
+          onClick={onOpenDirectionModal}
+          sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem' }}
+        >
+          MANAGE
+        </Button>
       </TableCell>
       <TableCell>
         <Button 
@@ -420,7 +417,7 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
           {indicator.dimensions?.map((dimension, index) => (
             <Chip
               key={index}
-              label={dimension}
+              label={typeof dimension === 'string' ? dimension : dimension.displayName}
               size="small"
               variant="outlined"
             />

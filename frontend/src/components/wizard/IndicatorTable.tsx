@@ -27,6 +27,7 @@ interface IndicatorTableProps {
   onBulkUpdate: (updates: { id: string; updates: Partial<ManagedIndicator> }[]) => void;
   isSaving: boolean;
   onEditValues: (indicatorId: string) => void;
+  onOpenDirectionModal: (indicator: ManagedIndicator) => void;
 }
 
 export const IndicatorTable: React.FC<IndicatorTableProps> = ({
@@ -40,6 +41,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
   onBulkUpdate,
   isSaving,
   onEditValues,
+  onOpenDirectionModal,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [unitPickerModalOpen, setUnitPickerModalOpen] = useState<string | null>(null);
@@ -154,6 +156,7 @@ export const IndicatorTable: React.FC<IndicatorTableProps> = ({
               isSaving={isSaving}
               onEditValues={onEditValues}
               onOpenUnitPicker={() => handleOpenUnitModal(indicator)}
+              onOpenDirectionModal={() => onOpenDirectionModal(indicator)}
             />
           ))}
         </TableBody>

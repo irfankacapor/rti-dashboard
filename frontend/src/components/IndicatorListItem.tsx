@@ -58,9 +58,9 @@ const IndicatorListItem: React.FC<IndicatorListItemProps> = ({
       >
         <Tooltip title={normalizedDirection === 'input' ? 'Input' : 'Output'}>
           {normalizedDirection === 'input' ? (
-            <RadioButtonUncheckedIcon fontSize="small" sx={{ mr: 1 }} />
-          ) : (
             <FiberManualRecordIcon fontSize="small" sx={{ mr: 1 }} />
+          ) : (
+            <RadioButtonUncheckedIcon fontSize="small" sx={{ mr: 1 }} />
           )}
         </Tooltip>
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
