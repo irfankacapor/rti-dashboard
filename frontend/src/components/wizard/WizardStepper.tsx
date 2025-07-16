@@ -11,7 +11,7 @@ import {
   Paper,
   useTheme,
 } from '@mui/material';
-import { CheckCircle, RadioButtonUnchecked } from '@mui/icons-material';
+import { CheckCircle } from '@mui/icons-material';
 import { useWizardStore } from '@/lib/store/useWizardStore';
 
 interface WizardStepperProps {

@@ -3,7 +3,6 @@ package io.dashboard.service;
 import io.dashboard.dto.*;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
-import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,17 +1,18 @@
 package io.dashboard.controller;
 
 import io.dashboard.dto.*;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.service.ChartDataService;
+import io.dashboard.test.security.WithMockAdmin;
+import io.dashboard.util.JwtUtil;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -19,10 +20,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ChartDataController.class)
+@WithMockAdmin
 class ChartDataControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private JwtUtil jwtUtil;
+
+    @MockBean
+    private UnitRepository unitRepository;
 
     @MockBean
     private ChartDataService chartDataService;

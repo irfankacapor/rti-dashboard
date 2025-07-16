@@ -2,8 +2,6 @@ package io.dashboard.controller;
 
 import io.dashboard.dto.*;
 import io.dashboard.exception.BadRequestException;
-import io.dashboard.model.DimTime;
-import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.repository.DimTimeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
@@ -14,12 +12,16 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.dashboard.exception.GlobalExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import jakarta.annotation.security.PermitAll;
 
-import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/v1/dashboard-data")
@@ -31,7 +33,10 @@ public class DashboardDataController {
     private final FactIndicatorValueRepository factRepository;
     private final IndicatorRepository indicatorRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @GetMapping("/{dashboardId}")
+    @PermitAll
     public ResponseEntity<DashboardDataResponse> getDashboardData(@PathVariable Long dashboardId) {
         log.info("Retrieving dashboard data for dashboard ID: {}", dashboardId);
         
@@ -50,6 +55,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/{dashboardId}/widgets/{widgetId}")
+    @PermitAll
     public ResponseEntity<WidgetDataResponse> getWidgetData(
             @PathVariable Long dashboardId,
             @PathVariable Long widgetId) {
@@ -77,6 +83,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/performance-metrics/{areaId}")
+    @PermitAll
     public ResponseEntity<PerformanceMetricsResponse> getPerformanceMetrics(@PathVariable Long areaId) {
         log.info("Retrieving performance metrics for area ID: {}", areaId);
         
@@ -104,6 +111,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/real-time-updates/{dashboardId}")
+    @PermitAll
     public ResponseEntity<RealTimeUpdateResponse> getRealTimeUpdates(@PathVariable Long dashboardId) {
         log.info("Retrieving real-time updates for dashboard ID: {}", dashboardId);
         
@@ -154,6 +162,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/export/{dashboardId}")
+    @PermitAll
     public ResponseEntity<DataExportResponse> exportDashboardData(
             @PathVariable Long dashboardId,
             @RequestParam(defaultValue = "JSON") String format) {
@@ -179,6 +188,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/quality-metrics/{dashboardId}")
+    @PermitAll
     public ResponseEntity<DataQualityMetricsResponse> getDataQualityMetrics(@PathVariable Long dashboardId) {
         log.info("Retrieving data quality metrics for dashboard ID: {}", dashboardId);
         
@@ -197,6 +207,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/refresh-status/{dashboardId}")
+    @PermitAll
     public ResponseEntity<DataRefreshStatusResponse> getDataRefreshStatus(@PathVariable Long dashboardId) {
         log.info("Retrieving data refresh status for dashboard ID: {}", dashboardId);
         
@@ -215,6 +226,7 @@ public class DashboardDataController {
     }
 
     @GetMapping("/performance-metrics")
+    @PermitAll
     public ResponseEntity<List<PerformanceMetricsResponse>> getAllPerformanceMetrics() {
         log.info("Retrieving all performance metrics");
         try {
@@ -227,14 +239,23 @@ public class DashboardDataController {
         }
     }
 
+    @PermitAll
     @GetMapping("/dashboard-with-relationships")
     public ResponseEntity<DashboardWithRelationshipsResponse> getDashboardWithRelationships() {
-        log.info("Retrieving dashboard data with goal-subarea relationships");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        logger.info("Controller Authentication: {}", auth);
+        if (auth != null) {
+            logger.info("Controller Principal: {}", auth.getPrincipal());
+            logger.info("Controller Authorities: {}", auth.getAuthorities());
+            logger.info("Controller Authenticated: {}", auth.isAuthenticated());
+        } else {
+            logger.warn("Controller Authentication is null");
+        }
         try {
             DashboardWithRelationshipsResponse response = dashboardDataService.getDashboardWithRelationships();
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error retrieving dashboard with relationships: {}", e.getMessage());
+            logger.error("Error retrieving dashboard with relationships: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

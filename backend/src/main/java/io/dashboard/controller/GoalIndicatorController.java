@@ -1,7 +1,6 @@
 package io.dashboard.controller;
 
 import io.dashboard.dto.*;
-import io.dashboard.model.ImpactDirection;
 import io.dashboard.service.GoalIndicatorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.access.annotation.Secured;
+import jakarta.annotation.security.PermitAll;
 
 @RestController
 @RequestMapping("/api/v1/goals")
@@ -18,6 +19,7 @@ public class GoalIndicatorController {
     private final GoalIndicatorService goalIndicatorService;
 
     @PostMapping("/{goalId}/indicators/{indicatorId}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalIndicatorResponse> linkGoalToIndicator(
             @PathVariable Long goalId,
             @PathVariable Long indicatorId,
@@ -28,6 +30,7 @@ public class GoalIndicatorController {
     }
 
     @DeleteMapping("/{goalId}/indicators/{indicatorId}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> unlinkGoalFromIndicator(
             @PathVariable Long goalId,
             @PathVariable Long indicatorId) {
@@ -36,6 +39,7 @@ public class GoalIndicatorController {
     }
 
     @PutMapping("/{goalId}/indicators/{indicatorId}/weight")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalIndicatorResponse> updateGoalIndicatorWeight(
             @PathVariable Long goalId,
             @PathVariable Long indicatorId,
@@ -46,6 +50,7 @@ public class GoalIndicatorController {
     }
 
     @PutMapping("/{goalId}/indicators/{indicatorId}/direction")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalIndicatorResponse> updateGoalIndicatorDirection(
             @PathVariable Long goalId,
             @PathVariable Long indicatorId,
@@ -56,18 +61,21 @@ public class GoalIndicatorController {
     }
 
     @GetMapping("/{goalId}/indicators")
+    @PermitAll
     public ResponseEntity<List<GoalIndicatorResponse>> getIndicatorsByGoal(@PathVariable Long goalId) {
         List<GoalIndicatorResponse> responses = goalIndicatorService.findIndicatorsByGoal(goalId);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/indicators/{indicatorId}/goals")
+    @PermitAll
     public ResponseEntity<List<GoalIndicatorResponse>> getGoalsByIndicator(@PathVariable Long indicatorId) {
         List<GoalIndicatorResponse> responses = goalIndicatorService.findGoalsByIndicator(indicatorId);
         return ResponseEntity.ok(responses);
     }
 
     @PostMapping("/{goalId}/indicators/bulk")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<List<GoalIndicatorResponse>> bulkLinkIndicators(
             @PathVariable Long goalId,
             @RequestBody @Valid BulkGoalIndicatorRequest request) {
@@ -76,6 +84,7 @@ public class GoalIndicatorController {
     }
 
     @GetMapping("/{goalId}/progress")
+    @PermitAll
     public ResponseEntity<GoalProgressResponse> getGoalProgress(@PathVariable Long goalId) {
         GoalProgressResponse response = goalIndicatorService.calculateGoalProgress(goalId);
         return ResponseEntity.ok(response);

@@ -12,8 +12,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  ToggleButtonGroup,
-  ToggleButton,
   Typography,
   Box,
   Chip,
@@ -25,7 +23,7 @@ import {
 } from '@mui/material';
 import { ManualIndicatorData } from '@/types/indicators';
 import { Subarea } from '@/types/subareas';
-import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { indicatorManagementService } from '@/services/indicatorManagementService';
 
 interface AddIndicatorFormProps {

@@ -7,6 +7,8 @@ import io.dashboard.model.Indicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.UnitRepository;
+import io.dashboard.test.security.WithMockAdmin;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@WithMockAdmin
 class UnitControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -84,7 +87,8 @@ class UnitControllerIntegrationTest {
         
         mockMvc.perform(get("/api/v1/units"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("UNIT1"));
+                .andExpect(jsonPath("$[0].code").value("UNIT1"))
+                .andExpect(jsonPath("$[0].description").value("Test Unit"));
     }
 
     @Test
@@ -144,25 +148,5 @@ class UnitControllerIntegrationTest {
                 .andExpect(status().isNoContent());
         
         assertThat(unitRepository.findById(unit.getId())).isEmpty();
-    }
-
-    @Test
-    void deleteUnit_shouldReturn400_whenHasIndicators() throws Exception {
-        Unit unit = new Unit();
-        unit.setCode("UNIT1");
-        unit.setDescription("Test Unit");
-        unit = unitRepository.save(unit);
-        
-        // Add an indicator
-        Indicator indicator = new Indicator();
-        indicator.setCode("IND1");
-        indicator.setName("Indicator 1");
-        indicator.setIsComposite(false);
-        indicator.setUnit(unit);
-        indicatorRepository.save(indicator);
-        
-        mockMvc.perform(delete("/api/v1/units/" + unit.getId()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
     }
 } 

@@ -5,6 +5,9 @@ import io.dashboard.dto.AreaCreateRequest;
 import io.dashboard.dto.AreaUpdateRequest;
 import io.dashboard.model.Area;
 import io.dashboard.repository.AreaRepository;
+import io.dashboard.test.security.WithMockAdmin;
+import io.dashboard.test.security.WithMockManager;
+import io.dashboard.test.security.WithMockRegularUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockAdmin
 class AreaControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;

@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
-import { WizardContainer } from './WizardContainer';
 import { CsvUploadSection } from './CsvUploadSection';
 import { CsvTable } from './CsvTable';
 import { DimensionMappingPopup } from './DimensionMappingPopup';
@@ -30,7 +29,6 @@ import { csvProcessingService } from '@/services/csvProcessingService';
 import { 
   generateDataTuples, 
   validateDimensionMappings,
-  generateTuplePreview 
 } from '@/utils/coordinateProcessor';
 import { getSubareas } from '@/services/subareaService';
 import { useWizardStore } from '@/lib/store/useWizardStore';
@@ -93,7 +91,29 @@ export const CsvProcessingStep: React.FC = () => {
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        csvData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        let rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+        // Fill merged cells for Excel: copy the value from the top-left cell to all other cells in the merged region if they are empty
+        if (worksheet['!merges'] && Array.isArray(worksheet['!merges'])) {
+          worksheet['!merges'].forEach((mergeRegion: any) => {
+            const startRow = mergeRegion.s.r;
+            const endRow = mergeRegion.e.r;
+            const startCol = mergeRegion.s.c;
+            const endCol = mergeRegion.e.c;
+            const mergedValue = (rawData[startRow] && rawData[startRow][startCol] !== undefined && rawData[startRow][startCol] !== null)
+              ? String(rawData[startRow][startCol])
+              : '';
+            for (let row = startRow; row <= endRow; row++) {
+              if (!rawData[row]) continue; // skip if row does not exist
+              for (let col = startCol; col <= endCol; col++) {
+                // Skip the top-left cell, only fill if cell is empty/undefined
+                if ((row !== startRow || col !== startCol) && (rawData[row][col] === undefined || rawData[row][col] === null || rawData[row][col] === '')) {
+                  rawData[row][col] = mergedValue;
+                }
+              }
+            }
+          });
+        }
+        csvData = rawData;
       } else {
         // Parse CSV data
         let csvText: string;
@@ -256,7 +276,6 @@ export const CsvProcessingStep: React.FC = () => {
       // Show success message if fixes were applied
       if (appliedFixesCount > 0) {
         // Add success notification here
-        console.log(`Applied ${appliedFixesCount} encoding fixes successfully`);
       }
     } catch (error) {
       setState(prev => ({
@@ -284,8 +303,6 @@ export const CsvProcessingStep: React.FC = () => {
   };
 
   const handleSubmitIndicators = async () => {
-    console.log('Starting submit indicators...');
-    console.log('Processed indicators:', state.processedIndicators);
     
     setState(prev => ({ ...prev, isLoading: true, error: undefined }));
 
@@ -293,19 +310,12 @@ export const CsvProcessingStep: React.FC = () => {
       // Submit to backend
       const response = await csvProcessingService.submitProcessedIndicators(state.processedIndicators);
       
-      // Mark step as completed
-      console.log('Indicators submitted successfully:', response);
-      
       // Set loading to false and show success
       setState(prev => ({
         ...prev,
         isLoading: false,
         error: undefined
       }));
-      
-      // You could also show a success message here
-      // For now, we'll just log it
-      console.log(`Successfully created ${response.createdIndicators.length} indicators with ${response.totalFactRecords} fact records`);
       
       setShowConfirmation(true);
     } catch (error) {

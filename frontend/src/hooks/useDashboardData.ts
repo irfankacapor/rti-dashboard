@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { DashboardArea, DashboardSubarea } from '@/types/dashboard';
 import { apiClient } from '@/lib/api';
-
-interface DashboardDataResponse {
-  areas: DashboardArea[];
-  subareas: DashboardSubarea[];
-}
+import { Subarea } from '@/types/subareas';
+import { AreaApiResponse } from '@/types/areas';
 
 export const useDashboardData = () => {
   const [areas, setAreas] = useState<DashboardArea[]>([]);
@@ -26,7 +23,7 @@ export const useDashboardData = () => {
         const subareasData = await apiClient.get('/subareas');
 
         // Transform areas data
-        const transformedAreas: DashboardArea[] = areasData.map((area: any) => ({
+        const transformedAreas: DashboardArea[] = areasData.map((area: AreaApiResponse) => ({
           id: area.id.toString(),
           name: area.name,
           description: area.description,
@@ -40,7 +37,7 @@ export const useDashboardData = () => {
         }));
 
         // Transform subareas data
-        const transformedSubareas: DashboardSubarea[] = subareasData.map((subarea: any) => ({
+        const transformedSubareas: DashboardSubarea[] = subareasData.map((subarea: Subarea) => ({
           id: subarea.id.toString(),
           name: subarea.name,
           description: subarea.description,

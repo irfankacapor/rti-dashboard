@@ -2,10 +2,7 @@ package io.dashboard.service;
 
 import io.dashboard.dto.*;
 import io.dashboard.model.*;
-import io.dashboard.model.SubareaIndicator;
 import io.dashboard.repository.*;
-import io.dashboard.exception.BadRequestException;
-import io.dashboard.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -13,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,7 +28,6 @@ public class DashboardDataService {
     private final GoalGroupService goalGroupService;
     private final GoalIndicatorService goalIndicatorService;
     private final SubareaService subareaService;
-    private final SubareaIndicatorRepository subareaIndicatorRepository;
 
     @Cacheable(value = "dashboardData", key = "#dashboardId")
     public DashboardDataResponse getDashboardData(Long dashboardId) {
@@ -544,11 +539,11 @@ public class DashboardDataService {
                     
                     // For each indicator, find connected subareas
                     for (GoalIndicatorResponse goalIndicator : goalIndicators) {
-                        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findByIndicatorId(goalIndicator.getIndicatorId());
-                        log.debug("Indicator {} has {} subarea relationships", goalIndicator.getIndicatorId(), subareaIndicators.size());
+                        List<FactIndicatorValue> subareaFacts = factIndicatorValueRepository.findByIndicatorIdWithSubarea(goalIndicator.getIndicatorId());
+                        log.debug("Indicator {} has {} subarea relationships", goalIndicator.getIndicatorId(), subareaFacts.size());
                         
-                        for (SubareaIndicator subareaIndicator : subareaIndicators) {
-                            String subareaId = subareaIndicator.getSubarea().getId().toString();
+                        for (FactIndicatorValue subareaFact : subareaFacts) {
+                            String subareaId = subareaFact.getSubarea().getId().toString();
                             connectedSubareaIds.add(subareaId);
                             
                             // Build reverse mapping

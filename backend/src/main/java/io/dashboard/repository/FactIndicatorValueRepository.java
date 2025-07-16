@@ -19,7 +19,7 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     List<FactIndicatorValue> findByIndicatorIdWithTime(@Param("indicatorId") Long indicatorId);
     
     // Find by subarea ID
-    @Query("SELECT f FROM FactIndicatorValue f JOIN f.indicator i JOIN i.subareaIndicators si WHERE si.subarea.id = :subareaId")
+    @Query("SELECT f FROM FactIndicatorValue f WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaId(@Param("subareaId") Long subareaId);
     
     // Find by indicator with eager loading of time dimension for latest value calculation
@@ -70,12 +70,10 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     @Query("SELECT f FROM FactIndicatorValue f WHERE " +
            "(:indicatorId IS NULL OR f.indicator.id = :indicatorId) AND " +
            "(:timeId IS NULL OR f.time.id = :timeId) AND " +
-           "(:locationId IS NULL OR f.location.id = :locationId) AND " +
-           "(:unitId IS NULL OR f.unit.id = :unitId)")
+           "(:locationId IS NULL OR f.location.id = :locationId)")
     List<FactIndicatorValue> findByDimensions(@Param("indicatorId") Long indicatorId,
                                              @Param("timeId") Long timeId,
-                                             @Param("locationId") Long locationId,
-                                             @Param("unitId") Long unitId);
+                                             @Param("locationId") Long locationId);
     
     // Get distinct indicators
     @Query("SELECT DISTINCT f.indicator.id FROM FactIndicatorValue f")
@@ -107,16 +105,13 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "JOIN FETCH f.indicator i " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
-           "JOIN i.subareaIndicators si " +
-           "WHERE si.subarea.id = :subareaId")
+           "WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoading(@Param("subareaId") Long subareaId);
     
     // Find by indicator with eager loading of all required relationships
     @Query("SELECT f FROM FactIndicatorValue f " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "WHERE f.indicator.id = :indicatorId")
     List<FactIndicatorValue> findByIndicatorIdWithEagerLoading(@Param("indicatorId") Long indicatorId);
     
@@ -124,7 +119,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     @Query("SELECT f FROM FactIndicatorValue f " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "LEFT JOIN FETCH f.generics " +
            "WHERE f.indicator.id = :indicatorId")
     List<FactIndicatorValue> findByIndicatorIdWithGenerics(@Param("indicatorId") Long indicatorId);
@@ -134,9 +128,33 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
            "JOIN FETCH f.indicator i " +
            "LEFT JOIN FETCH f.time " +
            "LEFT JOIN FETCH f.location " +
-           "LEFT JOIN FETCH f.unit " +
            "LEFT JOIN FETCH f.generics " +
-           "JOIN i.subareaIndicators si " +
-           "WHERE si.subarea.id = :subareaId")
+           "WHERE f.subarea.id = :subareaId")
     List<FactIndicatorValue> findBySubareaIdWithEagerLoadingGenerics(@Param("subareaId") Long subareaId);
+
+    @Query("SELECT f FROM FactIndicatorValue f LEFT JOIN FETCH f.time LEFT JOIN FETCH f.location LEFT JOIN FETCH f.generics WHERE f.indicator.id = :indicatorId AND f.subarea.id = :subareaId")
+    List<FactIndicatorValue> findByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
+
+    // Count by indicator and subarea
+    long countByIndicatorIdAndSubareaId(Long indicatorId, Long subareaId);
+    
+    // Find distinct dimension types for a given indicator and subarea
+    @Query(value = 
+        "SELECT 'time' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND subarea_id = :subareaId AND time_id IS NOT NULL) " +
+        "UNION ALL " +
+        "SELECT 'location' AS dimension " +
+        "WHERE EXISTS (SELECT 1 FROM fact_indicator_values WHERE indicator_id = :indicatorId AND subarea_id = :subareaId AND location_id IS NOT NULL) " +
+        "UNION ALL " +
+        "SELECT g.dimension_name AS dimension " +
+        "FROM fact_indicator_value_generic j " +
+        "JOIN fact_indicator_values f ON j.fact_indicator_value_id = f.id " +
+        "JOIN dim_generic g ON j.generic_id = g.id " +
+        "WHERE f.indicator_id = :indicatorId AND f.subarea_id = :subareaId " +
+        "GROUP BY g.dimension_name",
+        nativeQuery = true)
+    List<String> findDimensionsByIndicatorIdAndSubareaId(@Param("indicatorId") Long indicatorId, @Param("subareaId") Long subareaId);
+
+    @Query("SELECT f FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId AND f.subarea IS NOT NULL")
+    List<FactIndicatorValue> findByIndicatorIdWithSubarea(@Param("indicatorId") Long indicatorId);
 } 

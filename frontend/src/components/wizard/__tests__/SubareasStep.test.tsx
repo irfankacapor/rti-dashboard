@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SubareasStep } from '../SubareasStep';
 import { useWizardStore } from '@/store/wizardStore';
-import { act } from 'react-dom/test-utils';
 
 jest.mock('@/store/wizardStore');
 
@@ -11,7 +10,7 @@ const mockAreas = [
   { id: '2', name: 'Area 2', isDefault: false, description: '', code: '' },
 ];
 const mockSubareas = [
-  { id: 's1', code: '', name: 'Subarea 1', description: '', areaId: '1', createdAt: new Date() },
+  { id: 's1', code: '', name: 'Subarea 1', description: '', areaId: '2', createdAt: new Date() },
 ];
 
 // Helper to create a mock store state
@@ -91,9 +90,9 @@ describe('SubareasStep', () => {
     const areaSelect = container.querySelector('[data-testid="add-area-select"]');
     expect(areaSelect).not.toBeNull();
     fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: 'New Subarea' } });
-    fireEvent.change(areaSelect as Element, { target: { value: mockAreas[1].id } });
+    fireEvent.change(areaSelect as Element, { target: { value: '2' } });
     fireEvent.click(screen.getByTestId('add-save-subarea'));
-    expect(addSubarea).toHaveBeenCalledWith(expect.objectContaining({ areaId: mockAreas[1].id }));
+    expect(addSubarea).toHaveBeenCalledWith(expect.objectContaining({ areaId: '2' }));
   });
 
   it('shows "Unassigned" chip if subarea areaId does not match any area', () => {

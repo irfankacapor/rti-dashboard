@@ -8,20 +8,15 @@ import {
   CircularProgress,
   Snackbar,
   Paper,
-  Chip,
-  IconButton,
-  Tooltip,
   Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Upload as UploadIcon,
-  Refresh as RefreshIcon,
-  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useWizardStore } from '@/store/wizardStore';
 import { useWizardStore as useMainWizardStore } from '@/lib/store/useWizardStore';
-import { ManagedIndicator } from '@/types/indicators';
+import { ManagedIndicator, ManualIndicatorData } from '@/types/indicators';
 import { IndicatorTable } from './IndicatorTable';
 import { AddIndicatorForm } from './AddIndicatorForm';
 import { BulkIndicatorActions } from './BulkIndicatorActions';
@@ -177,7 +172,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     onNavigateToStep(3);
   };
 
-  const handleManualAdd = (indicatorData: any) => {
+  const handleManualAdd = (indicatorData: ManualIndicatorData) => {
     try {
       // Only add to local state - backend saving happens when clicking Next
       addManualIndicator(indicatorData);
@@ -207,6 +202,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
     output: dirtyIndicators.filter(i => i.direction === 'output').length,
     assigned: dirtyIndicators.filter(i => i.subareaId).length,
     unassigned: dirtyIndicators.filter(i => !i.subareaId).length,
+    missingUnits: dirtyIndicators.filter(i => !i.unitId).length,
   };
 
   if (isLoadingIndicators) {
@@ -284,6 +280,16 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
               </Typography>
             </Box>
           </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Box textAlign="center">
+              <Typography variant="h4" color={stats.missingUnits > 0 ? "error" : "success.main"}>
+                {stats.missingUnits}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Missing Units
+              </Typography>
+            </Box>
+          </Grid>
         </Grid>
 
         {stats.unassigned > 0 && (
@@ -294,6 +300,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
       </Paper>
 
       {/* Validation errors */}
+      {/*
       {!validation.isValid && validation.errors.length > 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="subtitle2" gutterBottom>
@@ -306,6 +313,7 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           </ul>
         </Alert>
       )}
+      */}
 
       {/* Bulk actions */}
       {selectedIds.length > 0 && (
@@ -316,6 +324,19 @@ export const IndicatorManagementStep: React.FC<IndicatorManagementStepProps> = (
           onBulkDelete={handleBulkDelete}
           onBulkDeleteWithData={handleBulkDeleteWithData}
         />
+      )}
+
+      {/* Unit warning */}
+      {stats.missingUnits > 0 && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Units Required
+          </Typography>
+          <Typography variant="body2">
+            {stats.missingUnits} indicator{stats.missingUnits === 1 ? '' : 's'} {stats.missingUnits === 1 ? 'is' : 'are'} missing a unit. 
+            Please set all units before proceeding to the next step. Units are required for proper data visualization and analysis.
+          </Typography>
+        </Alert>
       )}
 
       {/* Indicators table */}

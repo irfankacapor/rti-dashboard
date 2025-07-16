@@ -9,4 +9,5 @@ public class UnitResponse {
     private String code;
     private String description;
     private LocalDateTime createdAt;
+    private String group;
 } 

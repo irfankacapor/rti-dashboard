@@ -66,13 +66,15 @@ class GoalIndicatorServiceBusinessLogicTest {
         indicator1.setId(1L);
         indicator1.setName("Test Indicator 1");
         indicator1.setCode("TEST_IND_1");
-        indicator1.setUnit(unit);
+        indicator1.setUnitPrefix("€");
+        indicator1.setUnitSuffix("thousand");
 
         indicator2 = new Indicator();
         indicator2.setId(2L);
         indicator2.setName("Test Indicator 2");
         indicator2.setCode("TEST_IND_2");
-        indicator2.setUnit(unit);
+        indicator2.setUnitPrefix("€");
+        indicator2.setUnitSuffix("thousand");
     }
 
     @Test

@@ -18,6 +18,12 @@ public class IndicatorUpdateRequest {
     private Boolean isComposite;
 
     private Long unitId;
+    private String unitPrefix;
+    private String unitSuffix;
+
+    private Long subareaId;
+    private String direction;
+    private Double aggregationWeight;
 
     private Long dataTypeId;
 } 

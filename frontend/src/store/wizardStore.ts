@@ -688,6 +688,10 @@ export const useWizardStore = create<WizardState>()(
             errors.push(`Indicator "${i.name}" must have a name at least 3 characters long`);
             return false;
           }
+          if (!i.unitId) {
+            errors.push(`Indicator "${i.name}" must have a unit selected`);
+            return false;
+          }
           return true;
         });
         return { isValid, errors };
@@ -704,12 +708,41 @@ export const useWizardStore = create<WizardState>()(
       saveIndicators: async () => {
         set({ isSaving: true });
         try {
-          const { dirtyIndicators } = get();
-          // Separate manual indicators with dataRows
+          const { dirtyIndicators, managedIndicators } = get();
+          
+          // Separate indicators by type
           const manualIndicatorsWithValues = dirtyIndicators.filter(i => i.isManual && Array.isArray((i as any).dataRows) && (i as any).dataRows.length > 0);
-          const otherIndicators = dirtyIndicators.filter(i => !i.isManual || !(Array.isArray((i as any).dataRows) && (i as any).dataRows.length > 0));
+          const existingIndicatorsToUpdate = dirtyIndicators.filter(i => {
+            // Find if this indicator exists in managedIndicators (backend)
+            const existsInBackend = managedIndicators.some(mi => mi.id === i.id);
+            // Only include if it exists in backend and has been modified
+            return existsInBackend && i.isModified;
+          });
+          const otherIndicators = dirtyIndicators.filter(i => 
+            !i.isManual || !(Array.isArray((i as any).dataRows) && (i as any).dataRows.length > 0)
+          );
 
-          // 1. Create manual indicators with values via /indicators/create-from-csv
+          // 1. Update existing indicators that have been modified
+          for (const indicator of existingIndicatorsToUpdate) {
+            try {
+              await indicatorManagementService.updateIndicator(indicator.id, {
+                name: indicator.name,
+                description: indicator.description,
+                unit: indicator.unit,
+                unitId: indicator.unitId,
+                unitPrefix: indicator.unitPrefix,
+                unitSuffix: indicator.unitSuffix,
+                dataType: indicator.dataType,
+                subareaId: indicator.subareaId,
+                direction: indicator.direction,
+                aggregationWeight: indicator.aggregationWeight,
+              });
+            } catch (error) {
+              throw new Error(`Failed to update indicator "${indicator.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          }
+
+          // 2. Create manual indicators with values via /indicators/create-from-csv
           if (manualIndicatorsWithValues.length > 0) {
             const csvIndicators = manualIndicatorsWithValues.map(i => {
               // Map each dataRow to backend IndicatorValue format
@@ -735,7 +768,8 @@ export const useWizardStore = create<WizardState>()(
                 name: i.name,
                 description: i.description,
                 unit: i.unit,
-                source: i.source,
+                unitPrefix: i.unitPrefix,
+                unitSuffix: i.unitSuffix,
                 subareaId: i.subareaId ? parseInt(i.subareaId) : null,
                 direction: (i.direction || 'input').toUpperCase(),
                 aggregationWeight: 1.0,
@@ -751,9 +785,6 @@ export const useWizardStore = create<WizardState>()(
               throw err;
             }
           }
-
-          // 2. Create other indicators (if any) using the existing logic (if needed)
-          // ... (existing logic for otherIndicators)
 
           // Refresh from backend
           const freshIndicators = await indicatorManagementService.getIndicators();

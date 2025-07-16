@@ -8,24 +8,22 @@ import io.dashboard.dto.IndicatorValue;
 import io.dashboard.model.DimGeneric;
 import io.dashboard.model.DimLocation;
 import io.dashboard.model.DimTime;
-import io.dashboard.model.Direction;
 import io.dashboard.model.FactIndicatorValue;
 import io.dashboard.model.Indicator;
 import io.dashboard.model.Subarea;
-import io.dashboard.model.SubareaIndicator;
+import io.dashboard.model.Unit;
 import io.dashboard.repository.DimGenericRepository;
+import io.dashboard.repository.UnitRepository;
 import io.dashboard.repository.DimLocationRepository;
 import io.dashboard.repository.DimTimeRepository;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
-import io.dashboard.repository.SubareaIndicatorRepository;
+import io.dashboard.repository.SubareaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +40,8 @@ public class IndicatorBatchService {
     private final DimLocationRepository dimLocationRepository;
     private final DimGenericRepository dimGenericRepository;
     private final FactIndicatorValueRepository factRepository;
-    private final SubareaIndicatorRepository subareaIndicatorRepository;
+    private final UnitRepository unitRepository;
+    private final SubareaRepository subareaRepository;
     
     public IndicatorBatchResponse createFromCsvData(IndicatorBatchRequest request) {
         List<IndicatorResponse> createdIndicators = new ArrayList<>();
@@ -54,11 +53,8 @@ public class IndicatorBatchService {
                 // 1. Create or find indicator
                 Indicator indicator = createOrFindIndicator(csvIndicator);
                 
-                // 2. Create subarea relationship
-                createSubareaRelationship(indicator, csvIndicator);
-                
-                // 3. Process all values and create fact records
-                int factCount = processIndicatorValues(indicator, csvIndicator.getValues());
+                // 2. Process all values and create fact records
+                int factCount = processIndicatorValues(indicator, csvIndicator.getValues(), csvIndicator.getSubareaId());
                 totalFactRecords += factCount;
                 
                 // 4. Add to response only if not already added (for duplicates)
@@ -96,56 +92,46 @@ public class IndicatorBatchService {
         indicator.setName(csvIndicator.getName());
         indicator.setDescription(csvIndicator.getDescription());
         indicator.setIsComposite(false);
+        // Handle unit - find by code or create new
+        if (csvIndicator.getUnit() != null && !csvIndicator.getUnit().trim().isEmpty()) {
+            Unit unit = unitRepository.findByCode(csvIndicator.getUnit())
+                .orElseGet(() -> {
+                    Unit newUnit = new Unit();
+                    newUnit.setCode(csvIndicator.getUnit());
+                    newUnit.setDescription("Auto-generated from CSV import");
+                    return unitRepository.save(newUnit);
+                });
+            indicator.setUnit(unit);
+        }
+        indicator.setUnitPrefix(csvIndicator.getUnitPrefix());
+        indicator.setUnitSuffix(csvIndicator.getUnitSuffix());
             
         return indicatorRepository.save(indicator);
     }
     
-    private void createSubareaRelationship(Indicator indicator, CsvIndicatorData csvIndicator) {
-        // Check if relationship already exists
-        boolean exists = subareaIndicatorRepository.existsBySubareaIdAndIndicatorId(
-            csvIndicator.getSubareaId(), indicator.getId());
-            
-        if (!exists) {
-            SubareaIndicator relationship = new SubareaIndicator();
-            SubareaIndicator.SubareaIndicatorId id = new SubareaIndicator.SubareaIndicatorId();
-            id.setSubareaId(csvIndicator.getSubareaId());
-            id.setIndicatorId(indicator.getId());
-            relationship.setId(id);
-            relationship.setDirection(csvIndicator.getDirection());
-            relationship.setAggregationWeight(csvIndicator.getAggregationWeight());
-            
-            // Set the relationships properly - these are required for @MapsId to work
-            relationship.setIndicator(indicator);
-            // We need to fetch the subarea to set the relationship
-            // For now, we'll create a proxy or fetch it properly
-            // Since we're in a transaction, we can create a simple reference
-            Subarea subarea = new Subarea();
-            subarea.setId(csvIndicator.getSubareaId());
-            relationship.setSubarea(subarea);
-                
-            subareaIndicatorRepository.save(relationship);
-        }
-    }
-    
-    private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values) {
+    private int processIndicatorValues(Indicator indicator, List<IndicatorValue> values, Long subareaId) {
         int count = 0;
+        Subarea subarea = null;
+        
+        // Fetch subarea if subareaId is provided
+        if (subareaId != null) {
+            subarea = subareaRepository.findById(subareaId)
+                .orElseThrow(() -> new RuntimeException("Subarea with ID " + subareaId + " not found"));
+        }
         
         for (IndicatorValue value : values) {
             try {
                 // Create dimension records
                 DimTime timeId = value.getTimeValue() != null ? 
                     createOrFindTimeValue(value.getTimeValue(), value.getTimeType()) : null;
-                    
                 DimLocation locationId = value.getLocationValue() != null ?
                     createOrFindLocationValue(value.getLocationValue(), value.getLocationType()) : null;
-                
                 List<DimGeneric> generics = new ArrayList<>();
                 if (value.getCustomDimensions() != null && !value.getCustomDimensions().isEmpty()) {
                     for (Map.Entry<String, String> entry : value.getCustomDimensions().entrySet()) {
                         generics.add(createOrFindGenericDimension(entry.getKey(), entry.getValue()));
                     }
                 }
-                
                 // Create fact record
                 FactIndicatorValue fact = FactIndicatorValue.builder()
                     .indicator(indicator)
@@ -153,18 +139,16 @@ public class IndicatorBatchService {
                     .time(timeId)
                     .location(locationId)
                     .generics(generics)
+                    .subarea(subarea)
                     .sourceRowHash(generateHash(value))
                     .build();
-                    
                 factRepository.save(fact);
                 count++;
-                
             } catch (Exception e) {
                 log.warn("Failed to create fact record for indicator {} and value {}", 
                     indicator.getName(), value.getValue(), e);
             }
         }
-        
         return count;
     }
     
@@ -256,6 +240,10 @@ public class IndicatorBatchService {
         response.setDescription(indicator.getDescription());
         response.setIsComposite(indicator.getIsComposite());
         response.setCreatedAt(indicator.getCreatedAt());
+        response.setUnit(indicator.getUnit() != null ? indicator.getUnit().getCode() : null);
+        response.setUnitId(indicator.getUnit() != null ? indicator.getUnit().getId() : null);
+        response.setUnitPrefix(indicator.getUnitPrefix());
+        response.setUnitSuffix(indicator.getUnitSuffix());
         return response;
     }
 } 

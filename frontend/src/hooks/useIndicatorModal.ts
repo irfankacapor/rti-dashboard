@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useIndicatorData, useIndicatorDimensionValues } from './useApi';
 import { processChartData, determineTimeGranularity, buildTimeRangeOptions, generateDisplayLabel } from '../utils/chartDataProcessor';
 import { IndicatorChartData } from '../types/indicators';
+import { Dimension } from '../types/dimensions';
 
 interface UseIndicatorModalOptions {
   indicatorId: string;
@@ -16,26 +17,31 @@ export function useIndicatorModal({ indicatorId, timeRange }: UseIndicatorModalO
   const { data: dimensionMeta, loading: dimensionMetaLoading } = useIndicatorDimensionValues(indicatorId);
 
   // Get all available dimensions robustly
-  const availableDimensions: string[] = useMemo(() => {
+  const availableDimensions: Dimension[] = useMemo(() => {
     if (dimensionMeta && dimensionMeta.availableDimensions) {
-      // Extract the 'type' field from each dimension info object
-      return dimensionMeta.availableDimensions.map((dim: any) => dim.type);
+      // Return full dimension objects
+      return dimensionMeta.availableDimensions;
     }
-    return ['time'];
+    return [{ type: 'time', displayName: 'Time', values: [] }];
   }, [dimensionMeta]);
+
+  // Extract dimension types for compatibility
+  const availableDimensionTypes: string[] = useMemo(() => {
+    return availableDimensions.map(dim => dim.type);
+  }, [availableDimensions]);
 
   // Determine the default dimension (prefer 'time', else first available)
   const defaultDimension = useMemo(() => {
-    if (availableDimensions.includes('time')) return 'time';
-    return availableDimensions[0] || 'time';
-  }, [availableDimensions]);
+    if (availableDimensionTypes.includes('time')) return 'time';
+    return availableDimensionTypes[0] || 'time';
+  }, [availableDimensionTypes]);
 
   // Set default dimension on load
   useEffect(() => {
-    if (availableDimensions.length > 0 && !selectedDimension) {
+    if (availableDimensionTypes.length > 0 && !selectedDimension) {
       setSelectedDimension(defaultDimension);
     }
-  }, [availableDimensions, selectedDimension, defaultDimension]);
+  }, [availableDimensionTypes, selectedDimension, defaultDimension]);
 
   // Fetch indicator data (raw or aggregated depending on selected dimension)
   const { data, loading, error } = useIndicatorData(
@@ -43,7 +49,7 @@ export function useIndicatorModal({ indicatorId, timeRange }: UseIndicatorModalO
     timeRange,
     selectedDimension,
     defaultDimension,
-    availableDimensions
+    availableDimensionTypes
   );
 
   // Process chart data using utility function
@@ -88,6 +94,7 @@ export function useIndicatorModal({ indicatorId, timeRange }: UseIndicatorModalO
     chartData,
     tableData,
     availableDimensions,
+    availableDimensionTypes,
     timeRanges,
     displayLabel,
     

@@ -12,15 +12,14 @@ public class IndicatorResponse {
     private String description;
     private Boolean isComposite;
     private LocalDateTime createdAt;
-    private UnitResponse unit;
+    private String unit;
+    private Long unitId;
     private DataTypeResponse dataType;
-    private List<SubareaIndicatorResponse> subareaIndicators;
     private Long valueCount;
     private List<String> dimensions;
     private Long subareaId;
     private String subareaName;
     private String direction;
-    private Double latestValue;
-    private String latestValueUnit;
-    private String aggregationMethod;
+    private String unitPrefix;
+    private String unitSuffix;
 } 

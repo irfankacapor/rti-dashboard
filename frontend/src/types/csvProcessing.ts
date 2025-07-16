@@ -1,3 +1,6 @@
+import { Indicator } from "@/types/indicators";
+import { Dimension } from "@/types/dimensions";
+
 export interface IndicatorValue {
   value: number;
   timeValue?: string; // e.g., "2023"
@@ -11,9 +14,11 @@ export interface ProcessedIndicator {
   id: string;
   name: string; // e.g., "KMU mit zumindest grundlegender Digitalisierungsintensität"
   description?: string;
-  dimensions: string[]; // e.g., ['time', 'locations']
+  dimensions: Dimension[]; // Properly typed dimensions
   valueCount: number; // number of data points
   unit?: string;
+  unitPrefix?: string;
+  unitSuffix?: string;
   source?: string;
   subareaId?: string; // user assignment
   direction?: 'input' | 'output'; // user selection
@@ -21,7 +26,7 @@ export interface ProcessedIndicator {
 }
 
 export interface IndicatorBatchResponse {
-  createdIndicators: any[];
+  createdIndicators: Indicator[];
   totalFactRecords: number;
   message: string;
   warnings: string[];
@@ -58,6 +63,7 @@ export interface DimensionMapping {
   id: string;
   selection: CellSelection;
   dimensionType: 'indicator_names' | 'indicator_values' | 'time' | 'locations' | 'unit' | 'source' | 'additional_dimension';
+  mappingDirection: 'row' | 'column'; // NEW: Explicitly track mapping direction
   subType?: string; // e.g., 'year', 'month', 'state', 'city'
   customDimensionName?: string;
   uniqueValues?: string[];

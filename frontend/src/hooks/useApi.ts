@@ -1,27 +1,34 @@
+import { Indicator } from '@/types/indicators';
+import { Subarea } from '@/types/subareas';
 import { useState, useEffect } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
-function mapIndicatorApiToFrontend(apiIndicator: any) {
+function mapIndicatorApiToFrontend(apiIndicator: Indicator): Indicator {
   return {
     id: String(apiIndicator.id),
     name: apiIndicator.name,
-    description: apiIndicator.description,
-    unit: apiIndicator.unit?.code || apiIndicator.latestValueUnit || '',
+    description: apiIndicator.description || '',
+    unit: apiIndicator.unit || '',
+    unitId: String(apiIndicator.unitId || ''),
+    unitPrefix: apiIndicator.unitPrefix || '',
+    unitSuffix: apiIndicator.unitSuffix || '',
     direction: apiIndicator.direction,
-    valueCount: apiIndicator.valueCount,
+    valueCount: apiIndicator.valueCount || 0,
     dimensions: apiIndicator.dimensions || [],
-    subareaId: String(apiIndicator.subareaId),
-    subareaName: apiIndicator.subareaName,
-    dataType: apiIndicator.dataType?.code || '',
-    latestValue: apiIndicator.latestValue !== null ? apiIndicator.latestValue.toFixed(2) : '--',
-    aggregationMethod: apiIndicator.aggregationMethod || 'N/A',
+    subareaId: String(apiIndicator.subareaId || ''),
+    subareaName: apiIndicator.subareaName || '',
+    dataType: apiIndicator.dataType || { id: 0, code: '', name: '' },
+    isComposite: apiIndicator.isComposite || false,
+    createdAt: new Date(apiIndicator.createdAt),
+    code: apiIndicator.code || '',
+    subareaIndicators: apiIndicator.subareaIndicators || []
   };
 }
 
 export function useSubareaData(subareaId: string) {
-  const [indicators, setIndicators] = useState<any[]>([]);
-  const [subarea, setSubarea] = useState<any>(null);
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [subarea, setSubarea] = useState<Subarea | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +56,8 @@ export function useIndicatorData(
   timeRange: string,
   dimension?: string,
   defaultDimension: string = 'time',
-  availableDimensions?: string[]
+  availableDimensions?: string[],
+  subareaId?: string // NEW
 ) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -64,6 +72,26 @@ export function useIndicatorData(
     let effectiveDefault = defaultDimension;
     if (availableDimensions && availableDimensions.length > 0 && !availableDimensions.includes(defaultDimension)) {
       effectiveDefault = availableDimensions[0];
+    }
+
+    // If subareaId is provided, use subarea-specific endpoints
+    if (subareaId) {
+      // Fetch raw values
+      fetch(`${API_BASE}/subareas/${subareaId}/indicators/${indicatorId}/values`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          return res.json();
+        })
+        .then(responseData => {
+          setData(responseData);
+        })
+        .catch((err) => {
+          console.error('Error fetching subarea-indicator data:', err);
+          setError('Failed to fetch indicator data');
+        })
+        .finally(() => setLoading(false));
+      // TODO: If you want to fetch aggregation or dimension data, add similar fetches here
+      return;
     }
 
     // If the selected dimension is the default (or not set), fetch raw historical data
@@ -96,32 +124,31 @@ export function useIndicatorData(
           setError('Failed to fetch indicator data');
         })
         .finally(() => setLoading(false));
-    } else {
-      // Otherwise, fetch aggregated chart data from the new endpoint
-      fetch(`${API_BASE}/indicators/${indicatorId}/chart?aggregateBy=${dimension}`)
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          return res.json();
-        })
-        .then((result) => {
-          // The new DTO returns dataPoints as an array
-          const chartData = (result.dataPoints || []).map((point: any) => ({
-            label: point.label,
-            value: point.value
-          }));
-          setData({
-            chartData,
-            dimension,
-            availableDimensions: result.availableDimensions || [dimension],
-          });
-        })
-        .catch((err) => {
-          console.error('Error fetching indicator aggregated data:', err);
-          setError('Failed to fetch indicator aggregated data');
-        })
-        .finally(() => setLoading(false));
     }
-  }, [indicatorId, timeRange, dimension, defaultDimension, availableDimensions && availableDimensions.join(',')]);
+    // Otherwise, fetch aggregated chart data from the new endpoint
+    fetch(`${API_BASE}/indicators/${indicatorId}/chart?aggregateBy=${dimension}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        return res.json();
+      })
+      .then((result) => {
+        // The new DTO returns dataPoints as an array
+        const chartData = (result.dataPoints || []).map((point: any) => ({
+          label: point.label,
+          value: point.value
+        }));
+        setData({
+          chartData,
+          dimension,
+          availableDimensions: result.availableDimensions || [dimension],
+        });
+      })
+      .catch((err) => {
+        console.error('Error fetching indicator aggregated data:', err);
+        setError('Failed to fetch indicator aggregated data');
+      })
+      .finally(() => setLoading(false));
+  }, [indicatorId, timeRange, dimension, defaultDimension, availableDimensions && availableDimensions.join(','), subareaId]);
 
   return { data, loading, error };
 }
@@ -253,7 +280,7 @@ export function useSubareaAggregatedByDimension(subareaId: string, dimension: st
   return { data, loading, error };
 }
 
-export function useIndicatorDimensionValues(indicatorId: string) {
+export function useIndicatorDimensionValues(indicatorId: string, subareaId?: string) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -262,7 +289,10 @@ export function useIndicatorDimensionValues(indicatorId: string) {
     if (!indicatorId) return;
     setLoading(true);
     setError(null);
-    fetch(`${API_BASE}/indicators/${indicatorId}/dimensions`)
+    const url = subareaId
+      ? `${API_BASE}/subareas/${subareaId}/indicators/${indicatorId}/dimensions`
+      : `${API_BASE}/indicators/${indicatorId}/dimensions`;
+    fetch(url)
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -275,12 +305,12 @@ export function useIndicatorDimensionValues(indicatorId: string) {
         setError('Failed to fetch indicator dimensions');
       })
       .finally(() => setLoading(false));
-  }, [indicatorId]);
+  }, [indicatorId, subareaId]);
 
   return { data, loading, error };
 }
 
-export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
+export function useMultipleIndicatorDimensionValues(indicatorIds: string[], subareaId?: string) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -290,14 +320,14 @@ export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
       setData([]);
       return;
     }
-    
     setLoading(true);
     setError(null);
-    
-    // Fetch dimension metadata for all indicators in parallel
     Promise.all(
-      indicatorIds.map(id => 
-        fetch(`${API_BASE}/indicators/${id}/dimensions`)
+      indicatorIds.map(id => {
+        const url = subareaId
+          ? `${API_BASE}/subareas/${subareaId}/indicators/${id}/dimensions`
+          : `${API_BASE}/indicators/${id}/dimensions`;
+        return fetch(url)
           .then(res => {
             if (!res.ok) {
               throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -307,8 +337,8 @@ export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
           .catch((err) => {
             console.error(`Error fetching indicator ${id} dimensions:`, err);
             return null; // Return null for failed requests
-          })
-      )
+          });
+      })
     )
       .then(results => {
         setData(results.filter(result => result !== null));
@@ -318,7 +348,7 @@ export function useMultipleIndicatorDimensionValues(indicatorIds: string[]) {
         setError('Failed to fetch indicator dimensions');
       })
       .finally(() => setLoading(false));
-  }, [indicatorIds.join(',')]); // Use join to create a stable dependency
+  }, [indicatorIds.join(','), subareaId]);
 
   return { data, loading, error };
 } 

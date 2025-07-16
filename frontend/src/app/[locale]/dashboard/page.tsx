@@ -8,24 +8,23 @@ import {
   Drawer,
   IconButton,
   Toolbar,
-  AppBar,
   CircularProgress,
   Alert
 } from '@mui/material';
 import { 
-  Edit as EditIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
 import { CircularLayout, GoalsSidebar } from '@/components/dashboard';
 import { useDashboardWithRelationships } from '@/hooks';
+import { useDashboardEditMode } from '@/hooks/useDashboardEditMode';
 import { useRouter } from 'next/navigation';
 
 const DRAWER_WIDTH = 320;
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [isEditMode, setIsEditMode] = useState(false);
+  const { isEditMode } = useDashboardEditMode();
   const [highlightedGoals, setHighlightedGoals] = useState<string[]>([]);
   const [highlightedSubareas, setHighlightedSubareas] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -69,10 +68,6 @@ export default function DashboardPage() {
   const handleSubareaLeave = () => {
     setHighlightedGoals([]);
     setHighlightedSubareas([]);
-  };
-
-  const handleEditModeToggle = () => {
-    setIsEditMode(!isEditMode);
   };
 
   if (isLoadingDashboard) {
@@ -161,22 +156,6 @@ export default function DashboardPage() {
 
       {/* Main Dashboard Content */}
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Top App Bar */}
-        <AppBar position="static" elevation={1} color="default">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              RTI Dashboard
-            </Typography>
-            <IconButton
-              color={isEditMode ? "primary" : "default"}
-              onClick={handleEditModeToggle}
-              title={isEditMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-            >
-              <EditIcon />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-
         {/* Dashboard Content */}
         <Box sx={{ flexGrow: 1, p: 3, overflow: 'auto' }}>
           {areas && areas.length > 0 ? (

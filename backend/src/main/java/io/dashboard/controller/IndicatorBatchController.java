@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.annotation.Secured;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -16,6 +17,7 @@ public class IndicatorBatchController {
     private final IndicatorBatchService indicatorBatchService;
 
     @PostMapping("/indicators/create-from-csv")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<IndicatorBatchResponse> createIndicatorsFromCsv(
             @RequestBody @Valid IndicatorBatchRequest request) {
         

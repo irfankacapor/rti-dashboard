@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useWizardStore } from '@/store/wizardStore';
 import * as subareaService from '@/services/subareaService';
-import { SubareaFormData } from '@/types/subareas';
+import { Subarea, SubareaFormData } from '@/types/subareas';
 
 export function useSubareas() {
-  const setSubareas = useWizardStore((state) => (subs: any) => state.subareas = subs);
+  const setSubareas = useWizardStore((state) => (subs: Subarea[]) => state.subareas = subs);
   const addSubarea = useWizardStore((state) => state.addSubarea);
   const updateSubarea = useWizardStore((state) => state.updateSubarea);
   const deleteSubarea = useWizardStore((state) => state.deleteSubarea);

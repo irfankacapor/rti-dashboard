@@ -7,7 +7,7 @@ import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.DataType;
 import io.dashboard.repository.DataTypeRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +19,12 @@ import java.util.stream.Collectors;
 public class DataTypeService {
     private final DataTypeRepository dataTypeRepository;
 
+    @Transactional(readOnly = true)
     public List<DataTypeResponse> findAll() {
         return dataTypeRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public DataTypeResponse findById(Long id) {
         DataType dataType = dataTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("DataType", "id", id));

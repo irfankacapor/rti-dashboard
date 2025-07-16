@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.security.access.annotation.Secured;
+import jakarta.annotation.security.PermitAll;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ public class GoalTargetController {
     private final GoalTargetService goalTargetService;
     
     @GetMapping
+    @PermitAll
     public ResponseEntity<List<GoalTargetResponse>> getAllTargets() {
         log.debug("Getting all goal targets");
         // This would need a new method in service to get all targets
@@ -32,6 +35,7 @@ public class GoalTargetController {
     }
     
     @GetMapping("/{id}")
+    @PermitAll
     public ResponseEntity<GoalTargetResponse> getTargetById(@PathVariable Long id) {
         log.debug("Getting goal target by ID: {}", id);
         // This would need a new method in service to get target by ID
@@ -39,6 +43,7 @@ public class GoalTargetController {
     }
     
     @GetMapping("/goals/{goalId}/targets")
+    @PermitAll
     public ResponseEntity<List<GoalTargetResponse>> getTargetsForGoal(@PathVariable Long goalId) {
         log.debug("Getting targets for goal ID: {}", goalId);
         List<GoalTargetResponse> targets = goalTargetService.findByGoalId(goalId);
@@ -46,6 +51,7 @@ public class GoalTargetController {
     }
     
     @GetMapping("/indicators/{indicatorId}/targets")
+    @PermitAll
     public ResponseEntity<List<GoalTargetResponse>> getTargetsForIndicator(@PathVariable Long indicatorId) {
         log.debug("Getting targets for indicator ID: {}", indicatorId);
         List<GoalTargetResponse> targets = goalTargetService.findByIndicatorId(indicatorId);
@@ -53,6 +59,7 @@ public class GoalTargetController {
     }
     
     @PostMapping
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalTargetResponse> createTarget(@Valid @RequestBody GoalTargetCreateRequest request) {
         log.debug("Creating new goal target for goal ID: {} and indicator ID: {}", 
                 request.getGoalId(), request.getIndicatorId());
@@ -74,6 +81,7 @@ public class GoalTargetController {
     }
     
     @PutMapping("/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<GoalTargetResponse> updateTarget(@PathVariable Long id, 
                                                           @Valid @RequestBody GoalTargetUpdateRequest request) {
         log.debug("Updating goal target with ID: {}", id);
@@ -90,6 +98,7 @@ public class GoalTargetController {
     }
     
     @DeleteMapping("/{id}")
+    @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
     public ResponseEntity<Void> deleteTarget(@PathVariable Long id) {
         log.debug("Deleting goal target with ID: {}", id);
         goalTargetService.delete(id);

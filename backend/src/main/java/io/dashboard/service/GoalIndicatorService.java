@@ -216,7 +216,16 @@ public class GoalIndicatorService {
         item.setCurrentValue(75.0); // Mock current value
         item.setTargetValue(100.0); // Mock target value
         item.setProgress(75.0); // Mock progress percentage
-        item.setUnit(goalIndicator.getIndicator().getUnit() != null ? goalIndicator.getIndicator().getUnit().getCode() : null);
+        
+        // Construct unit string from prefix and suffix
+        String unitString = "";
+        if (goalIndicator.getIndicator().getUnitPrefix() != null) {
+            unitString += goalIndicator.getIndicator().getUnitPrefix() + " ";
+        }
+        if (goalIndicator.getIndicator().getUnitSuffix() != null) {
+            unitString += goalIndicator.getIndicator().getUnitSuffix();
+        }
+        item.setUnit(unitString.trim().isEmpty() ? null : unitString.trim());
         
         return item;
     }

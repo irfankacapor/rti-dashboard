@@ -13,8 +13,6 @@ import {
   MenuItem,
   FormControl,
   TextField,
-  ToggleButtonGroup,
-  ToggleButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -26,8 +24,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon,
-  Visibility as ViewIcon,
+  Cancel as CancelIcon
 } from '@mui/icons-material';
 import { ManagedIndicator, IndicatorFormData } from '@/types/indicators';
 import { Subarea } from '@/types/subareas';
@@ -45,6 +42,7 @@ interface IndicatorTableRowProps {
   onDeleteWithData?: () => void;
   isSaving: boolean;
   onEditValues?: (indicatorId: string) => void;
+  onOpenUnitPicker: () => void;
 }
 
 export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
@@ -60,12 +58,16 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
   onDeleteWithData,
   isSaving,
   onEditValues,
+  onOpenUnitPicker,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState<IndicatorFormData>({
     name: indicator.name,
     description: indicator.description || '',
     unit: indicator.unit || '',
+    unitId: indicator.unitId || undefined,
+    unitPrefix: indicator.unitPrefix || '',
+    unitSuffix: indicator.unitSuffix || '',
     source: indicator.source || '',
     dataType: indicator.dataType || 'decimal',
     subareaId: indicator.subareaId || '',
@@ -79,6 +81,9 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         name: indicator.name,
         description: indicator.description || '',
         unit: indicator.unit || '',
+        unitId: indicator.unitId || undefined,
+        unitPrefix: indicator.unitPrefix || '',
+        unitSuffix: indicator.unitSuffix || '',
         source: indicator.source || '',
         dataType: indicator.dataType || 'decimal',
         subareaId: indicator.subareaId || '',
@@ -87,6 +92,17 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
       });
     }
   }, [isEditing, indicator]);
+
+  // Update formData when indicator changes (for unit picker updates)
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      unit: indicator.unit || '',
+      unitId: indicator.unitId || undefined,
+      unitPrefix: indicator.unitPrefix || '',
+      unitSuffix: indicator.unitSuffix || '',
+    }));
+  }, [indicator.unit, indicator.unitId, indicator.unitPrefix, indicator.unitSuffix]);
 
   const handleSave = () => {
     onSave(formData);
@@ -133,6 +149,14 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
     }
   };
 
+  const formatUnitDisplay = (indicator: ManagedIndicator) => {
+    const parts = [];
+    if (indicator.unitPrefix) parts.push(indicator.unitPrefix);
+    if (indicator.unit) parts.push(indicator.unit);
+    if (indicator.unitSuffix) parts.push(indicator.unitSuffix);
+    return parts.length > 0 ? parts.join(' ') : '-';
+  };
+
   const editingRow = (
     <TableRow>
       <TableCell padding="checkbox">
@@ -164,13 +188,9 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         />
       </TableCell>
       <TableCell>
-        <TextField
-          value={formData.unit}
-          onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-          size="small"
-          fullWidth
-          sx={{ height: 40 }}
-        />
+        <Typography variant="body2" color="text.secondary">
+          Unit can be set outside of edit mode
+        </Typography>
       </TableCell>
       <TableCell>
         <TextField
@@ -247,23 +267,47 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
       </TableCell>
       <TableCell>
         <Box display="flex" gap={0.5}>
-          <Tooltip title="Save">
+          {isEditing ? (
+            <>
+              <Tooltip title="Save">
+                <IconButton
+                  size="small"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  color="primary"
+                >
+                  <SaveIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Cancel">
+                <IconButton
+                  size="small"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  <CancelIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : (
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={onEdit}
+                disabled={isSaving}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Delete">
             <IconButton
               size="small"
-              onClick={handleSave}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isSaving}
-              color="primary"
+              color="error"
             >
-              <SaveIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Cancel">
-            <IconButton
-              size="small"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              <CancelIcon />
+              <DeleteIcon />
             </IconButton>
           </Tooltip>
         </Box>
@@ -299,9 +343,32 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         </Typography>
       </TableCell>
       <TableCell>
-        <Typography variant="body2">
-          {indicator.unit || '-'}
-        </Typography>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography 
+            variant="body2" 
+            color={!indicator.unitId ? 'error' : 'inherit'}
+            sx={{ 
+              flex: 1,
+              fontStyle: !indicator.unitId ? 'italic' : 'normal'
+            }}
+          >
+            {formatUnitDisplay(indicator)}
+          </Typography>
+          <Button
+            size="small"
+            variant={!indicator.unitId ? "contained" : "outlined"}
+            color={!indicator.unitId ? "error" : "primary"}
+            onClick={onOpenUnitPicker}
+            sx={{ 
+              minWidth: 'auto', 
+              px: 1,
+              py: 0.5,
+              fontSize: '0.75rem'
+            }}
+          >
+            {!indicator.unitId ? 'SET' : 'CHANGE'}
+          </Button>
+        </Box>
       </TableCell>
       <TableCell>
         <Typography variant="body2">

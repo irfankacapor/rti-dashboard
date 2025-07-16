@@ -6,7 +6,7 @@ import {
   Chip, IconButton, LinearProgress
 } from '@mui/material';
 import { 
-  ExpandMore, AutoFixHigh, CheckCircle, Warning,
+  AutoFixHigh, CheckCircle, Warning,
   Visibility, VisibilityOff 
 } from '@mui/icons-material';
 import { DimensionMapping, EncodingIssue } from '@/types/csvProcessing';

@@ -44,9 +44,15 @@ public class Indicator {
     @Column(name = "is_composite", nullable = false)
     private Boolean isComposite = false;
     
+    @Column(name = "unit_prefix", length = 100)
+    private String unitPrefix;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unit_id")
     private Unit unit;
+
+    @Column(name = "unit_suffix", length = 100)
+    private String unitSuffix;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "data_type_id")
@@ -55,9 +61,6 @@ public class Indicator {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
-    @OneToMany(mappedBy = "indicator", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<SubareaIndicator> subareaIndicators = new ArrayList<>();
     
     @OneToMany(mappedBy = "indicator", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<GoalIndicator> goalIndicators = new ArrayList<>();

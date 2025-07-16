@@ -17,33 +17,6 @@ public class PerformanceCalculationService {
     private final SubareaRepository subareaRepository;
     private final AreaRepository areaRepository;
     private final IndicatorRepository indicatorRepository;
-    private final SubareaIndicatorRepository subareaIndicatorRepository;
-
-    public PerformanceScore calculateSubareaPerformance(Long subareaId) {
-        Subarea subarea = subareaRepository.findById(subareaId).orElseThrow(() -> new RuntimeException("Subarea not found"));
-        List<SubareaIndicator> subareaIndicators = subareaIndicatorRepository.findBySubareaId(subareaId);
-        if (subareaIndicators.isEmpty()) {
-            throw new RuntimeException("No indicators linked to subarea");
-        }
-        double weightedSum = 0.0;
-        double totalWeight = 0.0;
-        List<Long> indicatorIds = new ArrayList<>();
-        for (SubareaIndicator si : subareaIndicators) {
-            Indicator indicator = si.getIndicator();
-            if (indicator == null) continue;
-            // For demo, use a mock value; in real, fetch latest value
-            double value = 80.0; // TODO: fetch real value
-            double weight = si.getAggregationWeight() != null ? si.getAggregationWeight() : 1.0;
-            weightedSum += value * weight;
-            totalWeight += weight;
-            indicatorIds.add(si.getId().getIndicatorId());
-        }
-        double score = totalWeight > 0 ? weightedSum / totalWeight : 0.0;
-        score = Math.max(0, Math.min(100, score));
-        String colorCode = getColorCodeForScore(score);
-        PerformanceScore ps = new PerformanceScore(subareaId, score, colorCode, LocalDateTime.now(), indicatorIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
-        return performanceScoreRepository.save(ps);
-    }
 
     public PerformanceScore calculateAreaPerformance(Long areaId) {
         Area area = areaRepository.findById(areaId).orElseThrow(() -> new RuntimeException("Area not found"));
@@ -67,7 +40,7 @@ public class PerformanceCalculationService {
     public void calculateAllPerformances() {
         List<Subarea> subareas = subareaRepository.findAll();
         for (Subarea sub : subareas) {
-            calculateSubareaPerformance(sub.getId());
+            // calculateSubareaPerformance(sub.getId()); // This line is removed
         }
     }
 

@@ -2,7 +2,6 @@ package io.dashboard.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import io.dashboard.model.LayoutType;
 
 @Entity
 public class Dashboard {

@@ -1,4 +1,4 @@
-import { IndicatorValuesResponse, IndicatorValueUpdate } from '@/types/indicatorValues';
+import { IndicatorValuesResponse, IndicatorValueUpdate, IndicatorValueCreate } from '@/types/indicatorValues';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
@@ -20,6 +20,18 @@ export const indicatorValuesService = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
       throw new Error(`Failed to update indicator values: ${errorData.message}`);
+    }
+  },
+
+  createIndicatorValues: async (indicatorId: string, newValues: IndicatorValueCreate[]): Promise<void> => {
+    const response = await fetch(`${API_BASE}/indicators/${indicatorId}/values`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newValues),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(`Failed to create indicator values: ${errorData.message}`);
     }
   },
 }; 

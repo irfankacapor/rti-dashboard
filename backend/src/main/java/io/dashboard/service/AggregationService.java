@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import io.dashboard.model.DimTime;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +23,44 @@ public class AggregationService {
      */
     public double calculateIndicatorAggregatedValue(Long indicatorId) {
         List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdWithEagerLoading(indicatorId);
+        
+        if (values.isEmpty()) {
+            return 0.0;
+        }
+        
+        // Group by time period and calculate average for each period
+        Map<String, List<FactIndicatorValue>> groupedByTime = values.stream()
+            .filter(v -> v.getTime() != null)
+            .collect(Collectors.groupingBy(v -> v.getTime().getYear() + "-" + v.getTime().getMonth()));
+        
+        if (groupedByTime.isEmpty()) {
+            // No time dimension, just average all values
+            return values.stream()
+                .mapToDouble(v -> v.getValue().doubleValue())
+                .average()
+                .orElse(0.0);
+        }
+        
+        // Calculate average for each time period, then average those averages
+        List<Double> periodAverages = groupedByTime.values().stream()
+            .map(periodValues -> periodValues.stream()
+                .mapToDouble(v -> v.getValue().doubleValue())
+                .average()
+                .orElse(0.0))
+            .collect(Collectors.toList());
+        
+        return periodAverages.stream()
+            .mapToDouble(Double::doubleValue)
+            .average()
+            .orElse(0.0);
+    }
+    
+    /**
+     * Calculate aggregated value for a specific indicator in a specific subarea
+     * If multiple values exist for the same time period, average them
+     */
+    public double calculateIndicatorAggregatedValue(Long indicatorId, Long subareaId) {
+        List<FactIndicatorValue> values = factIndicatorValueRepository.findByIndicatorIdAndSubareaId(indicatorId, subareaId);
         
         if (values.isEmpty()) {
             return 0.0;
@@ -96,7 +134,11 @@ public class AggregationService {
         // Group by time period and calculate aggregated value for each period
         Map<String, List<FactIndicatorValue>> groupedByTime = values.stream()
             .filter(v -> v.getTime() != null)
-            .collect(Collectors.groupingBy(v -> v.getTime().getYear() + "-" + v.getTime().getMonth()));
+            .collect(Collectors.groupingBy(v -> {
+                DimTime time = v.getTime();
+                // Use the time value directly, which should be properly formatted
+                return time.getValue();
+            }));
         
         Map<String, Double> result = new HashMap<>();
         

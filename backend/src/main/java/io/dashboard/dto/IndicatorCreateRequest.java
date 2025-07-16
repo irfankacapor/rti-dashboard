@@ -22,6 +22,8 @@ public class IndicatorCreateRequest {
     private Boolean isComposite = false;
 
     private Long unitId;
+    private String unitPrefix;
+    private String unitSuffix;
 
     private Long dataTypeId;
 } 

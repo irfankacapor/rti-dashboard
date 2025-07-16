@@ -12,9 +12,5 @@ public interface SubareaRepository extends JpaRepository<Subarea, Long> {
     boolean existsByCode(String code);
     List<Subarea> findByAreaId(Long areaId);
     
-    @Query("SELECT s FROM Subarea s LEFT JOIN FETCH s.area LEFT JOIN FETCH s.subareaIndicators")
-    List<Subarea> findAllWithAreaAndIndicators();
-
-    @Query("SELECT s FROM Subarea s LEFT JOIN FETCH s.area LEFT JOIN FETCH s.subareaIndicators WHERE s.id = :id")
-    Optional<Subarea> findByIdWithArea(@Param("id") Long id);
+    // Remove all queries that join on subareaIndicators
 } 

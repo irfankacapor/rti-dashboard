@@ -1,11 +1,21 @@
 export interface Area {
-  id: string; // Use UUID for frontend
-  code: string; // Auto-generated from name
+  id: string; 
+  code: string;
   name: string;
   description: string;
-  isDefault: boolean; // Track if this is the default area
+  isDefault: boolean;
   createdAt: Date;
-  subareaCount?: number; // Number of subareas in this area
+  subareaCount?: number;
+}
+
+export interface AreaApiResponse {
+  id: string; 
+  code: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  createdAt: Date;
+  subareaCount?: number;
 }
 
 export interface AreaFormData {

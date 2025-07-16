@@ -1,5 +1,4 @@
 import { act } from 'react';
-import { create } from 'zustand';
 import { useWizardStore } from './wizardStore';
 
 describe('wizardStore area management', () => {

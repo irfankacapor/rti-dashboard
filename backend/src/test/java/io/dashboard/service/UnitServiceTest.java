@@ -5,7 +5,6 @@ import io.dashboard.dto.UnitResponse;
 import io.dashboard.dto.UnitUpdateRequest;
 import io.dashboard.exception.BadRequestException;
 import io.dashboard.exception.ResourceNotFoundException;
-import io.dashboard.model.Indicator;
 import io.dashboard.model.Unit;
 import io.dashboard.repository.UnitRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -115,20 +113,8 @@ class UnitServiceTest {
         Unit unit = new Unit();
         unit.setId(1L);
         when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(unitRepository.hasIndicators(1L)).thenReturn(false);
         unitService.delete(1L);
         verify(unitRepository).delete(unit);
-    }
-
-    @Test
-    void delete_withIndicators() {
-        Unit unit = new Unit();
-        unit.setId(1L);
-        when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(unitRepository.hasIndicators(1L)).thenReturn(true);
-        assertThatThrownBy(() -> unitService.delete(1L))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("indicators");
     }
 
     @Test

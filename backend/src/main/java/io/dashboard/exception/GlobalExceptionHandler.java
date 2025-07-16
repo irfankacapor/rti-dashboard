@@ -14,14 +14,11 @@ import org.slf4j.LoggerFactory;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.exception.JDBCConnectionException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import io.dashboard.exception.ErrorResponse;
-import io.dashboard.exception.ResourceNotFoundException;
-import io.dashboard.exception.BadRequestException;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
@@ -146,5 +143,25 @@ public class GlobalExceptionHandler {
             HttpStatus.METHOD_NOT_ALLOWED.value()
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            "You do not have permission to access this resource.",
+            "Access Denied",
+            HttpStatus.FORBIDDEN.value()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            "You do not have permission to access this resource.",
+            "Access Denied",
+            HttpStatus.FORBIDDEN.value()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 } 

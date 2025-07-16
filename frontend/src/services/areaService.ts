@@ -1,9 +1,9 @@
-import { Area, AreaFormData } from '@/types/areas';
+import { Area, AreaApiResponse, AreaFormData } from '@/types/areas';
 import { slugify } from '@/utils/slugify';
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/areas`;
 
-function mapAreaFromApi(apiArea: any): Area {
+function mapAreaFromApi(apiArea: AreaApiResponse): Area {
   return {
     id: String(apiArea.id),
     code: apiArea.code,

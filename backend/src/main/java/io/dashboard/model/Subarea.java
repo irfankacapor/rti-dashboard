@@ -47,6 +47,4 @@ public class Subarea {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @OneToMany(mappedBy = "subarea", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<SubareaIndicator> subareaIndicators = new ArrayList<>();
 } 
