@@ -201,7 +201,19 @@ public class IndicatorService {
         resp.setValueCount(valueCount);
         List<String> dimensions = factIndicatorValueRepository.findDimensionsByIndicatorId(indicator.getId());
         resp.setDimensions(dimensions);
-        
+        // --- NEW: Populate subareaIds and subareaNames ---
+        List<FactIndicatorValue> facts = factIndicatorValueRepository.findByIndicatorId(indicator.getId());
+        java.util.Set<Long> subareaIdSet = new java.util.HashSet<>();
+        java.util.Set<String> subareaNameSet = new java.util.HashSet<>();
+        for (FactIndicatorValue fact : facts) {
+            if (fact.getSubarea() != null) {
+                subareaIdSet.add(fact.getSubarea().getId());
+                subareaNameSet.add(fact.getSubarea().getName());
+            }
+        }
+        resp.setSubareaIds(new java.util.ArrayList<>(subareaIdSet));
+        resp.setSubareaNames(new java.util.ArrayList<>(subareaNameSet));
+        // --- END NEW ---
         return resp;
     }
 

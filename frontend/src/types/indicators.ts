@@ -23,6 +23,8 @@ export interface ManagedIndicator {
   // Relationships
   subareaId?: string;
   subareaName?: string; // For display
+  subareaIds?: string[]; // NEW: all subarea IDs for this indicator
+  subareaNames?: string[]; // NEW: all subarea names for this indicator
   direction?: IndicatorDirection;
   aggregationWeight?: number;
   

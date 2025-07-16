@@ -383,12 +383,15 @@ export const IndicatorTableRow: React.FC<IndicatorTableRowProps> = ({
         />
       </TableCell>
       <TableCell>
-        {indicator.subareaId ? (
-          <Typography variant="body2">
-            {getSubareaName(indicator.subareaId)}
-          </Typography>
+        {/* Show all subareas as chips if available, otherwise show 'Unassigned' */}
+        {Array.isArray(indicator.subareaNames) && indicator.subareaNames.length > 0 ? (
+          <Box display="flex" gap={0.5} flexWrap="wrap">
+            {indicator.subareaNames.map((name) => (
+              <Chip key={name} label={name} size="small" color="primary" />
+            ))}
+          </Box>
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" fontStyle="italic">
             Unassigned
           </Typography>
         )}

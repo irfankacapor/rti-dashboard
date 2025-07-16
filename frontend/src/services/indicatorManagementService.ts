@@ -28,6 +28,9 @@ export const indicatorManagementService = {
       dataType: item.dataType?.code || 'decimal',
       subareaId: item.subareaId?.toString() || '',
       subareaName: item.subareaName || '',
+      // NEW: map subareaIds and subareaNames from backend
+      subareaIds: Array.isArray(item.subareaIds) ? item.subareaIds.map((id: any) => id.toString()) : [],
+      subareaNames: Array.isArray(item.subareaNames) ? item.subareaNames : [],
       direction: (item.direction || 'input').toLowerCase(),
       aggregationWeight: item.aggregationWeight || 1.0,
       valueCount: item.valueCount || 0,
@@ -46,7 +49,33 @@ export const indicatorManagementService = {
     if (!response.ok) {
       throw new Error(`Failed to fetch indicator: ${response.statusText}`);
     }
-    return response.json();
+    const item = await response.json();
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      code: item.code,
+      unit: item.unit || '',
+      unitId: item.unitId || null,
+      unitPrefix: item.unitPrefix || '',
+      unitSuffix: item.unitSuffix || '',
+      source: item.source || '',
+      dataType: item.dataType?.code || 'decimal',
+      subareaId: item.subareaId?.toString() || '',
+      subareaName: item.subareaName || '',
+      // NEW: map subareaIds and subareaNames from backend
+      subareaIds: Array.isArray(item.subareaIds) ? item.subareaIds.map((id: any) => id.toString()) : [],
+      subareaNames: Array.isArray(item.subareaNames) ? item.subareaNames : [],
+      direction: (item.direction || 'input').toLowerCase(),
+      aggregationWeight: item.aggregationWeight || 1.0,
+      valueCount: item.valueCount || 0,
+      dimensions: item.dimensions || [],
+      isFromCsv: false,
+      isManual: false,
+      isModified: false,
+      createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+      lastModified: item.lastModified ? new Date(item.lastModified) : undefined,
+    };
   },
 
   // Create new indicator

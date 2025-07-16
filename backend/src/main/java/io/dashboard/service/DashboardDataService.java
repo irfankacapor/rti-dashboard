@@ -530,31 +530,26 @@ public class DashboardDataService {
             
             // For each goal, find connected subareas through indicators
             for (GoalResponse goal : goals) {
-                List<String> connectedSubareaIds = new ArrayList<>();
-                
+                java.util.Set<String> connectedSubareaIds = new java.util.HashSet<>();
                 try {
                     // Get indicators for this goal
                     List<GoalIndicatorResponse> goalIndicators = goalIndicatorService.findIndicatorsByGoal(goal.getId());
                     log.debug("Goal {} has {} indicators", goal.getId(), goalIndicators.size());
-                    
                     // For each indicator, find connected subareas
                     for (GoalIndicatorResponse goalIndicator : goalIndicators) {
                         List<FactIndicatorValue> subareaFacts = factIndicatorValueRepository.findByIndicatorIdWithSubarea(goalIndicator.getIndicatorId());
                         log.debug("Indicator {} has {} subarea relationships", goalIndicator.getIndicatorId(), subareaFacts.size());
-                        
                         for (FactIndicatorValue subareaFact : subareaFacts) {
                             String subareaId = subareaFact.getSubarea().getId().toString();
                             connectedSubareaIds.add(subareaId);
-                            
                             // Build reverse mapping
-                            subareaToGoals.computeIfAbsent(subareaId, k -> new ArrayList<>()).add(goal.getId().toString());
+                            subareaToGoals.computeIfAbsent(subareaId, k -> new java.util.ArrayList<>()).add(goal.getId().toString());
                         }
                     }
                 } catch (Exception e) {
                     log.warn("Failed to fetch relationships for goal {}: {}", goal.getId(), e.getMessage());
                 }
-                
-                goalToSubareas.put(goal.getId().toString(), connectedSubareaIds);
+                goalToSubareas.put(goal.getId().toString(), new java.util.ArrayList<>(connectedSubareaIds));
                 log.debug("Goal {} connected to {} subareas: {}", goal.getId(), connectedSubareaIds.size(), connectedSubareaIds);
             }
             
