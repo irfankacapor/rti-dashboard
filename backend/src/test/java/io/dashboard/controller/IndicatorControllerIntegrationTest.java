@@ -129,7 +129,6 @@ class IndicatorControllerIntegrationTest {
         dimGeneric.setName("Test Generic");
         dimGeneric.setDimensionName("Test Dimension");
         dimGeneric.setValue("Test Value");
-        dimGeneric.setCategory("Test Category");
         dimGeneric = dimGenericRepository.save(dimGeneric);
         
         // Create a subarea for testing relationships

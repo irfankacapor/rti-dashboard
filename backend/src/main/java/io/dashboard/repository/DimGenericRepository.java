@@ -16,8 +16,6 @@ public interface DimGenericRepository extends JpaRepository<DimGeneric, Long> {
     
     List<DimGeneric> findByValue(String value);
     
-    List<DimGeneric> findByCategory(String category);
-    
     List<DimGeneric> findByNameAndValue(String name, String value);
     
     Optional<DimGeneric> findByDimensionNameAndValue(String dimensionName, String value);
@@ -27,7 +25,4 @@ public interface DimGenericRepository extends JpaRepository<DimGeneric, Long> {
     
     @Query("SELECT dg FROM DimGeneric dg WHERE dg.value LIKE %:value%")
     List<DimGeneric> findByValueContaining(@Param("value") String value);
-    
-    @Query("SELECT DISTINCT dg.category FROM DimGeneric dg WHERE dg.category IS NOT NULL")
-    List<String> findAllCategories();
 } 

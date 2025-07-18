@@ -29,9 +29,6 @@ public class DimGeneric {
     @Column(name = "\"value\"", nullable = false, length = 255)
     private String value;
     
-    @Column(name = "category", length = 50)
-    private String category; // For grouping related dimensions
-    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
