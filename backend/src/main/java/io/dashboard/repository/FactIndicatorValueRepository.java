@@ -44,9 +44,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     // Check if source row hash exists
     boolean existsBySourceRowHash(String sourceRowHash);
     
-    // Find aggregated values
-    List<FactIndicatorValue> findByIndicatorIdAndIsAggregatedTrue(Long indicatorId);
-    
     // Find by value range
     @Query("SELECT f FROM FactIndicatorValue f WHERE f.indicator.id = :indicatorId AND f.value BETWEEN :minValue AND :maxValue")
     List<FactIndicatorValue> findByIndicatorIdAndValueRange(@Param("indicatorId") Long indicatorId,
@@ -59,9 +56,6 @@ public interface FactIndicatorValueRepository extends JpaRepository<FactIndicato
     
     // Count by indicator
     long countByIndicatorId(Long indicatorId);
-    
-    // Find by confidence score threshold
-    List<FactIndicatorValue> findByIndicatorIdAndConfidenceScoreGreaterThanEqual(Long indicatorId, Double confidenceScore);
     
     // Find by creation date range
     List<FactIndicatorValue> findByIndicatorIdAndCreatedAtBetween(Long indicatorId, LocalDateTime startDate, LocalDateTime endDate);

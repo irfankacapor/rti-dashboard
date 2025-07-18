@@ -63,15 +63,6 @@ public class FactIndicatorValue {
     @Column(name = "source_file", length = 255)
     private String sourceFile;
     
-    @Column(name = "source_row_number")
-    private Integer sourceRowNumber;
-    
-    @Column(name = "confidence_score")
-    private Double confidenceScore;
-    
-    @Column(name = "is_aggregated")
-    private Boolean isAggregated;
-    
     @Column(name = "direction", length = 20)
     private String direction;
     

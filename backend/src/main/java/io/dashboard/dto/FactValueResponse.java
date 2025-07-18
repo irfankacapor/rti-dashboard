@@ -25,10 +25,7 @@ public class FactValueResponse {
     private Long genericId;
     private String genericValue;
     private BigDecimal value;
-    private Double confidenceScore;
-    private Boolean isAggregated;
     private String sourceFile;
-    private Integer sourceRowNumber;
     private LocalDateTime createdAt;
     private Map<String, Object> dimensions;
 } 
