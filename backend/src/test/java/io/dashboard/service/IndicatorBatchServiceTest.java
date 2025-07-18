@@ -11,6 +11,11 @@ import io.dashboard.model.Subarea;
 import io.dashboard.repository.FactIndicatorValueRepository;
 import io.dashboard.repository.IndicatorRepository;
 import io.dashboard.repository.SubareaRepository;
+import io.dashboard.repository.UnitRepository;
+import io.dashboard.repository.DimTimeRepository;
+import io.dashboard.repository.DimLocationRepository;
+import io.dashboard.repository.DimGenericRepository;
+import io.dashboard.repository.DataTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +46,18 @@ class IndicatorBatchServiceTest {
 
     @Mock
     private FactIndicatorValueRepository factRepository;
+
+    @Mock
+    private UnitRepository unitRepository;
+
+    @Mock
+    private DimTimeRepository dimTimeRepository;
+    @Mock
+    private DimLocationRepository dimLocationRepository;
+    @Mock
+    private DimGenericRepository dimGenericRepository;
+    @Mock
+    private DataTypeRepository dataTypeRepository;
 
     @InjectMocks
     private IndicatorBatchService indicatorBatchService;
@@ -86,6 +104,12 @@ class IndicatorBatchServiceTest {
             fact.setId(1L);
             return fact;
         });
+        when(unitRepository.findByCode(anyString())).thenReturn(java.util.Optional.empty());
+        when(unitRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dimTimeRepository.findByValue(anyString())).thenReturn(java.util.Optional.empty());
+        when(dimTimeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dimLocationRepository.findByName(anyString())).thenReturn(java.util.Optional.empty());
+        when(dimLocationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         IndicatorBatchResponse response = indicatorBatchService.createFromCsvData(request);
@@ -139,6 +163,12 @@ class IndicatorBatchServiceTest {
             fact.setId(1L);
             return fact;
         });
+        when(unitRepository.findByCode(anyString())).thenReturn(java.util.Optional.empty());
+        when(unitRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dimTimeRepository.findByValue(anyString())).thenReturn(java.util.Optional.empty());
+        when(dimTimeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dimLocationRepository.findByName(anyString())).thenReturn(java.util.Optional.empty());
+        when(dimLocationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         IndicatorBatchResponse response = indicatorBatchService.createFromCsvData(request);
@@ -173,6 +203,12 @@ class IndicatorBatchServiceTest {
             fact.setId(1L);
             return fact;
         });
+        when(unitRepository.findByCode(anyString())).thenReturn(java.util.Optional.empty());
+        when(unitRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dimTimeRepository.findByValue(anyString())).thenReturn(java.util.Optional.empty());
+        when(dimTimeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dimLocationRepository.findByName(anyString())).thenReturn(java.util.Optional.empty());
+        when(dimLocationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         IndicatorBatchResponse response = indicatorBatchService.createFromCsvData(request);
