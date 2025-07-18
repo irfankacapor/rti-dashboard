@@ -131,39 +131,28 @@ public class AggregationService {
             return new HashMap<>();
         }
         
-        // Group by time period and calculate aggregated value for each period
+        // Group by time value (or year-month if you want more structure)
         Map<String, List<FactIndicatorValue>> groupedByTime = values.stream()
             .filter(v -> v.getTime() != null)
-            .collect(Collectors.groupingBy(v -> {
-                DimTime time = v.getTime();
-                // Use the time value directly, which should be properly formatted
-                return time.getValue();
-            }));
+            .collect(Collectors.groupingBy(v -> v.getTime().getValue()));
         
         Map<String, Double> result = new HashMap<>();
         
         for (Map.Entry<String, List<FactIndicatorValue>> entry : groupedByTime.entrySet()) {
-            String timePeriod = entry.getKey();
             List<FactIndicatorValue> periodValues = entry.getValue();
-            
             // Group by indicator for this time period
             Map<Long, List<FactIndicatorValue>> indicatorGroups = periodValues.stream()
                 .collect(Collectors.groupingBy(v -> v.getIndicator().getId()));
-            
             double periodAggregatedValue = 0.0;
-            
             for (List<FactIndicatorValue> indicatorValues : indicatorGroups.values()) {
-                // Average the values for this indicator in this time period
                 double indicatorAverage = indicatorValues.stream()
                     .mapToDouble(v -> v.getValue().doubleValue())
                     .average()
                     .orElse(0.0);
                 periodAggregatedValue += indicatorAverage;
             }
-            
-            result.put(timePeriod, periodAggregatedValue);
+            result.put(entry.getKey(), periodAggregatedValue);
         }
-        
         return result;
     }
     

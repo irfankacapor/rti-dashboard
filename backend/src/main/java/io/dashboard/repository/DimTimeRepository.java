@@ -16,8 +16,6 @@ public interface DimTimeRepository extends JpaRepository<DimTime, Long> {
     
     Optional<DimTime> findByYearAndMonthAndDay(Integer year, Integer month, Integer day);
     
-    Optional<DimTime> findByTimePeriod(String timePeriod);
-    
     List<DimTime> findByYear(Integer year);
     
     List<DimTime> findByYearAndMonth(Integer year, Integer month);

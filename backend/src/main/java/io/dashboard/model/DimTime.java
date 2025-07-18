@@ -39,9 +39,6 @@ public class DimTime {
     @Column(name = "quarter")
     private Integer quarter;
     
-    @Column(name = "time_period", length = 50)
-    private String timePeriod; // e.g., "Q1 2022", "Jan 2021"
-    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
