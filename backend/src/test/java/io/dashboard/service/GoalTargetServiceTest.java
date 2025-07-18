@@ -246,7 +246,7 @@ class GoalTargetServiceTest {
         // Given
         GoalTarget targetToUpdate = GoalTarget.builder()
                 .targetYear(2035)
-                .targetValue(new BigDecimal("2000000"))
+                .targetValue(new BigDecimal("50")) // Use a valid percentage value
                 .targetType(TargetType.PERCENTAGE_CHANGE)
                 .build();
 
