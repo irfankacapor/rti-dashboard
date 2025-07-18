@@ -48,9 +48,6 @@ public class GoalTarget {
     @Column(name = "target_type", nullable = false)
     private TargetType targetType;
     
-    @Column(name = "target_percentage", precision = 5, scale = 2)
-    private BigDecimal targetPercentage;
-    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

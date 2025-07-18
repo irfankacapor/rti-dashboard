@@ -22,9 +22,12 @@ interface Goal {
 
 interface GoalTarget {
   id?: number;
-  value: number;
+  value: number; // This will be used as targetValue
+  targetYear: number;
   deadline?: string;
   unit?: string;
+  targetType: string;
+  indicatorId: number;
 }
 
 interface Indicator {
@@ -151,9 +154,22 @@ export const GoalManagementStep: React.FC = () => {
         delete payload.goalGroup;
         
         if (editingGoal.id === 0) {
-          await goalService.createGoal(payload);
+          const createdGoal = await goalService.createGoal(payload);
+          if (editingGoal.targets && editingGoal.targets.length > 0 && editingGoal.indicators && editingGoal.indicators.length > 0) {
+            for (const target of editingGoal.targets) {
+              for (const indicatorId of editingGoal.indicators) {
+                await goalService.createGoalTarget({
+                  ...target,
+                  goalId: createdGoal.id,
+                  indicatorId,
+                  targetValue: target.value,
+                });
+              }
+            }
+          }
         } else {
           await goalService.updateGoal(editingGoal.id, payload);
+          // Optionally update targets for existing goals here
         }
         const updatedGoals = await goalService.getGoals();
         setGoals(updatedGoals.map(g => ({ 
@@ -181,13 +197,24 @@ export const GoalManagementStep: React.FC = () => {
   // Target management
   const handleAddTarget = () => {
     if (editingGoal) {
-      setEditingGoal({ ...editingGoal, targets: [...(editingGoal.targets || []), { value: 0, deadline: '', unit: '' }] });
+      const defaultIndicatorId = indicators.length > 0 ? indicators[0].id : 0;
+      const currentYear = new Date().getFullYear();
+      setEditingGoal({ ...editingGoal, targets: [...(editingGoal.targets || []), { value: 0, targetYear: currentYear, deadline: '', unit: '', targetType: 'ABSOLUTE', indicatorId: defaultIndicatorId }] });
     }
   };
   const handleTargetChange = (idx: number, field: string, value: any) => {
     if (editingGoal) {
       const newTargets = [...(editingGoal.targets || [])];
-      newTargets[idx] = { ...newTargets[idx], [field]: value };
+      if (field === 'targetYear') {
+        // Only store the year as a number
+        newTargets[idx] = { ...newTargets[idx], targetYear: Number(value) };
+      } else {
+        newTargets[idx] = { ...newTargets[idx], [field]: value };
+        // If targetType changes, reset value accordingly
+        if (field === 'targetType') {
+          newTargets[idx].value = 0; // Reset value for all types when type changes
+        }
+      }
       setEditingGoal({ ...editingGoal, targets: newTargets });
     }
   };
@@ -332,12 +359,48 @@ export const GoalManagementStep: React.FC = () => {
             <List>
               {(editingGoal?.targets || []).map((target, idx) => (
                 <ListItem key={idx}>
+                  <FormControl fullWidth sx={{ mr: 2 }}>
+                    <InputLabel>Target Type</InputLabel>
+                    <Select
+                      value={target.targetType || 'ABSOLUTE'}
+                      onChange={e => handleTargetChange(idx, 'targetType', e.target.value)}
+                      input={<OutlinedInput label="Target Type" />}
+                    >
+                      <MenuItem value="ABSOLUTE">Absolute Value</MenuItem>
+                      <MenuItem value="RELATIVE">Relative Value</MenuItem>
+                      <MenuItem value="PERCENTAGE_CHANGE">Percentage Change</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {target.targetType === 'PERCENTAGE_CHANGE' ? (
+                    <TextField
+                      label="Target Percentage (%)"
+                      type="number"
+                      value={target.value || ''}
+                      onChange={e => handleTargetChange(idx, 'value', Number(e.target.value))}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ mr: 2 }}
+                      inputProps={{ min: 0, max: 100 }}
+                      required
+                    />
+                  ) : (
+                    <TextField
+                      label="Target Value"
+                      type="number"
+                      value={target.value || ''}
+                      onChange={e => handleTargetChange(idx, 'value', Number(e.target.value))}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ mr: 2 }}
+                      required
+                    />
+                  )}
                   <TextField
-                    label="Value"
+                    label="Target Year"
                     type="number"
-                    value={target.value}
-                    onChange={e => handleTargetChange(idx, 'value', e.target.value)}
+                    value={target.targetYear || ''}
+                    onChange={e => handleTargetChange(idx, 'targetYear', Number(e.target.value))}
+                    InputLabelProps={{ shrink: true }}
                     sx={{ mr: 2 }}
+                    required
                   />
                   <TextField
                     label="Deadline"

@@ -26,5 +26,4 @@ public class GoalTargetUpdateRequest {
     @NotNull(message = "Target type is required")
     private TargetType targetType;
     
-    private BigDecimal targetPercentage;
 } 

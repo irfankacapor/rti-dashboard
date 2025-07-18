@@ -8,6 +8,7 @@ import io.dashboard.exception.ResourceNotFoundException;
 import io.dashboard.model.Goal;
 import io.dashboard.model.GoalTarget;
 import io.dashboard.model.Indicator;
+import io.dashboard.model.TargetType;
 import io.dashboard.repository.GoalRepository;
 import io.dashboard.repository.GoalTargetRepository;
 import io.dashboard.repository.IndicatorRepository;
@@ -81,7 +82,6 @@ public class GoalTargetService {
         existingTarget.setTargetYear(target.getTargetYear());
         existingTarget.setTargetValue(target.getTargetValue());
         existingTarget.setTargetType(target.getTargetType());
-        existingTarget.setTargetPercentage(target.getTargetPercentage());
         
         // Validate target value
         validateTargetValue(existingTarget);
@@ -119,12 +119,9 @@ public class GoalTargetService {
         }
         
         // Validate target percentage if provided
-        if (target.getTargetPercentage() != null) {
-            if (target.getTargetPercentage().compareTo(java.math.BigDecimal.ZERO) < 0) {
-                throw new BadRequestException("Target percentage cannot be negative");
-            }
-            if (target.getTargetPercentage().compareTo(new java.math.BigDecimal("100")) > 0) {
-                throw new BadRequestException("Target percentage cannot exceed 100%");
+        if (target.getTargetType() == TargetType.PERCENTAGE_CHANGE) {
+            if (target.getTargetValue().compareTo(new java.math.BigDecimal("0")) < 0 || target.getTargetValue().compareTo(new java.math.BigDecimal("100")) > 0) {
+                throw new BadRequestException("Target percentage cannot be negative or exceed 100% for PERCENTAGE_CHANGE");
             }
         }
     }
@@ -155,7 +152,6 @@ public class GoalTargetService {
                 .targetYear(target.getTargetYear())
                 .targetValue(target.getTargetValue())
                 .targetType(target.getTargetType())
-                .targetPercentage(target.getTargetPercentage())
                 .createdAt(target.getCreatedAt())
                 .build();
     }

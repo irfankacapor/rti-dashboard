@@ -89,7 +89,6 @@ class GoalTargetServiceTest {
                 .targetYear(2030)
                 .targetValue(new BigDecimal("1000000"))
                 .targetType(TargetType.ABSOLUTE)
-                .targetPercentage(new BigDecimal("10.5"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -98,7 +97,6 @@ class GoalTargetServiceTest {
                 .targetYear(2030)
                 .targetValue(new BigDecimal("1000000"))
                 .targetType(TargetType.ABSOLUTE)
-                .targetPercentage(new BigDecimal("10.5"))
                 .createdAt(testTarget.getCreatedAt())
                 .build();
     }
@@ -144,7 +142,6 @@ class GoalTargetServiceTest {
                 .targetYear(2030)
                 .targetValue(new BigDecimal("1000000"))
                 .targetType(TargetType.ABSOLUTE)
-                .targetPercentage(new BigDecimal("10.5"))
                 .build();
 
         when(goalRepository.findById(1L)).thenReturn(Optional.of(testGoal));
@@ -251,7 +248,6 @@ class GoalTargetServiceTest {
                 .targetYear(2035)
                 .targetValue(new BigDecimal("2000000"))
                 .targetType(TargetType.PERCENTAGE_CHANGE)
-                .targetPercentage(new BigDecimal("20.0"))
                 .build();
 
         when(goalTargetRepository.findById(1L)).thenReturn(Optional.of(testTarget));
@@ -314,7 +310,6 @@ class GoalTargetServiceTest {
                 .targetYear(2030)
                 .targetValue(new BigDecimal("1000000"))
                 .targetType(TargetType.ABSOLUTE)
-                .targetPercentage(new BigDecimal("10.5"))
                 .build();
 
         // When & Then
@@ -367,7 +362,6 @@ class GoalTargetServiceTest {
                 .targetYear(2030)
                 .targetValue(new BigDecimal("1000000"))
                 .targetType(TargetType.PERCENTAGE_CHANGE)
-                .targetPercentage(new BigDecimal("-10.5")) // Negative percentage
                 .build();
 
         // When & Then
@@ -381,7 +375,6 @@ class GoalTargetServiceTest {
                 .targetYear(2030)
                 .targetValue(new BigDecimal("1000000"))
                 .targetType(TargetType.PERCENTAGE_CHANGE)
-                .targetPercentage(new BigDecimal("150.0")) // Exceeds 100%
                 .build();
 
         // When & Then

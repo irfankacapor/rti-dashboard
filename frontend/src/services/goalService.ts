@@ -19,6 +19,14 @@ export interface GoalGroup {
   goalCount?: number;
 }
 
+export interface GoalTarget {
+  id?: number;
+  value: number;
+  deadline?: string;
+  unit?: string;
+  targetType: string; // Now fetched from backend
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const goalService = {
@@ -78,10 +86,28 @@ export const goalService = {
     }
     return response.json();
   },
-  getGoalTargets: async (goalId: number): Promise<any[]> => {
+  getGoalTargets: async (goalId: number): Promise<GoalTarget[]> => {
     const response = await fetch(`${API_BASE}/goals/${goalId}/targets`);
     if (!response.ok) {
       throw new Error('Failed to fetch goal targets');
+    }
+    return response.json();
+  },
+  getTargetTypes: async (): Promise<string[]> => {
+    const response = await fetch(`${API_BASE}/goal-targets/target-types`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch target types');
+    }
+    return response.json();
+  },
+  createGoalTarget: async (target: any) => {
+    const response = await fetch(`${API_BASE}/goal-targets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(target),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to create goal target');
     }
     return response.json();
   },

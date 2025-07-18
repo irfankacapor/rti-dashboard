@@ -21,6 +21,5 @@ public class GoalTargetResponse {
     private Integer targetYear;
     private BigDecimal targetValue;
     private TargetType targetType;
-    private BigDecimal targetPercentage;
     private LocalDateTime createdAt;
 } 

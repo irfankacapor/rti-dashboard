@@ -57,6 +57,16 @@ public class GoalTargetController {
         List<GoalTargetResponse> targets = goalTargetService.findByIndicatorId(indicatorId);
         return ResponseEntity.ok(targets);
     }
+
+    @GetMapping("/target-types")
+    @PermitAll
+    public ResponseEntity<List<String>> getTargetTypes() {
+        return ResponseEntity.ok(
+            java.util.Arrays.stream(io.dashboard.model.TargetType.values())
+                .map(Enum::name)
+                .toList()
+        );
+    }
     
     @PostMapping
     @Secured({"ROLE_ADMIN", "ROLE_MANAGER"})
@@ -73,7 +83,6 @@ public class GoalTargetController {
                 .targetYear(request.getTargetYear())
                 .targetValue(request.getTargetValue())
                 .targetType(request.getTargetType())
-                .targetPercentage(request.getTargetPercentage())
                 .build();
         
         GoalTargetResponse response = goalTargetService.create(target);
@@ -90,7 +99,6 @@ public class GoalTargetController {
                 .targetYear(request.getTargetYear())
                 .targetValue(request.getTargetValue())
                 .targetType(request.getTargetType())
-                .targetPercentage(request.getTargetPercentage())
                 .build();
         
         GoalTargetResponse response = goalTargetService.update(id, target);
