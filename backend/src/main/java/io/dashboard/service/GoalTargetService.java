@@ -136,7 +136,6 @@ public class GoalTargetService {
                 .url(target.getGoal().getUrl())
                 .year(target.getGoal().getYear())
                 .description(target.getGoal().getDescription())
-                .attributes(target.getGoal().getAttributes())
                 .createdAt(target.getGoal().getCreatedAt())
                 .targetCount(null) // Will be calculated separately if needed
                 .build();

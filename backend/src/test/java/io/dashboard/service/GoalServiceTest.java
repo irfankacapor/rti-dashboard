@@ -53,12 +53,10 @@ class GoalServiceTest {
     private Goal testGoal;
     private GoalResponse expectedResponse;
     private ObjectMapper objectMapper;
-    private JsonNode testAttributes;
 
     @BeforeEach
     void setUp() throws Exception {
         objectMapper = new ObjectMapper();
-        testAttributes = objectMapper.readTree("{\"key\": \"value\"}");
         
         testGoalGroup = GoalGroup.builder()
                 .id(1L)
@@ -74,7 +72,6 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes(testAttributes)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -84,7 +81,6 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes(testAttributes)
                 .createdAt(testGoal.getCreatedAt())
                 .targetCount(0L)
                 .build();
@@ -159,7 +155,6 @@ class GoalServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes(testAttributes)
                 .build();
 
         when(goalGroupRepository.findById(1L)).thenReturn(Optional.of(testGoalGroup));
@@ -204,7 +199,6 @@ class GoalServiceTest {
                 .url("https://updated.com")
                 .year(2026)
                 .description("Updated description")
-                .attributes(updatedAttributes)
                 .build();
 
         // Create an updated goal that reflects the changes
@@ -215,7 +209,6 @@ class GoalServiceTest {
                 .url("https://updated.com")
                 .year(2026)
                 .description("Updated description")
-                .attributes(updatedAttributes)
                 .createdAt(testGoal.getCreatedAt())
                 .build();
 

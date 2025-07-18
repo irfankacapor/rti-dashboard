@@ -51,12 +51,10 @@ class GoalTargetServiceTest {
     private GoalTarget testTarget;
     private GoalTargetResponse expectedResponse;
     private ObjectMapper objectMapper;
-    private JsonNode testAttributes;
 
     @BeforeEach
     void setUp() throws Exception {
         objectMapper = new ObjectMapper();
-        testAttributes = objectMapper.readTree("{\"key\": \"value\"}");
 
         testGoalGroup = GoalGroup.builder()
                 .id(1L)
@@ -72,7 +70,6 @@ class GoalTargetServiceTest {
                 .url("https://example.com")
                 .year(2025)
                 .description("Test goal")
-                .attributes(testAttributes)
                 .createdAt(LocalDateTime.now())
                 .build();
 

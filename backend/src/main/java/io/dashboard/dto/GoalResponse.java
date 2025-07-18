@@ -20,7 +20,6 @@ public class GoalResponse {
     private String url;
     private Integer year;
     private String description;
-    private JsonNode attributes;
     private LocalDateTime createdAt;
     private Long targetCount;
     private String type; // 'quantitative' or 'qualitative'

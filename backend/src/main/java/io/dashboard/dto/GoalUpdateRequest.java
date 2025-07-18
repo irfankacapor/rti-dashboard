@@ -35,8 +35,6 @@ public class GoalUpdateRequest {
     @Size(max = 1000, message = "Goal description must not exceed 1000 characters")
     private String description;
     
-    private JsonNode attributes;
-    
     // List of indicator IDs to link to this goal
     private List<Long> indicators;
 } 

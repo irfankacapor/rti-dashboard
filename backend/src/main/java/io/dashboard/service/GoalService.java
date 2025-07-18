@@ -82,7 +82,6 @@ public class GoalService {
                 .url(request.getUrl())
                 .year(request.getYear())
                 .description(request.getDescription())
-                .attributes(request.getAttributes())
                 .build();
         Goal savedGoal = goalRepository.save(goal);
         
@@ -113,7 +112,6 @@ public class GoalService {
         goal.setUrl(request.getUrl());
         goal.setYear(request.getYear());
         goal.setDescription(request.getDescription());
-        goal.setAttributes(request.getAttributes());
         Goal updatedGoal = goalRepository.save(goal);
         
         // Handle indicator relationships if provided
@@ -176,7 +174,6 @@ public class GoalService {
                 .url(goal.getUrl())
                 .year(goal.getYear())
                 .description(goal.getDescription())
-                .attributes(goal.getAttributes())
                 .createdAt(goal.getCreatedAt())
                 .targetCount(targetCount)
                 .build();
