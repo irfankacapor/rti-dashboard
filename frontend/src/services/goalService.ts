@@ -7,7 +7,6 @@ export interface Goal {
   goalGroup?: GoalGroup;
   url?: string;
   year?: number;
-  attributes?: any;
   createdAt?: string;
   targetCount?: number;
 }
