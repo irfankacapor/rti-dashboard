@@ -235,10 +235,25 @@ export const CsvProcessingStep: React.FC = () => {
         const indicatorName = tuple.coordinates.indicator_names || 'Unknown Indicator';
         if (!indicatorMap.has(indicatorName)) {
           // Fix: ensure dimensions is Dimension[]
+          // Only filter out keys that are not actual dimensions
           const dimensionKeys = Object.keys(tuple.coordinates).filter(key =>
-            !['indicator_names', 'time', 'locations', 'unit', 'source'].includes(key)
+            !['indicator_names', 'unit', 'source'].includes(key)
           );
-          const dimensions: Dimension[] = dimensionKeys.map(key => ({ name: key }));
+          const timeKeys = ['time', 'year', 'month', 'day', 'quarter'];
+          const locationKeys = ['location', 'locations', 'state', 'country', 'city', 'region', 'district'];
+          const dimensions: Dimension[] = dimensionKeys.map(key => {
+            if (timeKeys.includes(key)) {
+              return { type: 'time', displayName: key.charAt(0).toUpperCase() + key.slice(1), values: [] };
+            } else if (locationKeys.includes(key)) {
+              return { type: 'location', displayName: key.charAt(0).toUpperCase() + key.slice(1), values: [] };
+            } else {
+              return {
+                type: 'additional',
+                displayName: key.charAt(0).toUpperCase() + key.slice(1),
+                values: []
+              };
+            }
+          });
           indicatorMap.set(indicatorName, {
             id: uuidv4(),
             name: indicatorName,

@@ -175,8 +175,8 @@ export const IndicatorAssignment: React.FC<IndicatorAssignmentProps> = ({
                           <Box display="flex" gap={0.5} flexWrap="wrap">
                             {indicator.dimensions.map((dimension) => (
                               <Chip
-                                key={dimension}
-                                label={dimension}
+                                key={dimension.displayName}
+                                label={dimension.displayName}
                                 size="small"
                                 variant="outlined"
                               />
