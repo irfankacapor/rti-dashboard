@@ -391,6 +391,8 @@ export const CsvProcessingStep: React.FC = () => {
                 data={state.csvData}
                 onCellRangeSelect={handleCellRangeSelect}
                 existingMappings={state.dimensionMappings}
+                maxDisplayRows={1000}
+                maxDisplayCols={100}
               />
             )}
 

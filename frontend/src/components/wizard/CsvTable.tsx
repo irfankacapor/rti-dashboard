@@ -38,8 +38,8 @@ export const CsvTable: React.FC<CsvTableProps> = ({
   data,
   onCellRangeSelect,
   existingMappings,
-  maxDisplayRows = 20,
-  maxDisplayCols = 15
+  maxDisplayRows = 1000, // Increased to show more rows
+  maxDisplayCols = 100   // Increased to show more columns
 }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<{row: number, col: number} | null>(null);
@@ -61,10 +61,10 @@ export const CsvTable: React.FC<CsvTableProps> = ({
     return newRow;
   });
 
-  // Limit display size for performance
-  const displayData = processedData.slice(0, maxDisplayRows).map(row => row.slice(0, maxDisplayCols));
-  const hasMoreRows = data.length > maxDisplayRows;
-  const hasMoreCols = data[0]?.length > maxDisplayCols;
+  // Show all data with scrolling
+  const displayData = processedData;
+  const hasMoreRows = false; // No longer limiting rows
+  const hasMoreCols = false; // No longer limiting columns
 
   const generateId = () => `selection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -225,9 +225,11 @@ export const CsvTable: React.FC<CsvTableProps> = ({
       position: 'relative',
       cursor: 'pointer',
       userSelect: 'none',
-      minWidth: '100px',
-      maxWidth: '200px',
-      wordBreak: 'break-word'
+      minWidth: '120px',
+      maxWidth: '300px',
+      wordBreak: 'break-word',
+      whiteSpace: 'pre-wrap',
+      lineHeight: '1.2'
     };
     
     // Current selection highlighting
@@ -284,20 +286,24 @@ export const CsvTable: React.FC<CsvTableProps> = ({
         </Box>
       </Box>
 
-      {(hasMoreRows || hasMoreCols) && (
+      {data.length > 0 && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Showing {maxDisplayRows} of {data.length} rows and {maxDisplayCols} of {data[0]?.length || 0} columns.
-          {hasMoreRows && ' Use cell selection to map larger datasets.'}
+          Showing all {data.length} rows and {data[0]?.length || 0} columns. Scroll to view all data.
         </Alert>
       )}
 
       <Paper 
         ref={tableRef}
         className={isSelecting ? 'csv-table-noselect' : ''}
-        sx={{ overflow: 'auto', maxHeight: '600px' }}
+        sx={{ 
+          overflow: 'auto', 
+          maxHeight: '70vh',
+          minHeight: '400px',
+          border: '1px solid #e0e0e0'
+        }}
       >
-        <TableContainer>
-          <Table size="small" stickyHeader>
+        <TableContainer sx={{ maxHeight: '100%' }}>
+          <Table size="small" stickyHeader sx={{ minWidth: '100%' }}>
             <TableHead>
               <TableRow>
                 {showCoordinates && (
@@ -317,7 +323,9 @@ export const CsvTable: React.FC<CsvTableProps> = ({
                     sx={{ 
                       backgroundColor: 'grey.100', 
                       fontWeight: 'bold',
-                      minWidth: '100px'
+                      minWidth: '120px',
+                      maxWidth: '300px',
+                      wordBreak: 'break-word'
                     }}
                   >
                     {showCoordinates ? `Col ${colIndex}` : `Column ${colIndex + 1}`}
@@ -354,9 +362,20 @@ export const CsvTable: React.FC<CsvTableProps> = ({
                       className={getCellClassName(rowIndex, colIndex)}
                       style={getCellStyle(rowIndex, colIndex)}
                     >
-                      <Typography variant="body2" noWrap style={{ userSelect: 'none' }}>
-                        {cell || ''}
-                      </Typography>
+                                          <Typography 
+                      variant="body2" 
+                      style={{ 
+                        userSelect: 'none',
+                        maxHeight: '60px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical'
+                      }}
+                    >
+                      {cell || ''}
+                    </Typography>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -369,7 +388,7 @@ export const CsvTable: React.FC<CsvTableProps> = ({
       <Box mt={2}>
         <Typography variant="body2" color="text.secondary">
           <strong>Instructions:</strong> Click and drag to select cells, or use Shift+Cmd+Arrow keys to extend selection. 
-          Press Cmd+C to toggle coordinate display.
+          Press Cmd+C to toggle coordinate display. Scroll to view all rows and columns.
         </Typography>
       </Box>
 
